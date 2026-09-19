@@ -11,3 +11,6 @@ The scheduled workflow runs at 15:00 Vietnam time, Monday through Friday. It ref
 Alpha Stock reads the same shared snapshot from:
 
 https://raw.githubusercontent.com/Kalm-D/tracker/main/public/data/market.json.gz
+
+
+Standalone deployment is configured through the repository workflow.
