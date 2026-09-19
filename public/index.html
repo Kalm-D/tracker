@@ -4402,6 +4402,297 @@ body.t140-soft-theme{background:#e9eef3!important;color:#14253b!important}.t140-
   }
 }
 
+
+<style id="trackerMobileLayout">
+/* Mobile-only information hierarchy. Desktop styles remain unchanged. */
+@media (max-width: 700px) {
+  html {
+    scroll-padding-bottom: 92px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body.tracker-app-v127 {
+    overflow-x: hidden;
+  }
+
+  body.tracker-app-v127 .app {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 10px 10px calc(96px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Compact headline: brand + notification, then search + market data. */
+  body.tracker-app-v127 .topbar {
+    width: 100%;
+    min-height: 0 !important;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+    grid-template-areas:
+      "brand actions"
+      "search search"
+      "market market" !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    border-radius: 19px !important;
+  }
+
+  body.tracker-app-v127 .brand-top {
+    min-width: 0;
+    height: 42px !important;
+    gap: 10px !important;
+    align-items: center !important;
+  }
+
+  body.tracker-app-v127 .brand-top .top-logo {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+  }
+
+  body.tracker-app-v127 .brand-top h1 {
+    margin: 0 !important;
+    font-size: 24px !important;
+    line-height: 1.05 !important;
+  }
+
+  body.tracker-app-v127 .brand-top .subtitle {
+    display: none !important;
+  }
+
+  body.tracker-app-v127 .topbar .actions {
+    grid-area: actions !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 !important;
+    justify-self: end !important;
+    align-self: start !important;
+    justify-content: flex-end !important;
+  }
+
+  body.tracker-app-v127 .topbar .actions #v2NotifyBtn {
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 42px !important;
+    flex-basis: 42px !important;
+    border-radius: 13px !important;
+  }
+
+  body.tracker-app-v127 .header-search {
+    grid-area: search !important;
+    width: 100% !important;
+  }
+
+  body.tracker-app-v127 .header-search input {
+    width: 100% !important;
+    height: 48px !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    font-size: 15px !important;
+  }
+
+  body.tracker-app-v127 .header-market {
+    grid-area: market !important;
+    width: 100% !important;
+    min-height: 68px !important;
+    padding: 10px 14px !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+
+  body.tracker-app-v127 .header-market .market-line {
+    gap: 7px !important;
+    line-height: 1.1 !important;
+    flex-wrap: nowrap !important;
+  }
+
+  body.tracker-app-v127 .header-market .market-name {
+    font-size: 12px !important;
+  }
+
+  body.tracker-app-v127 .header-market .market-price {
+    font-size: 20px !important;
+  }
+
+  body.tracker-app-v127 .header-market .market-up {
+    font-size: 12px !important;
+  }
+
+  body.tracker-app-v127 .header-market .market-sub {
+    max-width: 100% !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  /* The desktop tab rail is replaced by the mobile bottom navigation. */
+  body.tracker-app-v127 .tracker140-nav {
+    display: none !important;
+  }
+
+  body.tracker-app-v127 #tracker140Workspace {
+    padding-bottom: 84px !important;
+  }
+
+  /* Dashboard: four key indicators in a 2 x 2 scan-friendly grid. */
+  body.tracker-app-v127 .v2-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  body.tracker-app-v127 .v2-grid > .v2-card {
+    min-width: 0 !important;
+  }
+
+  body.tracker-app-v127 .v2-c3 {
+    grid-column: span 1 !important;
+  }
+
+  body.tracker-app-v127 .v2-c4,
+  body.tracker-app-v127 .v2-c6,
+  body.tracker-app-v127 .v2-c8,
+  body.tracker-app-v127 .v2-c12 {
+    grid-column: span 2 !important;
+  }
+
+  body.tracker-app-v127 .v2-card {
+    min-width: 0 !important;
+    padding: 12px !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 22px rgba(0,0,0,.10) !important;
+  }
+
+  body.tracker-app-v127 .v2-card h2 {
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+  }
+
+  body.tracker-app-v127 .v2-sub {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  body.tracker-app-v127 .v2-kpi {
+    margin-top: 9px !important;
+    font-size: 26px !important;
+    line-height: 1 !important;
+  }
+
+  body.tracker-app-v127 #t140-v2dashboard .v2-grid > .v2-c3:nth-child(2) .v2-kpi,
+  body.tracker-app-v127 #t140-v2dashboard .v2-grid > .v2-c3:nth-child(4) .v2-kpi {
+    font-size: 18px !important;
+    line-height: 1.12 !important;
+  }
+
+  body.tracker-app-v127 .v2-tablewrap,
+  body.tracker-app-v127 .t140-tablewrap {
+    max-width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.tracker-app-v127 .v2-table {
+    min-width: 760px !important;
+  }
+
+  body.tracker-app-v127 .v2-table th,
+  body.tracker-app-v127 .v2-table td {
+    padding: 8px 7px !important;
+    font-size: 11px !important;
+  }
+
+  body.tracker-app-v127 .v2-scorebar {
+    grid-template-columns: 68px minmax(0, 1fr) 32px !important;
+    gap: 6px !important;
+    font-size: 10px !important;
+  }
+
+  /* Keep every existing Tracker view usable without desktop-sized overflow. */
+  body.tracker-app-v127 .t140-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  body.tracker-app-v127 .t140-col-3 {
+    grid-column: span 1 !important;
+  }
+
+  body.tracker-app-v127 .t140-col-4,
+  body.tracker-app-v127 .t140-col-6,
+  body.tracker-app-v127 .t140-col-8,
+  body.tracker-app-v127 .t140-col-12 {
+    grid-column: span 2 !important;
+  }
+
+  body.tracker-app-v127 .t140-card {
+    min-width: 0 !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  body.tracker-app-v127 .t140-sector-row {
+    grid-template-columns: minmax(74px, 1fr) minmax(42px, 1.3fr) 38px 42px !important;
+    gap: 5px !important;
+    font-size: 10px !important;
+  }
+
+  body.tracker-app-v127 .t140-sector-name,
+  body.tracker-app-v127 .t140-muted {
+    font-size: 10px !important;
+  }
+
+  body.tracker-app-v127 .t140-formgrid,
+  body.tracker-app-v127 .t140-formgrid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  body.tracker-app-v127 .t140-input,
+  body.tracker-app-v127 .t140-select,
+  body.tracker-app-v127 .t140-textarea {
+    min-width: 0 !important;
+    font-size: 13px !important;
+  }
+
+  body.tracker-app-v127 .t140-toolbar {
+    gap: 6px !important;
+  }
+
+  body.tracker-app-v127 .t140-bottomnav {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    gap: 2px !important;
+    padding: 5px !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 24px rgba(2,8,18,.22) !important;
+  }
+
+  body.tracker-app-v127 .t140-bottomnav button {
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 5px 1px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+  }
+
+  body.tracker-app-v127 .t140-bottomnav .ico {
+    margin-bottom: 2px !important;
+    font-size: 15px !important;
+  }
+
+  body.tracker-app-v127 .v2-notify-panel {
+    top: 70px !important;
+    right: 10px !important;
+    width: calc(100vw - 20px) !important;
+    max-height: 66vh !important;
+  }
+}
+</style>
 </style>
 </head>
 <body class="tracker-app-v127">
