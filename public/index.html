@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Tracker" />
   <meta name="description" content="Tracker v2.0 Complete — Vietnam stock research, screener, evidence engine, multi-timeframe, pattern and risk toolkit." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2316c79a%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%234b8cff%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22%23071426%22%2F%3E%3Cpath%20d%3D%22M13%2018h38v8H36v25h-8V26H13z%22%20fill%3D%22url(%23g)%22%2F%3E%3Ccircle%20cx%3D%2247%22%20cy%3D%2247%22%20r%3D%226%22%20fill%3D%22%2316c79a%22%2F%3E%3C%2Fsvg%3E" />
   <title>Tracker v2.0.1 Complete — Evidence Research Platform</title>
   <style>
     :root {
@@ -4695,6 +4696,153 @@ body.t140-soft-theme{background:#e9eef3!important;color:#14253b!important}.t140-
   }
 }
 </style>
+
+<style id="trackerDarkTheme">
+/* Dark theme contract: no light surfaces or dark-on-dark headings outside Soft Light. */
+body.tracker-app-v127:not(.t140-soft-theme) {
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(66, 142, 255, .12), transparent 34%),
+    linear-gradient(180deg, #07111f 0%, #050b16 100%) !important;
+  color: #eaf2ff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .app {
+  color: #eaf2ff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .topbar,
+body.tracker-app-v127:not(.t140-soft-theme) .tracker140-nav,
+body.tracker-app-v127:not(.t140-soft-theme) .panel,
+body.tracker-app-v127:not(.t140-soft-theme) .card,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-card {
+  background: linear-gradient(180deg, #0e1d31 0%, #091526 100%) !important;
+  border-color: #263d59 !important;
+  color: #eaf2ff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .topbar {
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .28) !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .header-search input,
+body.tracker-app-v127:not(.t140-soft-theme) .header-market,
+body.tracker-app-v127:not(.t140-soft-theme) .field input,
+body.tracker-app-v127:not(.t140-soft-theme) .field select,
+body.tracker-app-v127:not(.t140-soft-theme) .search input,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-input,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-select,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-textarea {
+  background: #071321 !important;
+  border-color: #2a4564 !important;
+  color: #edf6ff !important;
+  box-shadow: none !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .header-search input::placeholder,
+body.tracker-app-v127:not(.t140-soft-theme) input::placeholder,
+body.tracker-app-v127:not(.t140-soft-theme) textarea::placeholder {
+  color: #7890b0 !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .header-market {
+  background: linear-gradient(180deg, #0b1b2f 0%, #081526 100%) !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .brand-top h1,
+body.tracker-app-v127:not(.t140-soft-theme) .panel-title,
+body.tracker-app-v127:not(.t140-soft-theme) .section-title,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-card h2,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-card h3,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-card h2,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-card h3,
+body.tracker-app-v127:not(.t140-soft-theme) .setting-group h3 {
+  color: #edf6ff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .subtitle,
+body.tracker-app-v127:not(.t140-soft-theme) .status-line,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-sub,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-muted,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-label,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-sub,
+body.tracker-app-v127:not(.t140-soft-theme) .muted,
+body.tracker-app-v127:not(.t140-soft-theme) .muted-small,
+body.tracker-app-v127:not(.t140-soft-theme) .label,
+body.tracker-app-v127:not(.t140-soft-theme) .submetric,
+body.tracker-app-v127:not(.t140-soft-theme) .footer-note {
+  color: #9bb2d1 !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .tracker140-nav button {
+  color: #a8bdd9 !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .tracker140-nav button:hover,
+body.tracker-app-v127:not(.t140-soft-theme) .tracker140-nav button.active {
+  color: #effffb !important;
+  background: rgba(22, 199, 154, .14) !important;
+  border-color: rgba(22, 199, 154, .42) !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .t140-note,
+body.tracker-app-v127:not(.t140-soft-theme) .hint,
+body.tracker-app-v127:not(.t140-soft-theme) .result-hint,
+body.tracker-app-v127:not(.t140-soft-theme) .mini,
+body.tracker-app-v127:not(.t140-soft-theme) .quality-box,
+body.tracker-app-v127:not(.t140-soft-theme) .quality-notes {
+  background: #10243b !important;
+  border-color: #294765 !important;
+  color: #a9c0de !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .t140-btn {
+  background: #0b213a !important;
+  border-color: #2b4868 !important;
+  color: #eaf4ff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .t140-btn.primary,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-btn[data-theme="dark"] {
+  background: linear-gradient(135deg, #0ea57c, #156ea9) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .v2-table th,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-table th,
+body.tracker-app-v127:not(.t140-soft-theme) th {
+  background: #0a1a2e !important;
+  color: #b8cbe5 !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .v2-table td,
+body.tracker-app-v127:not(.t140-soft-theme) .t140-table td,
+body.tracker-app-v127:not(.t140-soft-theme) td {
+  color: #cbd9ea !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .v2-guide-body,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-guide-body .doc,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-head {
+  background: #081525 !important;
+  color: #eaf2ff !important;
+  border-color: #29435f !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .v2-guide-body h2,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-guide-body h3,
+body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-head b {
+  color: #edf6ff !important;
+}
+
+body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
+  color: #b8cbe4 !important;
+  border-bottom-color: rgba(148, 163, 184, .16) !important;
+}
+</style>
+
 </head>
 <body class="tracker-app-v127">
   <div class="app">
