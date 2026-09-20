@@ -5205,10 +5205,6 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
     </div>
   </div>
 
-  <div class="guide-dock" id="guideDock">
-    <button id="openGuideBtn" class="guide-btn" type="button">HDSD</button>
-  </div>
-
   <div id="guideBackdrop" class="guide-backdrop" aria-hidden="true">
     <div class="guide-modal" role="dialog" aria-modal="true" aria-label="Hướng dẫn sử dụng Tracker">
       <button id="closeGuideBtn" class="guide-close-x" type="button" aria-label="Đóng hướng dẫn">×</button>
@@ -7532,7 +7528,6 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       gb.style.display = "none";
       gb.setAttribute("aria-hidden", "true");
     };
-    if ($("openGuideBtn")) $("openGuideBtn").addEventListener("click", openGuide);
     if ($("closeGuideBtn")) $("closeGuideBtn").addEventListener("click", closeGuide);
     if ($("guideBackdrop")) $("guideBackdrop").addEventListener("click", (e) => { if (e.target.id === "guideBackdrop") closeGuide(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeGuide(); closePlaybookModal(); } });
@@ -8211,7 +8206,6 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     }
     document.body.insertAdjacentHTML('beforeend','<div id="v2NotifyPanel" class="v2-notify-panel" role="dialog" aria-label="Notification Center"></div><div id="v2PaletteOverlay" class="v2-panel-overlay"><div class="v2-palette"><input id="v2PaletteInput" placeholder="Gõ mã, dashboard, vcp, guide, backup..."><div id="v2CommandList" class="v2-command-list"></div></div></div>');
     bindNotificationDismiss();
-    const oldGuideBtn=document.getElementById('openGuideBtn');if(oldGuideBtn)oldGuideBtn.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();showV2('guide')},true);
     setupPalette();patchDetail();
     return true;
   }
@@ -8289,23 +8283,28 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
        this is loaded from the same-origin data/market.json file. -->
   <script src="./shared/market-data.js"></script>
   <script>
-    (async () => {
+    async function refreshTrackerSharedMarketData() {
       try {
         const sourceUrl = window.SHARED_MARKET_DATA_URL || "./data/market.json.gz";
         const shared = await window.SharedMarketData.load(sourceUrl);
         if (shared.rows.length >= 1 && window.TrackerDataBridge?.loadRows) {
+          const asOf = shared.meta?.asOf || "latest";
           const label = shared.meta?.refreshedOnOpen
-            ? `VNDIRECT live on-open • ${shared.meta?.asOf || "latest"}`
+            ? `VNDIRECT live on-open • ${asOf}`
             : shared.meta?.isDemo
               ? "Dữ liệu mẫu • shared market snapshot"
-              : `Shared market snapshot • ${shared.meta?.asOf || "latest"}`;
+              : `Shared market snapshot • ${asOf} • 10:40 & 15:00 T2–T6`;
           window.TrackerDataBridge.loadRows(shared.rows, label);
           window.dispatchEvent(new CustomEvent("shared-market-data-ready", { detail: shared }));
         }
       } catch (error) {
-        console.warn("Shared market data chưa sẵn sàng; giữ dataset demo.", error);
+        console.warn("Shared market data chưa sẵn sàng; giữ dataset hiện tại.", error);
       }
-    })();
+    }
+    refreshTrackerSharedMarketData();
+    window.setInterval(() => {
+      if (document.visibilityState !== "hidden") refreshTrackerSharedMarketData();
+    }, 10 * 60 * 1000);
   </script>
 
   <script id="trackerHeaderLayout">
