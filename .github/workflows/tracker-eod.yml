@@ -5,7 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # 15:00 Vietnam time (UTC+7), Monday-Friday.
+    # Morning snapshot: 10:40 Vietnam time (UTC+7), Monday-Friday.
+    - cron: "40 10 * * 1-5"
+      timezone: "Asia/Ho_Chi_Minh"
+    # Afternoon snapshot: 15:00 Vietnam time (UTC+7), Monday-Friday.
     - cron: "0 15 * * 1-5"
       timezone: "Asia/Ho_Chi_Minh"
 
