@@ -7839,6 +7839,33 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
     renderView(v);
   }
   function renderView(v){({overview:renderOverview,strategy:renderStrategy,watchlist:renderWatchlist,portfolio:renderPortfolio,research:renderResearch,alerts:renderAlerts,settings:renderSettings}[v]||(()=>{}))()}
+
+  // Cùng cửa sổ phiên thị trường cho mọi mã; không lấy phiên cũ để bù dữ liệu thiếu.
+  function volumeRankings(rows, benchmark = 'VNINDEX') {
+    const stocks = rows.filter(r => /^[A-Z0-9]{3}$/.test(r.ticker) && ['HOSE','HNX','UPCOM'].includes(r.exchange));
+    const reference = rows.filter(r => r.ticker === benchmark);
+    const dates = [...new Set((reference.length ? reference : stocks).map(r => r.date))].sort();
+    return [1,5,21,63].map(days => {
+      const windowDates = dates.slice(-days), selected = new Set(windowDates), byTicker = new Map();
+      for (const r of stocks) {
+        if (!selected.has(r.date) || r.volume == null || !Number.isFinite(Number(r.volume)) || Number(r.volume) < 0) continue;
+        let x = byTicker.get(r.ticker);
+        if (!x) { x = {ticker:r.ticker, exchange:r.exchange, sector:r.sector, sessions:new Map()}; byTicker.set(r.ticker,x); }
+        x.sessions.set(r.date, Number(r.volume));
+        if(r.sector && r.sector !== 'Chưa phân loại') x.sector=r.sector;
+      }
+      const top = [...byTicker.values()].map(x => ({...x, count:x.sessions.size, volume:[...x.sessions.values()].reduce((a,b)=>a+b,0)}))
+        .sort((a,b)=>b.volume-a.volume || a.ticker.localeCompare(b.ticker)).slice(0,10);
+      return {days, dates:windowDates, top};
+    });
+  }
+  function renderVolumeRankings() {
+    const labels={1:'1 ngày',5:'1 tuần',21:'1 tháng',63:'3 tháng'};
+    return volumeRankings(state.rawRows, settings().benchmarkTicker).map(w => `<section class="t140-card t140-col-6" id="volumeTop${w.days}"><h2>Top 10 khối lượng · ${labels[w.days]}</h2>
+      <div class="t140-sub">Tổng khối lượng ${w.days} phiên gần nhất · ${esc(w.dates[0]||'—')} → ${esc(w.dates.at(-1)||'—')}<br>Toàn bộ HOSE / HNX / UPCOM · Đơn vị: cổ phiếu. Cột phiên cho biết mức đầy đủ dữ liệu; không bù phiên thiếu bằng phiên cũ.</div>
+      <div class="t140-tablewrap"><table class="t140-table"><thead><tr><th>#</th><th>Mã</th><th>Sàn</th><th>Ngành</th><th>Tổng KL (CP)</th><th>Phiên có DL</th></tr></thead><tbody>${w.top.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.ticker)}</b></td><td>${esc(x.exchange)}</td><td>${esc(x.sector||'Chưa phân loại')}</td><td>${num(x.volume,0)}</td><td>${x.count}/${w.days}</td></tr>`).join('')||'<tr><td colspan="6">Chưa có dữ liệu khối lượng trong kỳ.</td></tr>'}</tbody></table></div></section>`).join('');
+  }
+
   function renderOverview(){
     const el=document.getElementById('t140-overview'); if(!el)return; const m=metrics(); const reg=state.marketRegime||{};
     const above50=m.filter(x=>x.close>x.m50).length, above200=m.filter(x=>x.close>x.m200).length, breakouts=m.filter(x=>x.breakoutPass||x.sepaBreakoutPass||x.donchianPass).length, leaders=m.filter(x=>x.rsPercentile>=80).length;
@@ -7851,6 +7878,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       <div class="t140-card t140-col-8"><h2>Sector Rotation</h2><div class="t140-sub">Xếp hạng ngành bằng RS trung bình của các mã đang có dữ liệu.</div>${sec.slice(0,10).map(s=>`<div class="t140-sector-row"><div class="t140-sector-name">${esc(s.name)}</div><div class="t140-progress"><span style="width:${Math.max(4,Math.min(100,s.avgRs))}%"></span></div><div class="t140-muted">RS ${num(s.avgRs,0)}</div><div class="${s.avgRet>=0?'t140-good':'t140-bad'}">${pct(s.avgRet)}</div></div>`).join('')||'<div class="t140-empty">Chưa có dữ liệu ngành.</div>'}</div>
       <div class="t140-card t140-col-4"><h2>4 chu kỳ cổ phiếu</h2><div class="t140-sub">Phân loại thuật toán từ trend, volume và distribution.</div>${phases.map(([p,n])=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.1)"><span>${p}</span><b>${n}</b></div>`).join('')}<div class="t140-sub" style="margin-top:8px">Leader RS ≥ 80: <b>${leaders}</b></div></div>
       <div class="t140-card t140-col-12"><h2>Top Ranking</h2><div class="t140-sub">Kết hợp Tracker Score, RS, Market Fit, Risk và Volume Ratio.</div><div class="t140-tablewrap"><table class="t140-table"><thead><tr><th>Mã</th><th>Ngành</th><th>Khối lượng (CP)</th><th>Ngày KL</th><th>Phase</th><th>Score</th><th>RS</th><th>Vol Ratio</th><th>RSI14</th><th>20D</th><th>Setup</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${x.ticker}</b></td><td>${esc(x.sector)}</td><td>${num(x.rows?.at(-1)?.volume,0)}</td><td>${esc(x.date)}</td><td>${phasePill(x.phaseCode)}</td><td>${scoreP(x.trackerScore)}</td><td>${num(x.rsPercentile,0)}</td><td>${num(x.volRatio,2)}×</td><td>${num(x.rsi14,1)}</td><td class="${x.return20Pct>=0?'t140-good':'t140-bad'}">${pct(x.return20Pct)}</td><td>${esc(x.setupSummary||'—')}</td></tr>`).join('')}</tbody></table></div></div>
+      ${renderVolumeRankings()}
     </div>`;
   }
   function phasePill(p){const c=p==='TĂNG GIÁ'?'good':p==='GIẢM GIÁ'?'bad':p==='PHÂN PHỐI'?'warn':'info';return `<span class="t140-pill ${c}">${esc(p||'—')}</span>`}
@@ -8317,6 +8345,55 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
       syncCompactHeader();
     })();
   </script>
+
+
+<style id="tracker-layout-controls">
+#dataCenterPanel, a[href="#dataCenterPanel"] { display:none!important; }
+.tracker-foldable { position:relative; }
+.tracker-fold-head { padding-right:48px!important; }
+.tracker-fold-button { position:absolute;right:12px;top:12px;width:32px;height:32px;padding:0!important;border:1px solid currentColor;border-radius:9px;background:transparent;color:inherit;cursor:pointer;font-size:18px;line-height:1;z-index:2;opacity:.8; }
+.tracker-fold-button:hover,.tracker-fold-button:focus-visible{opacity:1;outline:2px solid #39b7db;outline-offset:2px}
+.tracker-foldable.is-folded > :not(.tracker-fold-head):not(.tracker-fold-button){display:none!important}
+#filterConfigPanel { margin-top:18px; }
+#filterConfigPanel>.panel-body { display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px; }
+#filterConfigPanel .setting-group { margin:0; }
+@media(max-width:700px){#filterConfigPanel>.panel-body{display:block}.tracker-fold-button{right:10px;top:10px}}
+</style>
+<script>
+(() => {
+  // Giữ các phần tử nhập cũ ẩn để tương thích bộ máy dữ liệu; giao diện dùng dữ liệu tự động.
+  const main=document.querySelector('.app > .grid > main');
+  const aside=document.querySelector('aside.settings');
+  const configHead=aside && [...aside.children].find(el=>el.classList.contains('panel-head') && el.textContent.includes('Cấu hình bộ lọc'));
+  if(main){
+    const quality=document.getElementById('qualityPanel'); if(quality)main.appendChild(quality);
+    if(configHead){const body=configHead.nextElementSibling;const panel=document.createElement('section');panel.id='filterConfigPanel';panel.className='panel';panel.append(configHead,body);main.appendChild(panel);}
+  }
+  const storageKey='tracker.collapsed-panels.v1';let saved={};
+  try{saved=JSON.parse(localStorage.getItem(storageKey)||'{}')||{};}catch(_){}
+  let serial=0,scheduled=false;
+  const observer=new MutationObserver(()=>{if(!scheduled){scheduled=true;setTimeout(enhance,0);}});
+  function enhance(){
+    scheduled=false;observer.disconnect();
+    document.querySelectorAll('main .panel, .t140-card, .v2-card, .sidebar-pipeline-panel, main .card, .setting-group').forEach(card=>{
+      if(card.id==='dataCenterPanel'||card.querySelector(':scope > .tracker-fold-button'))return;
+      const head=card.querySelector(':scope > .panel-head, :scope > .sidebar-subhead, :scope > h2, :scope > h3, :scope > .label, :scope > .t140-muted, :scope > .v2-muted');
+      if(!head)return;
+      const title=(head.querySelector('.panel-title')||head).textContent.trim().replace(/\s+/g,' ');
+      const view=card.closest('.t140-view,.v2-view')?.id||'screener';
+      const key=card.id||view+':'+title;
+      card.classList.add('tracker-foldable');head.classList.add('tracker-fold-head');
+      if(!card.id)card.id='trackerFold'+(++serial);
+      const button=document.createElement('button');button.type='button';button.className='tracker-fold-button';button.setAttribute('aria-controls',card.id);
+      const apply=()=>{const folded=!!saved[key];card.classList.toggle('is-folded',folded);button.textContent=folded?'▸':'⌄';button.setAttribute('aria-expanded',String(!folded));button.setAttribute('aria-label',(folded?'Mở rộng ':'Thu gọn ')+title);button.title=folded?'Mở rộng':'Thu gọn';};
+      button.onclick=e=>{e.stopPropagation();saved[key]=!saved[key];try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch(_){}apply();};
+      card.appendChild(button);apply();
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+  }
+  enhance();
+})();
+</script>
 
 </body>
 </html>
