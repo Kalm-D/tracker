@@ -8377,9 +8377,9 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     scheduled=false;observer.disconnect();
     document.querySelectorAll('main .panel, .t140-card, .v2-card, .sidebar-pipeline-panel, main .card, .setting-group').forEach(card=>{
       if(card.id==='dataCenterPanel'||card.querySelector(':scope > .tracker-fold-button'))return;
-      const head=card.querySelector(':scope > .panel-head, :scope > .sidebar-subhead, :scope > h2, :scope > h3, :scope > .label, :scope > .t140-muted, :scope > .v2-muted');
+      const head=card.querySelector(':scope > .panel-head, :scope > .sidebar-subhead, :scope > h2, :scope > h3, :scope > .label, :scope > .t140-muted') || [...card.children].find(el=>el.querySelector('h2,h3')) || card.querySelector(':scope > .v2-sub');
       if(!head)return;
-      const title=(head.querySelector('.panel-title')||head).textContent.trim().replace(/\s+/g,' ');
+      const title=(head.querySelector('.panel-title,h2,h3')||head).textContent.trim().replace(/\s+/g,' ');
       const view=card.closest('.t140-view,.v2-view')?.id||'screener';
       const key=card.id||view+':'+title;
       card.classList.add('tracker-foldable');head.classList.add('tracker-fold-head');
