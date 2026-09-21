@@ -409,6 +409,10 @@ def main() -> int:
     quality_output.parent.mkdir(parents=True, exist_ok=True)
 
     universe = get_universe(args.symbols, args.symbols_file, args.limit, args.exchange)
+    from sector_data import load_sectors
+    sector_map = load_sectors()
+    for item in universe:
+        item['sector'] = sector_map.get(item['ticker'], item.get('sector') or 'Chưa phân loại')
     tasks: List[Tuple[str, str, str, bool]] = []
     if not args.no_index:
         tasks.extend((idx, "INDEX", "Chỉ số", True) for idx in DEFAULT_INDEXES)
@@ -487,4 +491,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 

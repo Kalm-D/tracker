@@ -6918,6 +6918,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       $("detailFacts").innerHTML = [
         ["Giá", fmtPrice(x.close)],
         ["Ngày dữ liệu", x.date],
+        ["Khối lượng phiên (CP)", fmtNum(x.rows?.at(-1)?.volume ?? NaN, 0)],
         ["Data Gate", `${x.dataQualityLabel} (${Number.isFinite(x.staleSessions) ? x.staleSessions : "—"} phiên)`],
         ["Regime Fit", Number.isFinite(x.marketFitScore) ? String(x.marketFitScore) : "—"],
         ["Grade", x.trackerGrade || "—"],
@@ -7849,7 +7850,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       ${[["Regime",reg.label||'—',reg.key==='UPTREND'?'good':reg.key==='DOWNTREND'?'bad':'warn'],["Breadth > MA50",m.length?pct(above50/m.length*100,0):'—','info'],["Breadth > MA200",m.length?pct(above200/m.length*100,0):'—','info'],["Breakout hiện tại",String(breakouts),'good']].map(x=>`<div class="t140-card t140-col-3"><div class="t140-muted">${x[0]}</div><div class="t140-kpi t140-${x[2]}">${x[1]}</div><div class="t140-sub">${m.length} mã trong universe hiện tại</div></div>`).join('')}
       <div class="t140-card t140-col-8"><h2>Sector Rotation</h2><div class="t140-sub">Xếp hạng ngành bằng RS trung bình của các mã đang có dữ liệu.</div>${sec.slice(0,10).map(s=>`<div class="t140-sector-row"><div class="t140-sector-name">${esc(s.name)}</div><div class="t140-progress"><span style="width:${Math.max(4,Math.min(100,s.avgRs))}%"></span></div><div class="t140-muted">RS ${num(s.avgRs,0)}</div><div class="${s.avgRet>=0?'t140-good':'t140-bad'}">${pct(s.avgRet)}</div></div>`).join('')||'<div class="t140-empty">Chưa có dữ liệu ngành.</div>'}</div>
       <div class="t140-card t140-col-4"><h2>4 chu kỳ cổ phiếu</h2><div class="t140-sub">Phân loại thuật toán từ trend, volume và distribution.</div>${phases.map(([p,n])=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.1)"><span>${p}</span><b>${n}</b></div>`).join('')}<div class="t140-sub" style="margin-top:8px">Leader RS ≥ 80: <b>${leaders}</b></div></div>
-      <div class="t140-card t140-col-12"><h2>Top Ranking</h2><div class="t140-sub">Kết hợp Tracker Score, RS, Market Fit, Risk và Volume Ratio.</div><div class="t140-tablewrap"><table class="t140-table"><thead><tr><th>Mã</th><th>Ngành</th><th>Phase</th><th>Score</th><th>RS</th><th>Vol Ratio</th><th>RSI14</th><th>20D</th><th>Setup</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${x.ticker}</b></td><td>${esc(x.sector)}</td><td>${phasePill(x.phaseCode)}</td><td>${scoreP(x.trackerScore)}</td><td>${num(x.rsPercentile,0)}</td><td>${num(x.volRatio,2)}×</td><td>${num(x.rsi14,1)}</td><td class="${x.return20Pct>=0?'t140-good':'t140-bad'}">${pct(x.return20Pct)}</td><td>${esc(x.setupSummary||'—')}</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="t140-card t140-col-12"><h2>Top Ranking</h2><div class="t140-sub">Kết hợp Tracker Score, RS, Market Fit, Risk và Volume Ratio.</div><div class="t140-tablewrap"><table class="t140-table"><thead><tr><th>Mã</th><th>Ngành</th><th>Khối lượng (CP)</th><th>Ngày KL</th><th>Phase</th><th>Score</th><th>RS</th><th>Vol Ratio</th><th>RSI14</th><th>20D</th><th>Setup</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${x.ticker}</b></td><td>${esc(x.sector)}</td><td>${num(x.rows?.at(-1)?.volume,0)}</td><td>${esc(x.date)}</td><td>${phasePill(x.phaseCode)}</td><td>${scoreP(x.trackerScore)}</td><td>${num(x.rsPercentile,0)}</td><td>${num(x.volRatio,2)}×</td><td>${num(x.rsi14,1)}</td><td class="${x.return20Pct>=0?'t140-good':'t140-bad'}">${pct(x.return20Pct)}</td><td>${esc(x.setupSummary||'—')}</td></tr>`).join('')}</tbody></table></div></div>
     </div>`;
   }
   function phasePill(p){const c=p==='TĂNG GIÁ'?'good':p==='GIẢM GIÁ'?'bad':p==='PHÂN PHỐI'?'warn':'info';return `<span class="t140-pill ${c}">${esc(p||'—')}</span>`}
@@ -8319,3 +8320,4 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
 
 </body>
 </html>
+

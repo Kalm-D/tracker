@@ -190,8 +190,23 @@
         result.meta = { ...result.meta, asOf: cached.meta?.asOf || result.meta?.asOf, cachedOnOpen: true, liveSource: cached.meta?.source || "VNDIRECT public API" };
       }
     }
-    return refreshLatest(result);
+    const metadata = new Map();
+    result.rows.forEach(row => {
+      const saved = metadata.get(row.ticker) || {};
+      if (row.sector && row.sector !== 'Chưa phân loại') saved.sector = row.sector;
+      if (row.exchange && row.exchange !== 'UNKNOWN') saved.exchange = row.exchange;
+      metadata.set(row.ticker, saved);
+    });
+    const refreshed = await refreshLatest(result);
+    // Giữ ngành và sàn đã biết khi dữ liệu giá mới không có các trường này.
+    refreshed.rows.forEach(row => {
+      const saved = metadata.get(row.ticker);
+      if (saved?.sector) row.sector = saved.sector;
+      if ((!row.exchange || row.exchange === 'UNKNOWN') && saved?.exchange) row.exchange = saved.exchange;
+    });
+    return refreshed;
   }
 
   root.SharedMarketData = { load, inflate, normalizeRow, refreshLatest };
 })(window);
+
