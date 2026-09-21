@@ -8358,6 +8358,8 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
 .tracker-redundant-summary { display:none!important; }
 @media(max-width:480px){.tracker-leader-grid{grid-template-columns:1fr;}}
 .tracker-fold-button { position:absolute;right:10px!important;top:10px!important;width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;max-width:26px!important;max-height:26px!important;flex:0 0 26px!important;padding:0!important;margin:0!important;border:1px solid currentColor;border-radius:7px!important;background:transparent;color:inherit;cursor:pointer;font-size:14px!important;line-height:24px!important;z-index:2;opacity:.8;box-sizing:border-box!important; }
+.tracker-fold-button { display:inline-flex!important;align-items:center!important;justify-content:center!important;line-height:1!important; }
+.tracker-fold-button svg { display:block;flex:none;width:18px;height:18px;pointer-events:none; }
 .tracker-foldable.is-folded { min-height:48px; }
 .tracker-fold-button:hover,.tracker-fold-button:focus-visible{opacity:1;outline:2px solid #39b7db;outline-offset:2px}
 .tracker-foldable.is-folded > :not(.tracker-fold-head):not(.tracker-fold-button){display:none!important}
@@ -8393,7 +8395,7 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
   function enhance(){
     scheduled=false;observer.disconnect();
     document.querySelectorAll('main .panel, .t140-card, .v2-card, .sidebar-pipeline-panel, main .card, .setting-group').forEach(card=>{
-      if(card.id==='dataCenterPanel'||card.closest('.tracker-redundant-summary, .tracker-leader-grid, #t140-portfolio')||card.querySelector(':scope > .tracker-fold-button'))return;
+      if(card.matches('#t140-overview .t140-col-3')||card.id==='dataCenterPanel'||card.closest('.tracker-redundant-summary, .tracker-leader-grid, #t140-portfolio')||card.querySelector(':scope > .tracker-fold-button'))return;
       const head=card.querySelector(':scope > .panel-head, :scope > .sidebar-subhead, :scope > h2, :scope > h3, :scope > .label, :scope > .t140-muted') || [...card.children].find(el=>el.querySelector('h2,h3')) || card.querySelector(':scope > .v2-sub');
       if(!head)return;
       const title=(head.querySelector('.panel-title,h2,h3')||head).textContent.trim().replace(/\s+/g,' ');
@@ -8402,7 +8404,7 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
       card.classList.add('tracker-foldable');head.classList.add('tracker-fold-head');
       if(!card.id)card.id='trackerFold'+(++serial);
       const button=document.createElement('button');button.type='button';button.className='tracker-fold-button';button.setAttribute('aria-controls',card.id);
-      const apply=()=>{const folded=!!saved[key];card.classList.toggle('is-folded',folded);button.textContent=folded?'▸':'⌄';button.setAttribute('aria-expanded',String(!folded));button.setAttribute('aria-label',(folded?'Mở rộng ':'Thu gọn ')+title);button.title=folded?'Mở rộng':'Thu gọn';};
+      const apply=()=>{const folded=!!saved[key];card.classList.toggle('is-folded',folded);button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M5 3h14M5 21h14"/><path d="'+(folded?'M12 5v5m-3-3 3 3 3-3M12 19v-5m-3 3 3-3 3 3':'M12 7v10M9 10l3-3 3 3M9 14l3 3 3-3')+'"/></svg>';button.setAttribute('aria-expanded',String(!folded));button.setAttribute('aria-label',(folded?'Mở rộng ':'Thu gọn ')+title);button.title=folded?'Mở rộng':'Thu gọn';};
       button.onclick=e=>{e.stopPropagation();saved[key]=!saved[key];try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch(_){}apply();};
       card.appendChild(button);apply();
     });
