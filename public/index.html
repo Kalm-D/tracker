@@ -8350,8 +8350,15 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
 <style id="tracker-layout-controls">
 #dataCenterPanel, a[href="#dataCenterPanel"] { display:none!important; }
 .tracker-foldable { position:relative; }
-.tracker-fold-head { padding-right:48px!important; }
-.tracker-fold-button { position:absolute;right:12px;top:12px;width:32px;height:32px;padding:0!important;border:1px solid currentColor;border-radius:9px;background:transparent;color:inherit;cursor:pointer;font-size:18px;line-height:1;z-index:2;opacity:.8; }
+.tracker-fold-head { padding-right:38px!important; }
+#filterConfigPanel .setting-group { min-height:32px; padding-top:2px; margin-bottom:12px!important; }
+#filterConfigPanel .setting-group > h3 { min-height:24px; margin-top:0; }
+#filterConfigPanel .setting-group > .tracker-fold-button { top:0!important; right:0!important; }
+.tracker-leader-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.tracker-redundant-summary { display:none!important; }
+@media(max-width:480px){.tracker-leader-grid{grid-template-columns:1fr;}}
+.tracker-fold-button { position:absolute;right:10px!important;top:10px!important;width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;max-width:26px!important;max-height:26px!important;flex:0 0 26px!important;padding:0!important;margin:0!important;border:1px solid currentColor;border-radius:7px!important;background:transparent;color:inherit;cursor:pointer;font-size:14px!important;line-height:24px!important;z-index:2;opacity:.8;box-sizing:border-box!important; }
+.tracker-foldable.is-folded { min-height:48px; }
 .tracker-fold-button:hover,.tracker-fold-button:focus-visible{opacity:1;outline:2px solid #39b7db;outline-offset:2px}
 .tracker-foldable.is-folded > :not(.tracker-fold-head):not(.tracker-fold-button){display:none!important}
 #filterConfigPanel { margin-top:18px; }
@@ -8369,6 +8376,16 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     const quality=document.getElementById('qualityPanel'); if(quality)main.appendChild(quality);
     if(configHead){const body=configHead.nextElementSibling;const panel=document.createElement('section');panel.id='filterConfigPanel';panel.className='panel';panel.append(configHead,body);main.appendChild(panel);}
   }
+  // Gom hai nhóm theo dõi vào Dashboard; giữ ID thống kê ẩn cho bộ máy lọc.
+  const leader=document.getElementById('leaderCount')?.closest('.card');
+  const early=document.getElementById('earlyCount')?.closest('.card');
+  const oldSummary=leader?.parentElement;
+  const dashboard=document.querySelector('#trackerScorePanel > .panel-body');
+  if(dashboard && leader && early){
+    const group=document.createElement('div');group.className='tracker-leader-grid';
+    group.append(leader,early);dashboard.prepend(group);
+    if(oldSummary)oldSummary.classList.add('tracker-redundant-summary');
+  }
   const storageKey='tracker.collapsed-panels.v1';let saved={};
   try{saved=JSON.parse(localStorage.getItem(storageKey)||'{}')||{};}catch(_){}
   let serial=0,scheduled=false;
@@ -8376,7 +8393,7 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
   function enhance(){
     scheduled=false;observer.disconnect();
     document.querySelectorAll('main .panel, .t140-card, .v2-card, .sidebar-pipeline-panel, main .card, .setting-group').forEach(card=>{
-      if(card.id==='dataCenterPanel'||card.querySelector(':scope > .tracker-fold-button'))return;
+      if(card.id==='dataCenterPanel'||card.closest('.tracker-redundant-summary, .tracker-leader-grid, #t140-portfolio')||card.querySelector(':scope > .tracker-fold-button'))return;
       const head=card.querySelector(':scope > .panel-head, :scope > .sidebar-subhead, :scope > h2, :scope > h3, :scope > .label, :scope > .t140-muted') || [...card.children].find(el=>el.querySelector('h2,h3')) || card.querySelector(':scope > .v2-sub');
       if(!head)return;
       const title=(head.querySelector('.panel-title,h2,h3')||head).textContent.trim().replace(/\s+/g,' ');
