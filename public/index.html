@@ -4311,7 +4311,25 @@ body.t140-soft-theme{background:#e9eef3!important;color:#14253b!important}.t140-
 @media(max-width:1100px){.t140-col-3{grid-column:span 6}.t140-col-4,.t140-col-6,.t140-col-8{grid-column:span 12}.t140-formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tracker140-nav{top:4px}}
 @media(max-width:700px){.app{padding-left:8px!important;padding-right:8px!important;padding-bottom:78px!important}.tracker140-nav{display:none}.t140-col-3{grid-column:span 12}.t140-formgrid,.t140-formgrid.two{grid-template-columns:1fr}.t140-rule{grid-template-columns:1fr 76px 1fr 34px}.t140-card{padding:12px;border-radius:14px}.t140-bottomnav{position:fixed;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));z-index:80;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:6px;background:rgba(4,13,25,.96);border:1px solid var(--t140-border);border-radius:16px;backdrop-filter:blur(18px)}.t140-bottomnav button{border:0;background:transparent;color:#8197b8;padding:7px 2px;border-radius:10px;font-size:10px;font-weight:750}.t140-bottomnav button.active{background:rgba(22,199,154,.12);color:#dffff5}.t140-bottomnav .ico{display:block;font-size:17px;margin-bottom:2px}.t140-tablewrap{max-height:62vh}}
 
-  </style>
+  
+    .quick-stage {border:1px solid var(--border,#cbd5e1);border-radius:14px;overflow:hidden;margin-bottom:8px;}
+    .quick-stage summary {display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;list-style:none;}
+    .quick-stage summary::-webkit-details-marker {display:none;}
+    .quick-count {font-size:24px;font-weight:800;min-width:42px;}
+    .quick-stage small {display:block;margin-top:4px;}
+    .quick-chevron {margin-left:auto;font-size:24px;}
+    .quick-stage[open] .quick-chevron {transform:rotate(180deg);}
+    .quick-tickers {display:flex;flex-wrap:wrap;gap:8px;padding:12px;max-height:320px;overflow:auto;}
+    .engine-criteria summary {cursor:pointer;padding:12px;font-weight:700;}
+    #engineStageFilters {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;padding:12px;}
+    .engine-option {display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border,#cbd5e1);border-radius:10px;cursor:pointer;}
+    .engine-option input {width:auto;min-height:0;accent-color:#0d9488;}
+    .engine-option b {margin-left:auto;}
+    body.tracker-app-v127:not(.t140-soft-theme) :is(.metric,.num,.v,.market-price,.vn-value,.vn-price,.vnindex-value,.regime-value,.quick-stage,.engine-criteria,#engineIntersection,.track-card,.stat-value,.t140-kpi,.v2-kpi) {color:#e6edf7!important;}
+    body.tracker-app-v127:not(.t140-soft-theme) :is(.quick-stage,.engine-criteria) {background:#0d1c2e;border-color:#294965;}
+    body.t140-soft-theme :is(.quick-stage,.engine-criteria,#engineIntersection) {color:#17243b;background:#f8fbff;}
+
+</style>
 <style id="trackerV2Styles">
 /* Tracker v2.0 Complete enhancements */
 :root{--v2-ink:#10243b;--v2-surface:#f7fafc;--v2-border:#d6e1e9;--v2-teal:#0e9f79;--v2-blue:#2679b9;--v2-amber:#c89016;--v2-red:#c94f68;--v2-purple:#7256c9}
@@ -4847,7 +4865,15 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
 }
 </style>
 
-</head>
+<style>
+body.tracker-app-v127:not(.t140-soft-theme) .regime-box {background:#0d1c2e!important;border-color:#294965!important;}
+body.tracker-app-v127:not(.t140-soft-theme) .regime-box .v,
+body.tracker-app-v127:not(.t140-soft-theme) #engineIntersection p {color:#e6edf7!important;}
+body.tracker-app-v127:not(.t140-soft-theme) .regime-box .k,
+body.tracker-app-v127:not(.t140-soft-theme) .regime-box .d,
+body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!important;}
+.quick-tickers button {display:inline-flex;align-items:center;gap:6px;}
+</style></head>
 <body class="tracker-app-v127">
   <div class="app">
     <div class="topbar">
@@ -4910,7 +4936,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
             <div class="sidebar-subhead">
               <div>
                 <div class="panel-title">Pipeline lọc kỹ thuật</div>
-                <div class="status-line">Chọn một hoặc nhiều nhóm để lọc giao nhau.</div>
+                <div class="status-line">Mở từng tiêu chí để xem nhanh các mã phù hợp.</div>
               </div>
             </div>
             <div class="sidebar-pipeline-body">
@@ -4925,8 +4951,8 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         <div class="panel-body">
           <div class="setting-group">
             <h3>0. Data Quality Gate</h3>
-            <div class="hint">Chọn nhóm ngày dữ liệu bằng các ô trong bảng <b>Data Quality Gate</b>: Sau ngày chuẩn, D0, D-1, D-2 đến D-5, Trễ &gt; 5 phiên hoặc Thiếu lịch sử. Pipeline sẽ tự lọc theo nhóm đang chọn.</div>
-            <div class="muted-small">Nhóm đang chọn: <b id="activeQualityLabel">Ngày chuẩn / D0</b></div>
+            <div class="hint">Chọn nhóm ngày dữ liệu bằng các ô trong bảng <b>Data Quality Gate</b>: D0 + D-1 (mặc định), Sau ngày chuẩn, D0, D-1, D-2 đến D-5, Trễ &gt; 5 phiên hoặc Thiếu lịch sử. Pipeline sẽ tự lọc theo nhóm đang chọn.</div>
+            <div class="muted-small">Nhóm đang chọn: <b id="activeQualityLabel">D0 + D-1</b></div>
           </div>
 
           <div class="setting-group">
@@ -4985,7 +5011,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
           <div class="card">
             <div class="label">Nhóm ngày đang chọn</div>
             <div id="qualityValidCount" class="metric">0</div>
-            <div id="activeQualitySubmetric" class="submetric">Ngày chuẩn / D0</div>
+            <div id="activeQualitySubmetric" class="submetric">D0 + D-1</div>
           </div>
           <div class="card">
             <div class="label">Không vào pipeline hiện tại</div>
@@ -5109,9 +5135,10 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
               <div class="panel-title">Tracker Multi-Regime Dashboard — Full Engine</div>
               <div class="status-line">Tổng hợp Market Regime, Setup Classifier, Risk Engine, Scoring System và Dashboard đa môi trường.</div>
             </div>
-            <button id="selectTopRankedBtn" class="btn small">Xem A+ / A</button>
+            
           </div>
           <div class="panel-body">
+            <details id="engineCriteria" class="engine-criteria"><summary>Chọn tiêu chí lọc giao nhau <span id="engineSelectionCount"></span></summary><div id="engineStageFilters"></div></details><div id="engineIntersection"></div>
             <div id="trackerScoreSummary" class="regime-grid"></div>
             <div class="footer-note" style="margin-top:10px;">
               Tracker không đưa lệnh mua/bán tự động. Kết quả chỉ dùng để xếp hạng watchlist, chọn setup phù hợp môi trường và kiểm tra rủi ro trước khi ra quyết định.
@@ -5144,7 +5171,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
             <button id="exportBtn" class="btn small">Xuất CSV kết quả</button>
           </div>
           <div class="panel-body">
-            <div id="resultHint" class="result-hint">Danh sách cổ phiếu đang được ẩn. Hãy chọn ít nhất một nhóm trong <b>Pipeline lọc kỹ thuật</b> ở cột bên trái để hiển thị kết quả.</div>
+            <div id="resultHint" class="result-hint">Danh sách cổ phiếu đang được ẩn. Hãy chọn ít nhất một nhóm trong <b>Full Engine — Chọn tiêu chí lọc giao nhau</b> để hiển thị kết quả.</div>
 
             <div id="resultControls" class="toolbar is-hidden">
               <div id="tabs" class="tabs"></div>
@@ -5277,7 +5304,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       currentTab: "all",
       qualityView: null,
       qualityListVisible: false,
-      activeQualityGroup: "d0",
+      activeQualityGroup: "recent",
       sortKey: "rsPercentile",
       sortDir: "desc",
       watchlist: new Set(readWatchlistStorage()),
@@ -5329,6 +5356,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
 
     function qualityGroupLabel(key) {
       return ({
+        recent: "D0 + D-1",
         future: "Sau ngày chuẩn",
         d0: "Ngày chuẩn / D0",
         d1: "D-1",
@@ -5666,7 +5694,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         const qualityMeta = state.quality.byTicker.get(ticker) || { status: "UNKNOWN", label: "—", tone: "warn", staleSessions: NaN };
         const baseInfo = detectBase(arr, cfg, avgVol50, m50);
         let breakoutInfo = detectBreakout(arr, cfg, baseInfo.pivot, avgVol50);
-        if (qualityMeta.status !== "D0") {
+        if (!["D0", "D1"].includes(qualityMeta.status)) {
           breakoutInfo = { status: `Không xác nhận (${qualityMeta.label})`, tone: "warn", pass: false };
         }
         const stop = riskStop(arr, baseInfo.pivot, close);
@@ -5793,7 +5821,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       if (Number.isFinite(rr1) && rr1 < 1.2) score -= 14;
       if (m.distributionPass) score -= 18;
       if (!m.liquidityPass) score -= 28;
-      if (m.dataQuality && m.dataQuality !== "D0") score -= 12;
+      if (m.dataQuality && !["D0", "D1"].includes(m.dataQuality)) score -= 12;
       score = clamp(Math.round(score));
 
       let label = "Không đủ dữ liệu";
@@ -5900,7 +5928,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         let total = Math.round(raw);
         if (m.distributionPass || m.avoidPass) total = Math.min(total, 48);
         if (!m.liquidityPass) total = Math.min(total, 42);
-        if (m.dataQuality && m.dataQuality !== "D0") total = Math.min(total, 60);
+        if (m.dataQuality && !["D0", "D1"].includes(m.dataQuality)) total = Math.min(total, 60);
         m.trackerScore = clamp(total);
         if (m.avoidPass) m.trackerGrade = "Avoid";
         else if (m.trackerScore >= 82) m.trackerGrade = "A+";
@@ -6300,7 +6328,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       state.rawRows = merged;
       state.lastDataSource = `Data Center: ${exchangesLoaded.join(" + ")}`;
       state.qualityView = null;
-      state.activeQualityGroup = "d0";
+      state.activeQualityGroup = "recent";
       state.currentStage = null;
       state.selectedStages = [];
       state.headerSearchResults = [];
@@ -6393,7 +6421,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         if (merge.mismatchTotal > 0) notes.push(`Cảnh báo: có ${merge.mismatchTotal.toLocaleString("vi-VN")} dòng có exchange khác với ô import. Kiểm tra có chọn nhầm file không.`);
         if (merge.invalidTickers > 0) notes.push(`${merge.invalidTickers.toLocaleString("vi-VN")} ticker không phải cổ phiếu cơ sở sẽ bị Data Quality Gate tách riêng.`);
         if (!state.series.has(settings().benchmarkTicker)) notes.push(`Cảnh báo: không thấy ${settings().benchmarkTicker}; RS và Market Regime có thể kém tin cậy.`);
-        notes.push(`Tracker đã tự chạy pipeline theo nhóm Data Quality mặc định D0.`);
+        notes.push(`Tracker đã tự chạy pipeline theo nhóm Data Quality mặc định D0 + D-1.`);
       } else {
         notes.push("Chọn CSV HOSE/HNX/UPCOM riêng lẻ. Có thể chọn 1, 2 hoặc 3 file.");
         notes.push("Sau mỗi lần chọn file, Tracker tự merge và chạy lại pipeline.");
@@ -6434,7 +6462,20 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         else { standardDate = latestDates.sort().at(-1); method = "Ngày mới nhất trong CSV"; }
       }
 
-      const calendar = series.get(cfg.benchmarkTicker)?.map(x => x.date) || [...new Set(state.rawRows.filter(r => isPlainStockTicker(r.ticker) || isBenchmarkOrIndexTicker(r.ticker)).map(r => r.date))].sort();
+      // Không để chỉ số cập nhật chậm đẩy toàn bộ cổ phiếu sang nhóm tương lai.
+      const todayVN = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Ho_Chi_Minh', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
+      const stockDates = new Map();
+      for (const [ticker, rows] of series) {
+        const date = rows.at(-1)?.date;
+        if (isPlainStockTicker(ticker) && date <= todayVN) stockDates.set(date, (stockDates.get(date) || 0) + 1);
+      }
+      const quorum = Math.min(stockDates.size ? [...stockDates.values()].reduce((a,b)=>a+b,0) : 3, Math.max(3, Math.ceil(tickers.filter(isPlainStockTicker).length * 0.01)));
+      const marketDate = [...stockDates].filter(([,n])=>n >= quorum).map(([d])=>d).sort().at(-1);
+      if (marketDate && (!standardDate || standardDate > todayVN || marketDate > standardDate)) {
+        standardDate = marketDate;
+        method = 'Ngày giao dịch mới nhất được xác nhận bởi dữ liệu cổ phiếu';
+      }
+      const calendar = [...new Set([...series].filter(([t])=>isPlainStockTicker(t) || isBenchmarkOrIndexTicker(t)).flatMap(([,rows])=>rows.map(r=>r.date)))].filter(d=>d <= todayVN).sort();
       const dateIndex = new Map(calendar.map((d, i) => [d, i]));
       const stdIdx = dateIndex.get(standardDate);
       const byTicker = new Map();
@@ -6457,7 +6498,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         } else if (staleSessions < 0) { status = "FUTURE"; label = "Sau ngày chuẩn"; tone = "bad"; action = "Nhóm kiểm tra riêng: ngày dữ liệu lớn hơn ngày chuẩn."; counts.future++; }
         else if (arr.length < 210) { status = "TOO_SHORT"; label = "Thiếu lịch sử"; tone = "warn"; action = "Không đủ dữ liệu MA200/52W."; counts.tooShort++; }
         else if (staleSessions === 0) { status = "D0"; label = "D0"; tone = "good"; action = "Có thể chạy pipeline theo nhóm D0."; counts.d0++; }
-        else if (staleSessions === 1) { status = "D1"; label = "D-1"; tone = "info"; action = "Có thể chạy pipeline tham khảo, không xác nhận breakout mới."; counts.d1++; }
+        else if (staleSessions === 1) { status = "D1"; label = "D-1"; tone = "info"; action = "Dùng trong bộ lọc D0 + D-1; tín hiệu được tính tại ngày dữ liệu của mã."; counts.d1++; }
         else if (staleSessions <= 5) { status = "D2_D5"; label = `D-${staleSessions}`; tone = "warn"; action = "Chạy pipeline tham khảo, không dùng để xác nhận tín hiệu mới."; counts.d2to5++; }
         else { status = "STALE"; label = `Trễ ${staleSessions} phiên`; tone = "bad"; action = "Dữ liệu quá cũ. Chỉ xem tham khảo nếu cần."; counts.stale++; }
 
@@ -6470,23 +6511,24 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         else if (status === "STALE") groups.stale.push(item);
         else if (status === "TOO_SHORT") groups.tooShort.push(item);
         else if (status === "INVALID") groups.invalid.push(item);
-        if (!["D0","INDEX"].includes(status)) groups.excluded.push(item);
-        if (!["D0","INDEX"].includes(status) && samples.length < 120) samples.push(item);
+        if (!["D0","D1","INDEX"].includes(status)) groups.excluded.push(item);
+        if (!["D0","D1","INDEX"].includes(status) && samples.length < 120) samples.push(item);
       }
 
+      groups.recent = [...groups.d0, ...groups.d1];
       for (const key of Object.keys(groups)) groups[key].sort((a,b) => a.ticker.localeCompare(b.ticker));
 
       const today = new Date();
       const todayStr = today.toISOString().slice(0,10);
       const ageDays = daysBetween(standardDate, todayStr);
-      const activeGroup = state.activeQualityGroup || "d0";
+      const activeGroup = state.activeQualityGroup || "recent";
       const activeTickers = new Set((groups[activeGroup] || []).map(x => x.ticker));
       return { standardDate, method, ageDays, totalTickers: tickers.length, activeTickers, byTicker, counts, groups, samples };
     }
 
     function getActiveQualityTickerSet() {
       const q = state.quality || emptyQuality();
-      const group = state.activeQualityGroup || "d0";
+      const group = state.activeQualityGroup || "recent";
       return new Set((q.groups?.[group] || []).map(x => x.ticker));
     }
 
@@ -6622,8 +6664,9 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       const q = state.quality || emptyQuality();
       const c = q.counts || {};
       const current = state.qualityView;
-      const active = state.activeQualityGroup || "d0";
+      const active = state.activeQualityGroup || "recent";
       const cards = [
+        ["recent", "D0 + D-1", (c.d0 || 0) + (c.d1 || 0), "Dùng dữ liệu mới nhất của mỗi mã trong hai phiên"],
         ["future", "Sau ngày chuẩn", c.future || 0, "Ngày dữ liệu lớn hơn ngày chuẩn"],
         ["d0", "Ngày chuẩn / D0", c.d0 || 0, "Lọc pipeline theo đúng ngày chuẩn"],
         ["d1", "D-1", c.d1 || 0, "Lọc pipeline theo nhóm trễ 1 phiên"],
@@ -6665,6 +6708,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         return;
       }
       const labels = {
+        recent: "D0 + D-1",
         future: "Sau ngày chuẩn",
         d0: "Ngày chuẩn / D0",
         d1: "D-1",
@@ -6946,7 +6990,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         <p>Pipeline: ${escapeHtml(x.liquidityPass ? "Đạt thanh khoản" : "Không đạt thanh khoản")} → ${escapeHtml(x.trendStage)} → ${escapeHtml(x.leaderPass ? "Leader Track" : x.earlyPass ? "Early Watch Track" : "Chưa đạt RS split")} → ${escapeHtml(x.baseStatus)} → ${escapeHtml(x.breakoutStatus)}.</p>
         <p style="margin-top:8px;">Full Engine: Grade <b>${escapeHtml(x.trackerGrade || "—")}</b> | Tracker Score <b>${Number.isFinite(x.trackerScore) ? x.trackerScore : "—"}</b> | Market Fit <b>${Number.isFinite(x.marketFitScore) ? x.marketFitScore : "—"}</b> | Risk Score <b>${Number.isFinite(x.riskScore) ? x.riskScore : "—"}</b>.</p>
         <p style="margin-top:8px;">Kết luận hệ thống: <b>${escapeHtml(x.trackerAction || "—")}</b>. ${allowed ? "Setup đang khớp môi trường và có risk tương đối chấp nhận." : "Chưa đủ điều kiện để xem là setup ưu tiên; cần chờ xác nhận hoặc risk đẹp hơn."}</p>
-        <p style="margin-top:8px;">Nếu Data Gate không phải D0, tín hiệu breakout/volume mới nhất không được xác nhận. Tracker chỉ hỗ trợ lọc và xếp hạng, không phải khuyến nghị mua/bán tự động.</p>`;
+        <p style="margin-top:8px;">Nếu Data Gate ngoài D0/D-1, tín hiệu breakout/volume mới nhất không được xác nhận. Tracker chỉ hỗ trợ lọc và xếp hạng, không phải khuyến nghị mua/bán tự động.</p>`;
       $("modalBackdrop").style.display = "flex";
       setTimeout(() => drawChart(x), 20);
     }
@@ -7302,7 +7346,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         state.currentTab = "all";
         state.lastDataSource = provider.name;
         state.qualityView = null;
-        state.activeQualityGroup = "d0";
+        state.activeQualityGroup = "recent";
         setUpdateUi(false, `Đã cập nhật ${finalRows.length.toLocaleString("vi-VN")} dòng dữ liệu từ ${provider.name}. Thành công ${success}/${universe.length} mã, lỗi ${failed}.`);
         runScreener();
         toast(`Cập nhật xong: ${success} mã có dữ liệu hợp lệ.`);
@@ -7323,7 +7367,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       state.rawRows = generateDemoRows();
       state.lastDataSource = "Demo";
       state.qualityView = null;
-      state.activeQualityGroup = "d0";
+      state.activeQualityGroup = "recent";
       state.currentStage = null;
       state.selectedStages = [];
       state.series = buildSeries(state.rawRows);
@@ -7470,7 +7514,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       state.rawRows = rows;
       state.lastDataSource = file.name || "CSV Import tổng";
       state.qualityView = null;
-      state.activeQualityGroup = "d0";
+      state.activeQualityGroup = "recent";
       state.currentStage = null;
       state.selectedStages = [];
       state.currentTab = "all";
@@ -7628,16 +7672,19 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
     function renderPipeline() {
       const wrap = $("sidePipeline");
       if (!wrap) return;
+      const opened = new Set([...wrap.querySelectorAll('details[open]')].map(el=>el.dataset.stage));
+      const chips = rows => rows.map(x=>`<button type="button" class="btn small" data-quick-ticker="${escapeHtml(x.ticker)}">${escapeHtml(x.ticker)} <small>${escapeHtml(x.dataQualityLabel || '')}</small></button>`).join('') || '<span class="muted-small">Không có mã phù hợp.</span>';
+      wrap.innerHTML = stageMeta.map(([key,name,desc])=>`<details class="quick-stage" data-stage="${key}" ${opened.has(key)?'open':''}><summary><span class="quick-count">${state.stages[key]?.length || 0}</span><span><b>${escapeHtml(name)}</b><small>${escapeHtml(desc)}</small></span><span class="quick-chevron" aria-hidden="true">⌄</span></summary><div class="quick-tickers">${chips(state.stages[key] || [])}</div></details>`).join('');
       const selected = getSelectedStages();
-      wrap.innerHTML = stageMeta.map(([key, name, desc]) => {
-        const count = state.stages[key]?.length || 0;
-        return `<div class="stage ${selected.includes(key) ? "active" : ""}" data-stage="${key}">
-          <div class="name">${escapeHtml(name)}</div>
-          <div class="num">${count}</div>
-          <div class="desc">${escapeHtml(desc)}</div>
-        </div>`;
-      }).join("");
-      wrap.querySelectorAll('.stage').forEach(el => el.addEventListener('click', () => selectStage(el.dataset.stage)));
+      const filters = $("engineStageFilters");
+      if (filters) {
+        filters.innerHTML = stageMeta.map(([key,name])=>`<label class="engine-option"><input type="checkbox" data-engine-stage="${key}" ${selected.includes(key)?'checked':''}><span>${escapeHtml(name)}</span><b>${state.stages[key]?.length || 0}</b></label>`).join('');
+        filters.querySelectorAll('[data-engine-stage]').forEach(el=>el.addEventListener('change',()=>selectStage(el.dataset.engineStage)));
+        $("engineSelectionCount").textContent = selected.length ? `(${selected.length} đã chọn)` : '';
+        const rows = intersectStageRows(selected);
+        $("engineIntersection").innerHTML = selected.length ? `<p>Giao nhau: <b>${rows.length} mã</b> — ${selected.map(stageNameByKey).map(escapeHtml).join(' + ')}</p><div class="quick-tickers">${chips(rows)}</div>` : '<p class="muted-small">Chọn một hoặc nhiều tiêu chí để tìm các mã thỏa tất cả điều kiện.</p>';
+      }
+      [wrap, $("engineIntersection")].filter(Boolean).forEach(el=>el.querySelectorAll('[data-quick-ticker]').forEach(btn=>btn.addEventListener('click',()=>openDetail(btn.dataset.quickTicker))));
     }
 
     function renderTrackCards() {
@@ -7674,7 +7721,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
       const selected = getSelectedStages();
       if (!selected.length) {
         $("resultHint").classList.remove("is-hidden");
-        $("resultHint").innerHTML = 'Chưa chọn bộ lọc nào. Bấm chọn một hoặc nhiều ô trong <b>Pipeline lọc kỹ thuật</b> để lọc giao nhau. Ví dụ: <b>SEPA / VCP Breakout</b> + <b>Leader Track</b>.';
+        $("resultHint").innerHTML = 'Chưa chọn bộ lọc nào. Bấm chọn một hoặc nhiều ô trong <b>Full Engine — Chọn tiêu chí lọc giao nhau</b> để lọc giao nhau. Ví dụ: <b>SEPA / VCP Breakout</b> + <b>Leader Track</b>.';
         $("resultControls").classList.add("is-hidden");
         $("resultTableWrap").classList.add("is-hidden");
         body.innerHTML = "";
@@ -7766,7 +7813,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
         state.rawRows = clean;
         state.lastDataSource = source;
         state.qualityView = null;
-        state.activeQualityGroup = "d0";
+        state.activeQualityGroup = "recent";
         state.currentStage = null;
         state.selectedStages = [];
         state.currentTab = "all";
@@ -7821,17 +7868,18 @@ body.tracker-app-v127:not(.t140-soft-theme) .v2-notify-panel .v2-noteitem {
   function injectUI(){
     const app=document.querySelector('.app'); const grid=app?.querySelector('.grid'); if(!app||!grid||document.getElementById('tracker140Nav'))return;
     const nav=document.createElement('div'); nav.id='tracker140Nav'; nav.className='tracker140-nav';
-    nav.innerHTML=`<button data-v="screener">Screener</button><button data-v="overview" class="active">Market</button><button data-v="strategy">Strategy</button><button data-v="watchlist">Watchlist</button><button data-v="portfolio">Portfolio</button><button data-v="research">Research</button><button data-v="alerts">Alerts</button><button data-v="settings">Settings</button><span class="t140-version">Tracker ${VERSION}</span>`;
+    nav.innerHTML=`<button data-v="screener">Screener</button><button data-v="overview" class="active">Market</button><button data-v="watchlist">Watchlist</button><button data-v="portfolio">Portfolio</button><button data-v="alerts">Alerts</button><button data-v="settings">Settings</button><span class="t140-version">Tracker ${VERSION}</span>`;
     grid.before(nav);
     const ws=document.createElement('div'); ws.id='tracker140Workspace';
     ws.innerHTML=`<section id="t140-overview" class="t140-view"></section><section id="t140-strategy" class="t140-view"></section><section id="t140-watchlist" class="t140-view"></section><section id="t140-portfolio" class="t140-view"></section><section id="t140-research" class="t140-view"></section><section id="t140-alerts" class="t140-view"></section><section id="t140-settings" class="t140-view"></section>`;
     grid.after(ws);
-    const bottom=document.createElement('div'); bottom.className='t140-bottomnav'; bottom.id='t140BottomNav'; bottom.innerHTML=`<button data-v="screener"><span class="ico">⌁</span>Lọc</button><button data-v="overview" class="active"><span class="ico">◫</span>Market</button><button data-v="watchlist"><span class="ico">★</span>Watch</button><button data-v="portfolio"><span class="ico">◒</span>Portfolio</button><button data-v="strategy"><span class="ico">⚙</span>Strategy</button>`; document.body.append(bottom);
+    const bottom=document.createElement('div'); bottom.className='t140-bottomnav'; bottom.id='t140BottomNav'; bottom.innerHTML=`<button data-v="screener"><span class="ico">⌁</span>Lọc</button><button data-v="overview" class="active"><span class="ico">◫</span>Market</button><button data-v="watchlist"><span class="ico">★</span>Watch</button><button data-v="portfolio"><span class="ico">◒</span>Portfolio</button>`; document.body.append(bottom);
     document.querySelectorAll('[data-v]').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.v)));
     document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); switchView('screener'); setTimeout(()=>{const i=document.getElementById('headerTickerSearch'); i?.focus(); i?.select()},30)}});
     applyTheme(); switchView(data.view);
   }
   function switchView(v){
+    if (['strategy','research'].includes(v)) v='screener';
     data.view=v; const grid=document.querySelector('.app>.grid'); const ws=document.getElementById('tracker140Workspace');
     const isScreen=v==='screener'; if(grid)grid.style.display=isScreen?'grid':'none'; if(ws)ws.style.display=isScreen?'none':'block';
     document.querySelectorAll('.t140-view').forEach(x=>x.classList.toggle('active',x.id===`t140-${v}`));
@@ -8299,7 +8347,7 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     }
   }
 
-  function setupPalette(){const ov=document.getElementById('v2PaletteOverlay'),inp=document.getElementById('v2PaletteInput'),list=document.getElementById('v2CommandList');if(!ov||!inp||!list)return;const open=()=>{ov.classList.add('show');inp.value='';renderCommands('');setTimeout(()=>inp.focus(),20)},close=()=>ov.classList.remove('show');document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();e.stopImmediatePropagation();open()}else if(e.key==='Escape')close()},true);ov.addEventListener('click',e=>{if(e.target===ov)close()});inp.addEventListener('input',()=>renderCommands(inp.value));inp.addEventListener('keydown',e=>{if(e.key==='Enter'){list.querySelector('.v2-command')?.click()}});function renderCommands(q){q=q.trim().toLowerCase();const tickers=currentMetrics().map(x=>x.ticker);const cmds=[{k:'dashboard market',t:'Mở Dashboard Pro',f:()=>showV2('dashboard')},{k:'lab research',t:'Mở Research Lab',f:()=>showV2('lab')},{k:'guide hdsd help',t:'Mở HDSD cho người mới',f:()=>showV2('guide')},{k:'screener filter',t:'Mở Screener',f:()=>Tracker140.switchView('screener')},{k:'strategy',t:'Mở Strategy Builder',f:()=>Tracker140.switchView('strategy')},{k:'backup settings',t:'Mở Backup / Settings',f:()=>Tracker140.switchView('settings')},{k:'vcp scan',t:'Xem Top VCP trong Research Lab',f:()=>{const best=[...advMap.entries()].sort((a,b)=>b[1].vcp.confidence-a[1].vcp.confidence)[0];if(best)meta.selected=best[0];showV2('lab')}}];tickers.forEach(t=>cmds.push({k:t.toLowerCase(),t:`Mở ${t} trong Research Lab`,f:()=>{meta.selected=t;showV2('lab')}}));const hit=cmds.filter(c=>!q||c.k.includes(q)||c.t.toLowerCase().includes(q)).slice(0,12);list.innerHTML=hit.map((c,i)=>`<div class="v2-command" data-ci="${i}">${esc(c.t)}</div>`).join('')||'<div class="v2-command">Không có lệnh phù hợp.</div>';list.querySelectorAll('[data-ci]').forEach(x=>x.onclick=()=>{hit[+x.dataset.ci].f();close()})}}
+  function setupPalette(){const ov=document.getElementById('v2PaletteOverlay'),inp=document.getElementById('v2PaletteInput'),list=document.getElementById('v2CommandList');if(!ov||!inp||!list)return;const open=()=>{ov.classList.add('show');inp.value='';renderCommands('');setTimeout(()=>inp.focus(),20)},close=()=>ov.classList.remove('show');document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();e.stopImmediatePropagation();open()}else if(e.key==='Escape')close()},true);ov.addEventListener('click',e=>{if(e.target===ov)close()});inp.addEventListener('input',()=>renderCommands(inp.value));inp.addEventListener('keydown',e=>{if(e.key==='Enter'){list.querySelector('.v2-command')?.click()}});function renderCommands(q){q=q.trim().toLowerCase();const tickers=currentMetrics().map(x=>x.ticker);const cmds=[{k:'dashboard market',t:'Mở Dashboard Pro',f:()=>showV2('dashboard')},{k:'lab research',t:'Mở Research Lab',f:()=>showV2('lab')},{k:'guide hdsd help',t:'Mở HDSD cho người mới',f:()=>showV2('guide')},{k:'screener filter',t:'Mở Screener',f:()=>Tracker140.switchView('screener')},{k:'backup settings',t:'Mở Backup / Settings',f:()=>Tracker140.switchView('settings')},{k:'vcp scan',t:'Xem Top VCP trong Research Lab',f:()=>{const best=[...advMap.entries()].sort((a,b)=>b[1].vcp.confidence-a[1].vcp.confidence)[0];if(best)meta.selected=best[0];showV2('lab')}}];tickers.forEach(t=>cmds.push({k:t.toLowerCase(),t:`Mở ${t} trong Research Lab`,f:()=>{meta.selected=t;showV2('lab')}}));const hit=cmds.filter(c=>!q||c.k.includes(q)||c.t.toLowerCase().includes(q)).slice(0,12);list.innerHTML=hit.map((c,i)=>`<div class="v2-command" data-ci="${i}">${esc(c.t)}</div>`).join('')||'<div class="v2-command">Không có lệnh phù hợp.</div>';list.querySelectorAll('[data-ci]').forEach(x=>x.onclick=()=>{hit[+x.dataset.ci].f();close()})}}
 
   function hookUpdates(){try{const prev=renderAll;renderAll=function(){prev();setTimeout(()=>computeAdvanced(),10)}}catch(_){} }
   async function init(){if(!injectShell()){setTimeout(init,80);return}hookUpdates();await idb.open();showV2(ls.get('lastView','dashboard'));computeAdvanced();document.querySelectorAll('[data-v2]').forEach(b=>b.addEventListener('click',()=>ls.set('lastView',b.dataset.v2)));window.Tracker2={version:VERSION,computeAdvanced,advMap,show:showV2,idb,marketHealth,getAdvanced:t=>advMap.get(t)};console.log('Tracker v2 ready')}
@@ -8416,4 +8464,5 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
 
 </body>
 </html>
+
 
