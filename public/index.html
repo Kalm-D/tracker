@@ -4873,7 +4873,41 @@ body.tracker-app-v127:not(.t140-soft-theme) .regime-box .k,
 body.tracker-app-v127:not(.t140-soft-theme) .regime-box .d,
 body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!important;}
 .quick-tickers button {display:inline-flex;align-items:center;gap:6px;}
-</style></head>
+</style><style id="tracker-unified-dark">
+/* Thẻ cổ phiếu và bảng màu chung cho toàn bộ chế độ tối. */
+.pipeline-stock-list {display:grid;gap:16px;padding:12px;min-width:0;}
+.pipeline-stock-card {display:grid;grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:8px;padding:10px;border:1px solid #d6e1ee;border-radius:16px;background:#fff;min-width:0;}
+.pipeline-stock-card > [data-label] {display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:74px;padding:10px;border:1px solid #e3ebf5;border-radius:12px;background:#f8fbff;color:#172c46;font-size:12px;overflow-wrap:anywhere;gap:4px;}
+.pipeline-stock-card > [data-label]::before {content:attr(data-label);display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#607590;margin-bottom:4px;}
+.pipeline-stock-card .stock-main {grid-column:span 2;}
+.pipeline-stock-card .actions-cell {gap:8px;align-items:flex-start;}
+.pipeline-stock-card .pill {align-self:flex-start;white-space:normal;}
+body.tracker-app-v127:not(.t140-soft-theme) {--text:#e5edf8;--muted:#adc0d8;--line:#29435e;--border:#29435e;color:#e5edf8!important;background:#081422!important;color-scheme:dark;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.sidebar-brand,.sidebar-pipeline-panel,.sidebar-panel-head,.sidebar-pipeline-body,.tracker-sidebar-nav a,.modal,.modal-head,.modal-body,.playbook-modal,.guide-modal,.fact,.mini,.table-wrap,.regime-box,.quality-box,.data-slot,.v2-detail-advanced,.v2-evidence>div,.pipeline-stock-card,.quick-stage,.engine-criteria,.header-search-dropdown,.header-search-item) {background:#0e2033!important;background-image:none!important;border-color:#29435e!important;color:#e5edf8!important;box-shadow:none!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.btn,.tab,.tracker-fold-toggle,.summary-chip,.summary-chip button,.sidebar-nav-icon,.nav-icon,.pipeline-stock-card>[data-label]) {background:#152b43!important;background-image:none!important;border-color:#34516d!important;color:#e5edf8!important;box-shadow:none!important;}
+body.tracker-app-v127:not(.t140-soft-theme) #resultTableWrap :is(table,tbody,tr) {background:#0e2033!important;background-image:none!important;border-color:#29435e!important;box-shadow:none!important;}
+body.tracker-app-v127:not(.t140-soft-theme) #resultTableWrap tr td {background:#152b43!important;border-color:#29435e!important;color:#e5edf8!important;box-shadow:none!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.ticker,.sidebar-brand-title,.panel-title,.modal h2,.modal h3,.mini h3,.fact .v,.v2-detail-advanced h3,.pipeline-stock-card .ticker) {color:#f0f5ff!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.mini p,.modal p,.fact .k,.sidebar-brand-sub,.quick-stage small,.v2-sub,.v2-scorebar,.v2-between,.sidebar-panel-head,.summary-label) {color:#b6c8de!important;}
+body.tracker-app-v127:not(.t140-soft-theme) #resultTableWrap td::before,
+body.tracker-app-v127:not(.t140-soft-theme) .pipeline-stock-card>[data-label]::before {color:#adc0d8!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.pill.good,.v2-chip.good,.btn.good) {background:#103e36!important;color:#7af0bf!important;border-color:#23765d!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.pill.warn,.v2-chip.warn,.btn.warn) {background:#433519!important;color:#ffda85!important;border-color:#7d632a!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.pill.bad,.v2-chip.bad,.btn.bad) {background:#431f30!important;color:#ffafbd!important;border-color:#85465a!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(.pill.info,.v2-chip.info,.tab.active,.btn.primary) {background:#153b59!important;color:#9dd9ff!important;border-color:#3777a4!important;}
+body.tracker-app-v127:not(.t140-soft-theme) .v2-ai {background:#103329!important;color:#c1ebdc!important;border-color:#286b54!important;}
+body.tracker-app-v127:not(.t140-soft-theme) .v2-chip {background:#172e46!important;color:#c0d3ea!important;border-color:#35536f!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(input,select,textarea) {background:#091827!important;color:#e5edf8!important;border-color:#34516d!important;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(button,a,summary,input):focus-visible {outline:2px solid #76caff!important;outline-offset:3px;}
+@media(max-width:480px){.pipeline-stock-list{padding:6px}.pipeline-stock-card{grid-template-columns:repeat(2,minmax(0,1fr));padding:6px}.pipeline-stock-card .stock-main{grid-column:span 2}}
+</style>
+<style>
+body.tracker-app-v127 .app>.grid {grid-template-columns:minmax(0,1fr)!important;}
+body.tracker-app-v127 .app>.grid>aside {position:static!important;width:100%!important;max-height:none!important;}
+.pipeline-stock-list {max-height:75vh;overflow:auto;overscroll-behavior:contain;}
+body.tracker-app-v127:not(.t140-soft-theme) :is(canvas,.chart-wrap,.chart-box) {background:#0e2033!important;border-color:#29435e!important;}
+</style>
+</head>
 <body class="tracker-app-v127">
   <div class="app">
     <div class="topbar">
@@ -5166,7 +5200,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!im
           <div class="panel-head">
             <div>
               <div class="panel-title">Kết quả lọc kỹ thuật</div>
-              <div class="status-line">Kết quả sẽ cập nhật theo nhóm pipeline đã chọn ở cột trái và bộ lọc tìm kiếm bên dưới.</div>
+              <div class="status-line">Kết quả giao nhau theo các tiêu chí đã chọn trong Full Engine và bộ lọc tìm kiếm bên dưới.</div>
             </div>
             <button id="exportBtn" class="btn small">Xuất CSV kết quả</button>
           </div>
@@ -7000,7 +7034,8 @@ body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!im
       const ctx = canvas.getContext("2d");
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = "#FFFFFF";
+      const dark = !document.body.classList.contains("t140-soft-theme");
+      ctx.fillStyle = dark ? "#0e2033" : "#FFFFFF";
       ctx.fillRect(0,0,w,h);
       const data = x.rows.slice(-160);
       const prices = data.flatMap(r => [r.high, r.low]).concat([x.m50, x.m150, x.m200]).filter(Number.isFinite);
@@ -7008,7 +7043,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!im
       const left = 44, right = 16, top = 20, bottom = 40;
       const X = i => left + (i / Math.max(1, data.length - 1)) * (w - left - right);
       const Y = p => top + (pMax - p) / (pMax - pMin) * (h - top - bottom);
-      ctx.strokeStyle = "#E2E8F0";
+      ctx.strokeStyle = dark ? "#29435e" : "#E2E8F0";
       ctx.lineWidth = 1;
       for (let i=0; i<5; i++) {
         const y = top + i * (h-top-bottom)/4;
@@ -7031,7 +7066,7 @@ body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!im
       }
       line(x.pivot, "#0EA5FF", "Pivot");
       line(x.stop, "#EF4444", "Stop");
-      ctx.fillStyle = "#64748B"; ctx.font = "12px sans-serif"; ctx.fillText("160 phiên gần nhất", left, h - 12);
+      ctx.fillStyle = dark ? "#adc0d8" : "#64748B"; ctx.font = "12px sans-serif"; ctx.fillText("160 phiên gần nhất", left, h - 12);
     }
 
     function toggleWatch(ticker) {
@@ -7674,7 +7709,23 @@ body.tracker-app-v127:not(.t140-soft-theme) .quick-stage small {color:#adc0da!im
       if (!wrap) return;
       const opened = new Set([...wrap.querySelectorAll('details[open]')].map(el=>el.dataset.stage));
       const chips = rows => rows.map(x=>`<button type="button" class="btn small" data-quick-ticker="${escapeHtml(x.ticker)}">${escapeHtml(x.ticker)} <small>${escapeHtml(x.dataQualityLabel || '')}</small></button>`).join('') || '<span class="muted-small">Không có mã phù hợp.</span>';
-      wrap.innerHTML = stageMeta.map(([key,name,desc])=>`<details class="quick-stage" data-stage="${key}" ${opened.has(key)?'open':''}><summary><span class="quick-count">${state.stages[key]?.length || 0}</span><span><b>${escapeHtml(name)}</b><small>${escapeHtml(desc)}</small></span><span class="quick-chevron" aria-hidden="true">⌄</span></summary><div class="quick-tickers">${chips(state.stages[key] || [])}</div></details>`).join('');
+      wrap.innerHTML = stageMeta.map(([key,name,desc])=>`<details class="quick-stage" data-stage="${key}" ${opened.has(key)?'open':''}><summary><span class="quick-count">${state.stages[key]?.length || 0}</span><span><b>${escapeHtml(name)}</b><small>${escapeHtml(desc)}</small></span><span class="quick-chevron" aria-hidden="true">⌄</span></summary><div class="pipeline-stock-list"></div></details>`).join('');
+      // Chỉ dựng thẻ của mục đang mở để không tải hàng nghìn ô cùng lúc.
+      const renderCards = (detail, limit = 20) => {
+        const rows = state.stages[detail.dataset.stage] || [];
+        const list = detail.querySelector('.pipeline-stock-list');
+        list.innerHTML = rows.slice(0, limit).map(x => rowHtml(x)
+          .replace('<tr>', '<article class="pipeline-stock-card" aria-label="' + escapeHtml(x.ticker) + '">')
+          .replace('</tr>', '</article>').replace(/<td\b/g, '<div').replace(/<\/td>/g, '</div>')).join('') || '<p class="muted-small">Không có mã phù hợp.</p>';
+        if (rows.length > limit) list.insertAdjacentHTML('beforeend', `<button type="button" class="btn pipeline-more">Xem thêm (${Math.min(limit, rows.length)}/${rows.length} mã)</button>`);
+        list.querySelector('.pipeline-more')?.addEventListener('click', () => renderCards(detail, limit + 20));
+        list.querySelectorAll('[data-detail]').forEach(btn => btn.addEventListener('click', () => openDetail(btn.dataset.detail)));
+        list.querySelectorAll('[data-watch]').forEach(btn => btn.addEventListener('click', () => toggleWatch(btn.dataset.watch)));
+      };
+      wrap.querySelectorAll('.quick-stage').forEach(detail => {
+        if (detail.open) renderCards(detail);
+        detail.addEventListener('toggle', () => { if (detail.open && !detail.querySelector('.pipeline-stock-list').children.length) renderCards(detail); });
+      });
       const selected = getSelectedStages();
       const filters = $("engineStageFilters");
       if (filters) {
@@ -8318,7 +8369,7 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     <div class="v2-card v2-c4"><h2>Anchored VWAP</h2><div class="v2-sub">Giá ${num(a.last,0)}</div><div style="margin-top:10px"><div class="v2-between"><span>52W Low</span><b>${num(av.from52wLow,0)}</b></div><div class="v2-between"><span>52W High</span><b>${num(av.from52wHigh,0)}</b></div><div class="v2-between"><span>Max Volume</span><b>${num(av.fromMaxVolume,0)}</b></div><div class="v2-between"><span>Breakout</span><b>${num(av.fromBreakout,0)}</b></div></div></div>
     <div class="v2-card v2-c8"><h2>Explainable Evidence</h2><div class="v2-evidence"><div><b class="v2-good">Evidence (${a.evidence.length})</b><div style="margin-top:7px">${a.evidence.map(x=>chip('✓ '+x,'good')).join('')}</div></div><div><b class="v2-bad">Violations (${a.violations.length})</b><div style="margin-top:7px">${a.violations.map(x=>chip('• '+x,'bad')).join('')}</div></div></div><div class="v2-ai" style="margin-top:10px"><b>AI-Lite:</b> ${esc(Q.narrative(x.ticker,a))}</div></div>`}
 
-  function drawAdvChart(x,a){const cv=document.getElementById('v2AdvCanvas');if(!cv)return;const ctx=cv.getContext('2d'),rows=(x.rows||[]).slice(-180),w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);if(rows.length<5)return;const c=rows.map(r=>Number(r.close)),bbs=[];for(let i=0;i<rows.length;i++)bbs.push(Q.bb(rows.slice(0,i+1)));const vals=c.concat(bbs.flatMap(b=>[b.upper,b.lower]).filter(Number.isFinite),[a.avwap.from52wLow,a.avwap.fromBreakout].filter(Number.isFinite));const lo=Math.min(...vals)*.97,hi=Math.max(...vals)*1.03,L=48,R=18,T=18,B=34,X=i=>L+i/(rows.length-1)*(w-L-R),Y=v=>T+(hi-v)/(hi-lo)*(h-T-B);ctx.strokeStyle='#e3eaf0';for(let j=0;j<5;j++){const y=T+j*(h-T-B)/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke()}const line=(arr,color,width=1.6)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();let started=false;arr.forEach((v,i)=>{if(!Number.isFinite(v))return;const xx=X(i),yy=Y(v);if(!started){ctx.moveTo(xx,yy);started=true}else ctx.lineTo(xx,yy)});ctx.stroke()};line(c,'#1b4f72',2.2);line(bbs.map(b=>b.upper),'#9bb6cd',1);line(bbs.map(b=>b.lower),'#9bb6cd',1);const horiz=(v,color,label)=>{if(!Number.isFinite(v))return;ctx.strokeStyle=color;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(L,Y(v));ctx.lineTo(w-R,Y(v));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='12px sans-serif';ctx.fillText(label+' '+Math.round(v).toLocaleString('vi-VN'),L+5,Y(v)-4)};horiz(a.avwap.from52wLow,'#0c9b75','AVWAP Low');horiz(a.avwap.fromBreakout,'#7a59c8','AVWAP BO');horiz(a.vcp.pivot,'#d38a15','Pivot');ctx.fillStyle='#60758b';ctx.font='12px sans-serif';ctx.fillText('180 phiên gần nhất',L,h-10)}
+  function drawAdvChart(x,a){const cv=document.getElementById('v2AdvCanvas');if(!cv)return;const ctx=cv.getContext('2d'),rows=(x.rows||[]).slice(-180),w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);const dark=!document.body.classList.contains('t140-soft-theme');ctx.fillStyle=dark?'#0e2033':'#fff';ctx.fillRect(0,0,w,h);if(rows.length<5)return;const c=rows.map(r=>Number(r.close)),bbs=[];for(let i=0;i<rows.length;i++)bbs.push(Q.bb(rows.slice(0,i+1)));const vals=c.concat(bbs.flatMap(b=>[b.upper,b.lower]).filter(Number.isFinite),[a.avwap.from52wLow,a.avwap.fromBreakout].filter(Number.isFinite));const lo=Math.min(...vals)*.97,hi=Math.max(...vals)*1.03,L=48,R=18,T=18,B=34,X=i=>L+i/(rows.length-1)*(w-L-R),Y=v=>T+(hi-v)/(hi-lo)*(h-T-B);ctx.strokeStyle=dark?'#29435e':'#e3eaf0';for(let j=0;j<5;j++){const y=T+j*(h-T-B)/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke()}const line=(arr,color,width=1.6)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();let started=false;arr.forEach((v,i)=>{if(!Number.isFinite(v))return;const xx=X(i),yy=Y(v);if(!started){ctx.moveTo(xx,yy);started=true}else ctx.lineTo(xx,yy)});ctx.stroke()};line(c,dark?'#8bd5ff':'#1b4f72',2.2);line(bbs.map(b=>b.upper),'#9bb6cd',1);line(bbs.map(b=>b.lower),'#9bb6cd',1);const horiz=(v,color,label)=>{if(!Number.isFinite(v))return;ctx.strokeStyle=color;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(L,Y(v));ctx.lineTo(w-R,Y(v));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='12px sans-serif';ctx.fillText(label+' '+Math.round(v).toLocaleString('vi-VN'),L+5,Y(v)-4)};horiz(a.avwap.from52wLow,'#0c9b75','AVWAP Low');horiz(a.avwap.fromBreakout,'#7a59c8','AVWAP BO');horiz(a.vcp.pivot,'#d38a15','Pivot');ctx.fillStyle='#60758b';ctx.font='12px sans-serif';ctx.fillText('180 phiên gần nhất',L,h-10)}
 
   function patchDetail(){
     try{const prev=openDetail;openDetail=function(t){prev(t);setTimeout(()=>renderAdvancedDetail(t),25)}}catch(e){console.warn('Tracker v2 detail patch unavailable',e)}
@@ -8464,5 +8515,3 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
 
 </body>
 </html>
-
-
