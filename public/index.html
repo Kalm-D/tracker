@@ -4937,6 +4937,23 @@ body.tracker-app-v127:not(.t140-soft-theme) .tracker-current-guide th {backgroun
 </style><style id="tracker-menu-cleanup">
 body.tracker-app-v127:not(.t140-soft-theme) .tracker-sidebar-nav {border-bottom-color:#29435e!important;}
 @media(max-width:700px){#t140BottomNav{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+</style><style id="tracker-scroll-reveal">
+.tracker-header-slot {display:flow-root;overflow-anchor:none;}
+body.tracker-app-v127:not(.tracker-header-floating) .topbar {position:relative!important;top:auto!important;transform:none!important;}
+body.tracker-app-v127.tracker-header-floating .topbar {
+position:fixed!important;top:8px!important;left:var(--headline-left)!important;width:var(--headline-width)!important;box-sizing:border-box!important;margin:0!important;
+display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-areas:"search market"!important;gap:10px!important;padding:8px 12px!important;border-radius:14px!important;z-index:90!important;
+transform:translateY(calc(-100% - 20px))!important;opacity:0;visibility:hidden;pointer-events:none;transition:transform .2s ease,opacity .2s ease,visibility .2s!important;
+}
+body.tracker-app-v127.tracker-header-floating .topbar.headline-visible {transform:translateY(0)!important;opacity:1;visibility:visible;pointer-events:auto;}
+body.tracker-header-floating .topbar :is(.brand-top,.actions,.market-sub) {display:none!important;}
+body.tracker-header-floating .topbar .header-search {grid-area:search!important;min-width:0!important;}
+body.tracker-header-floating .topbar .header-market {grid-area:market!important;padding:6px 10px!important;min-width:0!important;}
+body.tracker-header-floating .topbar .header-search input {min-height:38px!important;padding:8px 10px!important;width:100%!important;}
+body.tracker-header-floating .topbar .market-line {display:flex!important;flex-wrap:nowrap!important;gap:6px!important;}
+body.tracker-header-floating .topbar .market-price {font-size:18px!important;}
+@media(max-width:520px){body.tracker-header-floating .topbar .market-name{font-size:10px!important}body.tracker-header-floating .topbar .market-price{font-size:14px!important}body.tracker-header-floating .topbar .header-market{padding:5px!important}body.tracker-header-floating .topbar .market-line{gap:4px!important}body.tracker-header-floating .topbar .market-dot{display:none!important}body.tracker-header-floating .topbar{gap:6px!important;padding:6px!important}}
+@media(prefers-reduced-motion:reduce){body.tracker-app-v127.tracker-header-floating .topbar{transition:none!important}}
 </style></head>
 <body class="tracker-app-v127">
   <div class="app">
@@ -8435,48 +8452,40 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
 
   <script id="trackerHeaderLayout">
     (() => {
-      const header = document.querySelector('.topbar');
-      if (!header) return;
-      const spacer = document.createElement('div');
-      spacer.className = 'tracker-header-spacer';
-      spacer.setAttribute('aria-hidden', 'true');
-      header.after(spacer);
-      const desktop = matchMedia('(min-width:721px)');
-      const reduced = matchMedia('(prefers-reduced-motion:reduce)');
-      let compact = false, expandedHeight = header.offsetHeight, pending = false, animation;
-      // Bù chiều cao mất đi để cuộn không tự đổi vị trí khi header thu gọn.
-      function reserveSpace() {
-        if (!compact) expandedHeight = header.offsetHeight;
-        spacer.style.height = compact ? Math.max(0, expandedHeight - header.offsetHeight) + 'px' : '0px';
+      const header=document.querySelector('.topbar');if(!header)return;
+      const slot=document.createElement('div');slot.className='tracker-header-slot';header.before(slot);slot.append(header);
+      let lastY=window.scrollY, floating=false, shown=false, pending=false, touchY=null;
+      function measure(){
+        document.body.classList.remove('tracker-header-floating');
+        slot.style.height='auto';
+        slot.style.height=slot.getBoundingClientRect().height+'px';
+        const rect=slot.getBoundingClientRect();
+        header.style.setProperty('--headline-left',rect.left+'px');header.style.setProperty('--headline-width',rect.width+'px');
+        document.body.classList.toggle('tracker-header-floating',floating);
       }
-      function update() {
-        pending = false;
-        const y = Math.max(0, window.scrollY);
-        const next = desktop.matches && (compact ? y > 32 : y > 140);
-        if (next === compact) return;
-        if (!compact) expandedHeight = header.offsetHeight;
-        const previousHeight = header.offsetHeight;
-        compact = next;
-        document.body.classList.toggle('tracker-header-compact', compact);
-        reserveSpace();
-        animation?.cancel();
-        if (!reduced.matches) animation = header.animate([
-          {transform:'scaleY(' + previousHeight / header.offsetHeight + ')', opacity:.92},
-          {transform:'scaleY(1)', opacity:1}
-        ], {duration:200, easing:'cubic-bezier(.2,.8,.2,1)'});
+      function apply(){
+        header.classList.toggle('headline-visible',shown);
+        // Không để phần bị ẩn vẫn nhận focus bằng bàn phím.
+        header.inert=floating&&!shown;
       }
-      function schedule() { if (!pending) { pending = true; requestAnimationFrame(update); } }
-      new ResizeObserver(reserveSpace).observe(header);
-      window.addEventListener('scroll', schedule, {passive:true});
-      window.addEventListener('resize', () => {
-        animation?.cancel();
-        // Đo lại chiều cao mở rộng theo độ rộng mới trong cùng khung hình.
-        document.body.classList.remove('tracker-header-compact');
-        expandedHeight = header.offsetHeight;
-        document.body.classList.toggle('tracker-header-compact', compact);
-        reserveSpace(); schedule();
-      }, {passive:true});
-      schedule();
+      function sync(){
+        pending=false;const y=Math.max(0,window.scrollY),delta=y-lastY;
+        const next=floating?y>24:y>120;
+        if(next!==floating){floating=next;shown=!next;document.body.classList.toggle('tracker-header-floating',floating);}
+        if(floating&&!header.contains(document.activeElement)){if(delta < -2)shown=true;else if(delta>8)shown=false;}
+        lastY=y;apply();
+      }
+      function schedule(){if(!pending){pending=true;requestAnimationFrame(sync)}}
+      function direction(delta){if(!floating||header.contains(document.activeElement))return;if(delta < -2)shown=true;else if(delta>8)shown=false;apply();}
+      window.addEventListener('scroll',schedule,{passive:true});
+      // Nhận cả thao tác cuộn trong bảng/danh sách con ở mọi tab.
+      document.addEventListener('wheel',e=>direction(e.deltaY),{passive:true});
+      document.addEventListener('touchstart',e=>{touchY=e.touches[0]?.clientY??null},{passive:true});
+      document.addEventListener('touchmove',e=>{const y=e.touches[0]?.clientY;if(touchY!=null&&y!=null)direction(touchY-y);touchY=y},{passive:true});
+      header.addEventListener('focusin',()=>{shown=true;apply()});
+      window.addEventListener('resize',()=>{measure();schedule()},{passive:true});
+      document.fonts?.ready.then(measure);
+      measure();sync();
     })();
   </script>
 
