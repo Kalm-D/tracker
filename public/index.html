@@ -7981,6 +7981,7 @@ body.tracker-header-floating .topbar .market-price {font-size:18px!important;}
     data.view=v; const grid=document.querySelector('.app>.grid'); const ws=document.getElementById('tracker140Workspace');
     const isScreen=v==='screener'; if(grid)grid.style.display=isScreen?'grid':'none'; if(ws)ws.style.display=isScreen?'none':'block';
     document.querySelectorAll('.t140-view').forEach(x=>x.classList.toggle('active',x.id===`t140-${v}`));
+    document.querySelectorAll('#tracker140Nav [data-v2]').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('active',x.dataset.v===v));
     renderView(v);
   }
