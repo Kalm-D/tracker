@@ -5123,6 +5123,77 @@ body:not(#_) details.quick-stage[data-cux="1"] > summary > span:not([class]){fle
 body:not(#_) details[data-cux="1"]:not(.cux-closed) > summary > .cux-summary{display:none!important}
 }
 </style>
+<style id="collapseLayout">
+@media screen {
+body:not(#_) .guide-section[data-cux="1"]{padding:4px 0!important;margin:0!important;min-height:0!important;border-top:1px solid var(--line)!important}
+body:not(#_) .guide-section[data-cux="1"]>h2{margin:0!important;padding:0!important}
+body:not(#_) .guide-section[data-cux="1"] .cux-trigger{min-height:52px!important}
+body:not(#_) .guide-section[data-cux="1"]>.cux-summary:empty{display:none!important}
+body:not(#_) [data-cux="1"]>.cux-hidden{height:0!important;max-height:0!important;min-height:0!important;padding:0!important;margin:0!important;border-width:0!important;overflow:hidden!important;box-sizing:border-box!important}
+body:not(#_) .guide-section[data-cux="1"]:not(.cux-closed)>.cux-piece{margin-top:12px!important}
+body:not(#_) .tx-masonry{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr))!important;grid-auto-rows:1px!important;row-gap:0!important;column-gap:16px!important;grid-auto-flow:row dense!important;align-items:start!important}
+body:not(#_) .tx-masonry>.tx-masonry-item{align-self:start!important;height:auto!important;min-height:0!important;margin:0!important;grid-column:span var(--tx-cols,1)!important;grid-row-end:span var(--tx-rows,1)!important;min-width:0!important;box-sizing:border-box!important}
+body:not(#_) .tx-masonry>.cux-tools,body:not(#_) .tx-masonry>.cux-tools-slot{grid-column:1/-1!important}
+body:not(#_) [data-cux="1"]:hover{transform:none!important}
+@media(max-width:600px){body:not(#_) .tx-masonry{grid-template-columns:minmax(0,1fr)!important}}
+}
+@media print{body:not(#_) .tx-masonry{display:block!important}body:not(#_) .tx-masonry-item{break-inside:avoid}}
+@media screen{
+body:not(#_) .cux-summary:empty{display:none!important}
+body:not(#_) .guide-section[data-cux="1"]{padding:3px 0!important}
+body:not(#_) .guide-section[data-cux="1"].cux-closed>table.cux-hidden{display:block!important;height:0!important;max-height:0!important;overflow:hidden!important}
+}
+</style>
+<style id="trackerHelp">
+@media screen {
+body:not(#_) .th-help-ui{box-sizing:border-box!important;text-transform:none!important;letter-spacing:normal!important}
+body:not(#_) .th-info{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;padding:10px!important;margin:0 0 0 3px!important;border:0!important;border-radius:50%!important;background:transparent!important;color:var(--accent,#22d3ee)!important;vertical-align:middle!important;box-shadow:none!important;cursor:pointer!important;flex:none!important;transform:none!important}
+body:not(#_) .th-info svg{width:20px;height:20px;stroke:currentColor}
+body:not(#_) .th-info:hover{background:var(--row-hover)!important}
+body:not(#_) .th-info:focus-visible,body:not(#_) [data-help-chip]:focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px!important}
+body:not(#_) .th-badge{display:inline-flex!important;align-items:center!important;gap:4px!important;border-radius:99px!important;border:1px solid currentColor!important;padding:3px 8px!important;font:600 11px/1.4 Inter,system-ui!important;background:var(--surface2)!important;margin:4px 6px 4px 0!important;white-space:normal!important;color:var(--muted)!important;max-width:100%!important}
+body:not(#_) .th-badge[data-verdict=good]{color:#34d399!important}
+body:not(#_) .th-badge[data-verdict=neutral]{color:#f5b82e!important}
+body:not(#_) .th-badge[data-verdict=caution]{color:#fb7185!important}
+body:not(#_).t140-soft-theme .th-badge[data-verdict=good]{color:#08734c!important}
+body:not(#_).t140-soft-theme .th-badge[data-verdict=neutral]{color:#855300!important}
+body:not(#_).t140-soft-theme .th-badge[data-verdict=caution]{color:#b4233b!important}
+body:not(#_) .th-brief{margin:6px 0 10px!important;font:400 12px/1.6 Inter,system-ui!important;color:var(--muted)!important;overflow-wrap:anywhere!important}
+body:not(#_).th-help-off .th-brief,body:not(#_) .cux-closed>.th-brief{display:none!important}
+body:not(#_) .th-header-help{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:2px!important}
+body:not(#_) .th-help-switch{display:inline-flex!important;align-items:center!important;gap:6px!important;font:400 12px Inter,system-ui!important;color:var(--muted)!important}
+body:not(#_) .th-help-overlay{position:fixed!important;inset:0!important;z-index:10020!important;background:#0003!important}
+body:not(#_) .th-help-dialog{position:fixed!important;z-index:10021!important;width:min(430px,calc(100vw - 24px))!important;max-height:85vh!important;overflow:auto!important;padding:20px!important;border:1px solid var(--line)!important;border-radius:18px!important;background:var(--surface,#102035)!important;color:var(--text,#e5edf8)!important;box-shadow:0 20px 70px #0006!important;font:400 13px/1.65 Inter,system-ui!important}
+body:not(#_) .th-help-dialog h3{color:var(--text)!important;font-size:17px!important;margin:0 40px 12px 0!important}
+body:not(#_) .th-help-dialog p{margin:8px 0!important;color:var(--text)!important}
+body:not(#_) .th-help-close{position:absolute!important;right:8px!important;top:8px!important;width:44px!important;height:44px!important;min-height:44px!important;padding:8px!important;background:var(--surface2)!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:12px!important}
+body:not(#_) .th-help-dialog table{width:100%!important;border-collapse:collapse!important;margin:10px 0!important;font-size:12px!important}
+body:not(#_) .th-help-dialog td{padding:6px!important;border-bottom:1px solid var(--line)!important;white-space:normal!important;color:var(--text)!important}
+body:not(#_) .th-help-dialog .th-disclaimer{font-size:11px!important;color:var(--muted)!important;border-top:1px solid var(--line)!important;padding-top:10px!important}
+body:not(#_) [data-help-chip]{cursor:help!important}
+@media(max-width:800px){body:not(#_) .th-brief,body:not(#_) th>.th-info{display:none!important}body:not(#_) .th-help-dialog{left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-height:85vh!important;border-radius:20px 20px 0 0!important;padding-bottom:calc(20px + env(safe-area-inset-bottom))!important}}
+@media(prefers-reduced-motion:reduce){body:not(#_) .th-help-ui{transition:none!important;animation:none!important}}
+}
+@media print{body:not(#_) .th-help-ui,body:not(#_) .th-help-overlay,body:not(#_) .th-help-dialog{display:none!important}}
+@media screen {
+body:not(#_) .th-brief{display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden!important}
+body:not(#_).th-help-off .th-brief,body:not(#_) .cux-closed>.th-brief{display:none!important}
+body:not(#_) .tx-masonry.tx-native{grid-template-rows:masonry!important;grid-auto-rows:auto!important;row-gap:16px!important}
+body:not(#_) .tx-masonry.tx-native>.tx-masonry-item{grid-row-end:auto!important}
+@media(max-width:800px){body:not(#_) .th-brief{display:none!important}}
+}
+@media screen{
+body:not(#_) .th-summary-value{display:none!important;color:var(--text)!important;font-size:14px!important;max-width:100%!important;overflow-wrap:anywhere!important}
+body:not(#_) .cux-closed .th-header-help .th-summary-value{display:inline!important}
+body:not(#_) .cux-closed .th-brief{display:none!important}
+}
+@media screen{
+body:not(#_) #resultBody [data-label],body:not(#_) .pipeline-stock-card [data-label]{position:relative!important}
+body:not(#_) [data-label]>.th-cell-info{position:absolute!important;right:0!important;top:0!important;padding:12px!important;width:44px!important;height:44px!important;z-index:1!important}
+body:not(#_) [data-label]>.th-cell-info svg{width:16px!important;height:16px!important}
+body:not(#_) [data-label]:has(>.th-cell-info)::before{max-width:calc(100% - 36px)!important}
+}
+</style>
 </head>
 <body class="tracker-app-v127">
   <div class="app">
@@ -8872,6 +8943,1715 @@ document.querySelectorAll('.tracker-foldable,.guide-section,details.quick-stage,
 for(const e of entries.values())renderSummary(e);labelTools();observer.observe(document.body,{childList:true,subtree:true,characterData:true});})}
 const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(enhance,120)});document.addEventListener('input',ev=>{const e=entries.get(ev.target.closest('.setting-group'));if(e)safe(()=>renderSummary(e))});document.addEventListener('change',ev=>{const e=entries.get(ev.target.closest('.setting-group'));if(e)safe(()=>renderSummary(e))});document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closePopup()});document.addEventListener('click',ev=>{const link=ev.target.closest('a[href^="#"]');if(!link)return;const section=document.getElementById(link.getAttribute('href').slice(1)),e=entries.get(section);if(e&&e.closed)apply(e,false)},true);document.addEventListener('pointerdown',ev=>{if(popup&&!popup.contains(ev.target)&&!anchor?.contains(ev.target))closePopup()});window.addEventListener('resize',()=>{closePopup();clearTimeout(timer);timer=setTimeout(enhance,120)});enhance();
 }catch(e){console.warn('Không thể nâng cấp phần thu gọn:',e)}})();
+</script>
+<script id="collapseLayoutScript">
+(()=>{'use strict';try{
+let pending;const tracked=new WeakSet(),observed=new Set();
+function layout(){clearTimeout(pending);for(const c of observed)if(!c.isConnected){ro.unobserve(c);observed.delete(c)}document.querySelectorAll('.v2-grid,.t140-grid,#regimePlaybook,#trackerScoreSummary').forEach(g=>{if(!g.getClientRects().length)return;const children=[...g.children].filter(c=>c.matches('.v2-card,.t140-card,.regime-box,.card'));if(children.length<2)return;g.classList.add('tx-masonry');g.classList.toggle('tx-native',CSS.supports('grid-template-rows','masonry'));const cols=innerWidth<=600?1:Math.max(1,Math.floor((g.clientWidth+16)/296));children.forEach(c=>{c.classList.add('tx-masonry-item');const old=c.className.match(/(?:v2-c|t140-col-)(12|8|6|4|3)(?:\s|$)/),n=old?Number(old[1]):3;const span=n===12?cols:n===8?Math.min(cols,Math.max(2,Math.round(cols*2/3))):n===6?Math.max(1,Math.ceil(cols/2)):1;c.style.setProperty('--tx-cols',String(span));if(!tracked.has(c)){tracked.add(c);observed.add(c);ro.observe(c)}});children.forEach(c=>{const rows=Math.ceil(c.getBoundingClientRect().height+16);if(c.style.getPropertyValue('--tx-rows')!==String(rows))c.style.setProperty('--tx-rows',String(rows))})})}
+function schedule(){clearTimeout(pending);pending=setTimeout(()=>{try{layout()}catch(e){console.warn('Bố cục thẻ:',e)}},60)}
+const ro=new ResizeObserver(schedule),mo=new MutationObserver(schedule);mo.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',schedule);document.addEventListener('transitionend',e=>{if(e.target.classList.contains('cux-piece'))schedule()});document.addEventListener('click',e=>{const trigger=e.target.closest('.cux-trigger');if(!trigger)return;setTimeout(()=>{schedule();if(trigger.getAttribute('aria-expanded')==='true'){const r=trigger.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)trigger.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});if(!trigger.closest('[data-cux="1"]')?.querySelector('canvas'))window.dispatchEvent(new Event('resize'))}},250)});layout();
+}catch(e){console.warn('Không thể nâng cấp bố cục:',e)}})();
+</script>
+<script id="trackerHelpScript">
+(()=>{'use strict';try{
+const TRACKER_GLOSSARY={
+  "Market Health": {
+    "aliases": [
+      "Market Health"
+    ],
+    "what": "Điểm sức khỏe chung của thị trường, từ 0 đến 100.",
+    "use": "Đọc bối cảnh trước khi xem từng cổ phiếu.",
+    "read": "Màu trong app: từ 75 tốt, 55–dưới 75 trung gian, dưới 55 thận trọng.",
+    "rules": [
+      {
+        "min": 75,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 75."
+      },
+      {
+        "min": 55,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 55,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 55."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Tổng hợp regime, breadth, leadership và O’Neil; không phải xác suất thị trường tăng."
+  },
+  "Confluence": {
+    "aliases": [
+      "Confluence"
+    ],
+    "what": "Tỷ lệ đồng thuận của chín nhóm bằng chứng kỹ thuật.",
+    "use": "Xem có nhiều chỉ báo cùng hỗ trợ hay không.",
+    "read": "Điểm = số nhóm đạt / 9 × 100. Màu app: 75 và 55.",
+    "rules": [
+      {
+        "min": 75,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 75."
+      },
+      {
+        "min": 55,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 55,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 55."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Các bằng chứng có thể tương quan; 100 không có nghĩa chắc chắn tăng."
+  },
+  "Base Quality": {
+    "aliases": [
+      "Base Quality",
+      "Quality"
+    ],
+    "what": "Điểm chất lượng nền giá từ mẫu hình, khối lượng, RS, thị trường và độ chặt.",
+    "use": "So sánh chất lượng nền trước khi đọc điểm phá vỡ.",
+    "read": "85: A+ BASE; 75: A BASE; 60: WATCHABLE; dưới 60: LOW QUALITY.",
+    "rules": [
+      {
+        "min": 75,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 75."
+      },
+      {
+        "min": 60,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 60,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 60."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Màu giải thích dùng nhãn baseQuality, không dùng màu tone chung 75/55."
+  },
+  "O’Neil Market": {
+    "aliases": [
+      "O’Neil Market",
+      "O'Neil Market"
+    ],
+    "what": "Trạng thái thị trường theo mô hình hồi phục và phiên xác nhận của app.",
+    "use": "Phân biệt nỗ lực hồi phục với xu hướng đã được xác nhận.",
+    "read": "CONFIRMED UPTREND cần phiên xác nhận và không quá 4 phiên phân phối; RALLY ATTEMPT chưa xác nhận.",
+    "rules": [
+      {
+        "match": "CONFIRMED UPTREND",
+        "verdict": "good",
+        "why": "{value}: app đã nhận diện điều kiện xác nhận."
+      },
+      {
+        "match": "RALLY ATTEMPT",
+        "verdict": "neutral",
+        "why": "{value}: mới là nỗ lực hồi phục."
+      },
+      {
+        "match": "CORRECTION|UNDER PRESSURE",
+        "verdict": "caution",
+        "why": "{value}: xu hướng còn chịu áp lực."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Đây là phép xấp xỉ của app, không phải nhãn chính thức từ IBD."
+  },
+  "Distribution Days": {
+    "aliases": [
+      "Distribution Days"
+    ],
+    "what": "Số phiên giảm giá kèm khối lượng lớn hơn phiên trước.",
+    "use": "Theo dõi áp lực phân phối trong cửa sổ app đang dùng.",
+    "read": "Số càng lớn, áp lực càng đáng chú ý. Dashboard dùng 30 phiên và giảm ít nhất 0,2%.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Market Regime và Dashboard dùng cửa sổ/định nghĩa khác nhau. Không áp một ngưỡng tốt/xấu chung cho cả hai."
+  },
+  "Breadth > MA50": {
+    "aliases": [
+      "Breadth > MA50",
+      "Breadth50"
+    ],
+    "what": "Tỷ lệ cổ phiếu có giá cao hơn trung bình 50 phiên.",
+    "use": "Đo mức lan tỏa của xu hướng ngắn và trung hạn.",
+    "read": "Văn bản app: trên 45% thường hỗ trợ breakout.",
+    "rules": [
+      {
+        "min": 45,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: trên 45%, độ rộng hỗ trợ tốt hơn."
+      },
+      {
+        "max": 45,
+        "verdict": "caution",
+        "why": "{value}: chưa vượt 45%, độ rộng hỗ trợ còn hạn chế."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Universe của từng màn hình có thể khác nhau; không so trực tiếp nếu mẫu khác."
+  },
+  "Breadth > MA200": {
+    "aliases": [
+      "Breadth > MA200",
+      "Breadth200",
+      "> MA200"
+    ],
+    "what": "Tỷ lệ cổ phiếu nằm trên trung bình 200 phiên.",
+    "use": "Đọc mức lan tỏa của xu hướng dài hơn.",
+    "read": "Văn bản app dùng vùng 35–40% làm vùng cần phòng thủ.",
+    "rules": [
+      {
+        "max": 35,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: dưới 35%, độ rộng trung hạn yếu."
+      },
+      {
+        "min": 35,
+        "max": 40,
+        "verdict": "neutral",
+        "why": "{value}: đang ở vùng chuyển tiếp 35–40%."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Trên 40% không tự động được coi tốt: app chưa có một ngưỡng tốt riêng chỉ cho chỉ số này."
+  },
+  "Leadership": {
+    "aliases": [
+      "Leadership"
+    ],
+    "what": "Tỷ lệ cổ phiếu trong mẫu có RS Rating từ 80 trở lên.",
+    "use": "Xem độ phổ biến của nhóm dẫn dắt.",
+    "read": "RS ≥80 là điều kiện thành viên; app chưa quy định tỷ lệ Leadership nào là tốt.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không nhầm ngưỡng RS 80 của từng mã với tỷ lệ phần trăm Leadership."
+  },
+  "Regime": {
+    "aliases": [
+      "Regime",
+      "Regime hiện tại"
+    ],
+    "what": "Phân loại môi trường xu hướng chung của thị trường.",
+    "use": "Đọc các kiểu setup phù hợp với bối cảnh.",
+    "read": "Uptrend: tăng; Sideway: đi ngang; Downtrend/Correction: giảm/điều chỉnh.",
+    "rules": [
+      {
+        "match": "downtrend|correction|giảm",
+        "verdict": "caution",
+        "why": "{value}: môi trường xu hướng yếu."
+      },
+      {
+        "match": "uptrend",
+        "verdict": "good",
+        "why": "{value}: app phân loại môi trường tăng."
+      },
+      {
+        "match": "sideway|neutral|recovery",
+        "verdict": "neutral",
+        "why": "{value}: môi trường trung gian hoặc đang hồi phục."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Risk Level": {
+    "aliases": [
+      "Risk Level"
+    ],
+    "what": "Mức rủi ro của bối cảnh thị trường theo app.",
+    "use": "Đặt các setup riêng lẻ trong bối cảnh rủi ro chung.",
+    "read": "Thấp, trung bình, cao là nhãn do engine gốc cung cấp.",
+    "rules": [
+      {
+        "match": "cao|high",
+        "verdict": "caution",
+        "why": "{value}: mức rủi ro thị trường cao."
+      },
+      {
+        "match": "trung bình|medium",
+        "verdict": "neutral",
+        "why": "{value}: rủi ro ở mức trung gian."
+      },
+      {
+        "match": "thấp|low",
+        "verdict": "good",
+        "why": "{value}: engine đang đánh giá rủi ro thấp hơn."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Setup nên xem": {
+    "aliases": [
+      "Setup nên xem"
+    ],
+    "what": "Nhóm mẫu hình mà engine ưu tiên trong regime hiện tại.",
+    "use": "Định hướng nhóm tiêu chí cần đọc tiếp.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Breakout hiện tại": {
+    "aliases": [
+      "Breakout hiện tại"
+    ],
+    "what": "Số mã đang thỏa điều kiện breakout của app.",
+    "use": "Đếm độ phổ biến của tín hiệu phá vỡ.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Top Setups — Evidence Ranking": {
+    "aliases": [
+      "Top Setups — Evidence Ranking"
+    ],
+    "what": "Danh sách xếp hạng theo tổng Confluence và Base Quality.",
+    "use": "Chọn mã để nghiên cứu bằng chứng chi tiết.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Sector Rotation": {
+    "aliases": [
+      "Sector Rotation"
+    ],
+    "what": "So sánh sức mạnh tương đối giữa các ngành.",
+    "use": "Xem ngành nào mạnh hơn trong mẫu đang có.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "4 chu kỳ cổ phiếu": {
+    "aliases": [
+      "4 chu kỳ cổ phiếu"
+    ],
+    "what": "Số mã ở các pha tích lũy, tăng, phân phối và giảm.",
+    "use": "Đọc cấu trúc pha của toàn bộ mẫu.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Multi Score": {
+    "aliases": [
+      "Multi Score"
+    ],
+    "what": "Các điểm thành phần xu hướng, động lượng, khối lượng, RS, mẫu hình, chất lượng và rủi ro.",
+    "use": "Xem mặt mạnh và yếu thay vì chỉ một điểm tổng.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Setup": {
+    "aliases": [
+      "Setup"
+    ],
+    "what": "Mẫu hình kỹ thuật được engine nhận diện.",
+    "use": "Đọc điều kiện nền và bối cảnh của tín hiệu.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Base": {
+    "aliases": [
+      "Base",
+      "Base / VCP"
+    ],
+    "what": "Trạng thái nền giá hoặc co hẹp biến động.",
+    "use": "Kiểm tra cấu trúc trước điểm phá vỡ.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Breakout": {
+    "aliases": [
+      "Breakout"
+    ],
+    "what": "Trạng thái giá so với vùng phá vỡ của app.",
+    "use": "Đọc khoảng cách tới pivot cùng khối lượng.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Action": {
+    "aliases": [
+      "Action"
+    ],
+    "what": "Mô tả hướng theo dõi do engine gốc tạo ra.",
+    "use": "Hiểu kết luận của app sau các điều kiện.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "RS Trend": {
+    "aliases": [
+      "RS Trend"
+    ],
+    "what": "Hướng thay đổi sức mạnh tương đối.",
+    "use": "Xem sức mạnh đang cải thiện hay suy yếu.",
+    "read": "Đọc giá trị và nhãn hiện tại cùng các thành phần liên quan; không có ngưỡng tốt/xấu đơn lẻ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
+  },
+  "Market Timing": {
+    "aliases": [
+      "Market Timing"
+    ],
+    "what": "Tổng hợp điểm thị trường và các thành phần breadth, leadership, O’Neil.",
+    "use": "Đối chiếu những thành phần đang hỗ trợ hoặc gây áp lực.",
+    "read": "Điểm Market dùng cùng thang Market Health; các thành phần cần đọc riêng.",
+    "rules": [
+      {
+        "min": 75,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 75."
+      },
+      {
+        "min": 55,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 55,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 55."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "MTF": {
+    "aliases": [
+      "MTF",
+      "Multi-Timeframe"
+    ],
+    "what": "Mức đồng thuận xu hướng ngày, tuần và tháng.",
+    "use": "Phát hiện xung đột giữa các khung thời gian.",
+    "read": "Điểm MTF ≥80: ALIGNED BULLISH; ≥55: CONSTRUCTIVE; ≤25: ALIGNED BEARISH; còn lại MIXED.",
+    "rules": [
+      {
+        "match": "ALIGNED BEARISH",
+        "verdict": "caution",
+        "why": "{value}: các khung đang nghiêng về giảm."
+      },
+      {
+        "match": "ALIGNED BULLISH|CONSTRUCTIVE",
+        "verdict": "good",
+        "why": "{value}: cấu trúc nhiều khung đang hỗ trợ."
+      },
+      {
+        "match": "MIXED",
+        "verdict": "neutral",
+        "why": "{value}: các khung chưa đồng thuận."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Weinstein": {
+    "aliases": [
+      "Weinstein",
+      "Stage",
+      "Weinstein Stage"
+    ],
+    "what": "Giai đoạn xu hướng dựa trên giá và trung bình 30 tuần.",
+    "use": "Phân biệt nền tích lũy, tăng, tạo đỉnh và giảm.",
+    "read": "App ưu tiên kiểm tra Stage 1 trước; Stage 2 cần giá trên MA30 tuần và độ dốc >1%.",
+    "rules": [
+      {
+        "match": "STAGE 2",
+        "verdict": "good",
+        "why": "{value}: engine nhận diện giai đoạn tăng."
+      },
+      {
+        "match": "STAGE 4",
+        "verdict": "caution",
+        "why": "{value}: engine nhận diện giai đoạn giảm."
+      },
+      {
+        "match": "STAGE 1|STAGE 3",
+        "verdict": "neutral",
+        "why": "{value}: giai đoạn chuyển tiếp cần thêm bằng chứng."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Đây là bộ quy tắc giản lược trong app, không thay thế kiểm tra đồ thị tuần."
+  },
+  "RS Rating": {
+    "aliases": [
+      "RS Rating",
+      "RS",
+      "RS V2",
+      "RS Percentile",
+      "RS Score"
+    ],
+    "what": "Thứ hạng sức mạnh tương đối của mã trong mẫu cổ phiếu.",
+    "use": "So sánh mã với nhóm còn lại, không nhầm với RSI.",
+    "read": "Advanced Engine dùng ≥80 cho bằng chứng RS leader; bộ lọc Leader/Early có ngưỡng tùy chỉnh riêng.",
+    "rules": [
+      {
+        "min": 80,
+        "verdict": "good",
+        "why": "{value}: đạt bằng chứng RS leader ≥80 của Advanced Engine."
+      },
+      {
+        "max": 80,
+        "exclusiveMax": true,
+        "verdict": "neutral",
+        "why": "{value}: chưa đạt mốc RS leader 80 của Advanced Engine."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "1M": {
+    "aliases": [
+      "1M"
+    ],
+    "what": "Hiệu suất tương đối so với chỉ số tham chiếu trong kỳ.",
+    "use": "Xem mã vượt hay kém benchmark ở từng khoảng thời gian.",
+    "read": "Dương: vượt benchmark; âm: kém benchmark; 0: ngang benchmark.",
+    "rules": [
+      {
+        "min": 0,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: vượt benchmark trong kỳ."
+      },
+      {
+        "max": 0,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: kém benchmark trong kỳ."
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "verdict": "neutral",
+        "why": "{value}: xấp xỉ benchmark."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "RS V2 dùng tỷ số tăng trưởng; RS trong screener có công thức gốc riêng. Không đổi phép tính."
+  },
+  "3M": {
+    "aliases": [
+      "3M"
+    ],
+    "what": "Hiệu suất tương đối so với chỉ số tham chiếu trong kỳ.",
+    "use": "Xem mã vượt hay kém benchmark ở từng khoảng thời gian.",
+    "read": "Dương: vượt benchmark; âm: kém benchmark; 0: ngang benchmark.",
+    "rules": [
+      {
+        "min": 0,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: vượt benchmark trong kỳ."
+      },
+      {
+        "max": 0,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: kém benchmark trong kỳ."
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "verdict": "neutral",
+        "why": "{value}: xấp xỉ benchmark."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "RS V2 dùng tỷ số tăng trưởng; RS trong screener có công thức gốc riêng. Không đổi phép tính."
+  },
+  "6M": {
+    "aliases": [
+      "6M"
+    ],
+    "what": "Hiệu suất tương đối so với chỉ số tham chiếu trong kỳ.",
+    "use": "Xem mã vượt hay kém benchmark ở từng khoảng thời gian.",
+    "read": "Dương: vượt benchmark; âm: kém benchmark; 0: ngang benchmark.",
+    "rules": [
+      {
+        "min": 0,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: vượt benchmark trong kỳ."
+      },
+      {
+        "max": 0,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: kém benchmark trong kỳ."
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "verdict": "neutral",
+        "why": "{value}: xấp xỉ benchmark."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "RS V2 dùng tỷ số tăng trưởng; RS trong screener có công thức gốc riêng. Không đổi phép tính."
+  },
+  "12M": {
+    "aliases": [
+      "12M"
+    ],
+    "what": "Hiệu suất tương đối so với chỉ số tham chiếu trong kỳ.",
+    "use": "Xem mã vượt hay kém benchmark ở từng khoảng thời gian.",
+    "read": "Dương: vượt benchmark; âm: kém benchmark; 0: ngang benchmark.",
+    "rules": [
+      {
+        "min": 0,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: vượt benchmark trong kỳ."
+      },
+      {
+        "max": 0,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: kém benchmark trong kỳ."
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "verdict": "neutral",
+        "why": "{value}: xấp xỉ benchmark."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "RS V2 dùng tỷ số tăng trưởng; RS trong screener có công thức gốc riêng. Không đổi phép tính."
+  },
+  "RS 3M": {
+    "aliases": [
+      "RS 3M"
+    ],
+    "what": "Hiệu suất tương đối so với chỉ số tham chiếu trong kỳ.",
+    "use": "Xem mã vượt hay kém benchmark ở từng khoảng thời gian.",
+    "read": "Dương: vượt benchmark; âm: kém benchmark; 0: ngang benchmark.",
+    "rules": [
+      {
+        "min": 0,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: vượt benchmark trong kỳ."
+      },
+      {
+        "max": 0,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: kém benchmark trong kỳ."
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "verdict": "neutral",
+        "why": "{value}: xấp xỉ benchmark."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "RS V2 dùng tỷ số tăng trưởng; RS trong screener có công thức gốc riêng. Không đổi phép tính."
+  },
+  "RS 6M": {
+    "aliases": [
+      "RS 6M"
+    ],
+    "what": "Hiệu suất tương đối so với chỉ số tham chiếu trong kỳ.",
+    "use": "Xem mã vượt hay kém benchmark ở từng khoảng thời gian.",
+    "read": "Dương: vượt benchmark; âm: kém benchmark; 0: ngang benchmark.",
+    "rules": [
+      {
+        "min": 0,
+        "exclusiveMin": true,
+        "verdict": "good",
+        "why": "{value}: vượt benchmark trong kỳ."
+      },
+      {
+        "max": 0,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value}: kém benchmark trong kỳ."
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "verdict": "neutral",
+        "why": "{value}: xấp xỉ benchmark."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "RS V2 dùng tỷ số tăng trưởng; RS trong screener có công thức gốc riêng. Không đổi phép tính."
+  },
+  "Volume Intelligence": {
+    "aliases": [
+      "Volume Intelligence"
+    ],
+    "what": "Điểm cấu trúc khối lượng, kết hợp lực tăng/giảm, OBV và biến động volume.",
+    "use": "Phân biệt dòng tiền hỗ trợ với áp lực phân phối.",
+    "read": "≥75: HEALTHY ACCUMULATION; ≥55: CONSTRUCTIVE; ≥40: NEUTRAL; dưới 40: DISTRIBUTION RISK.",
+    "rules": [
+      {
+        "min": 55,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 55."
+      },
+      {
+        "min": 40,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 40,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 40."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "RelVol": {
+    "aliases": [
+      "RelVol"
+    ],
+    "what": "Khối lượng phiên mới nhất chia trung bình 20 phiên.",
+    "use": "Nhận biết phiên có giao dịch khác thường.",
+    "read": "App đánh dấu RelVol ≥1,5; Dry-up <0,65; Climax >2,2.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Volume cao không tự nó tích cực; cần hướng giá và vị trí trong nền."
+  },
+  "Z": {
+    "aliases": [
+      "Z",
+      "Z-score"
+    ],
+    "what": "Khoảng cách volume hiện tại so với trung bình 60 phiên, theo độ lệch chuẩn.",
+    "use": "Nhận biết khối lượng bất thường.",
+    "read": "App cộng điểm nếu Z>0,5 và trừ điểm nếu Z>2,5; cần đọc tổng thể.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không áp tốt/xấu chỉ theo dấu của Z."
+  },
+  "Dry-up": {
+    "aliases": [
+      "Dry-up",
+      "No dry-up"
+    ],
+    "what": "Khối lượng thấp hơn 65% trung bình 20 phiên.",
+    "use": "Xem mức cạn cung, cần đặt trong bối cảnh nền giá.",
+    "read": "Dry-up là một điều kiện khối lượng; app cộng 10 điểm Volume nếu có.",
+    "rules": [
+      {
+        "match": "^Dry-up$",
+        "verdict": "neutral",
+        "why": "{value}: volume co lại; cần kiểm tra cấu trúc giá."
+      },
+      {
+        "match": "No dry-up",
+        "verdict": "neutral",
+        "why": "{value}: chưa có điều kiện volume cạn theo app."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Climax": {
+    "aliases": [
+      "Climax",
+      "No climax"
+    ],
+    "what": "Khối lượng vượt 2,2 lần trung bình 20 phiên.",
+    "use": "Nhận biết giao dịch đột biến để xem thêm đồ thị.",
+    "read": "Climax là cảnh báo volume lớn; không chỉ rõ hướng giá.",
+    "rules": [
+      {
+        "match": "^Climax$",
+        "verdict": "caution",
+        "why": "{value}: volume rất lớn, cần đọc bối cảnh."
+      },
+      {
+        "match": "No climax",
+        "verdict": "neutral",
+        "why": "{value}: chưa có đột biến theo mốc 2,2 lần."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Bollinger": {
+    "aliases": [
+      "Bollinger",
+      "Squeeze"
+    ],
+    "what": "Trạng thái co giãn của dải biến động Bollinger.",
+    "use": "Xem biến động đang co hẹp hay mở rộng.",
+    "read": "Percentile BandWidth ≤20: EXTREME; ≤35: TIGHT; ≥85: EXPANDED; còn lại NORMAL.",
+    "rules": [
+      {
+        "match": "EXTREME|TIGHT|NORMAL|EXPANDED",
+        "verdict": "neutral",
+        "why": "{value}: mô tả độ rộng biến động, không dự đoán hướng."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "BandWidth": {
+    "aliases": [
+      "BandWidth"
+    ],
+    "what": "Độ rộng dải Bollinger chia đường giữa, tính theo phần trăm.",
+    "use": "So độ biến động hiện tại với lịch sử của chính mã.",
+    "read": "Đọc cùng percentile 120 phiên; không có ngưỡng BandWidth tuyệt đối chung.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "%B": {
+    "aliases": [
+      "%B"
+    ],
+    "what": "Vị trí giá trong dải Bollinger từ biên dưới tới biên trên.",
+    "use": "Xem giá nằm gần biên nào.",
+    "read": "0% ở biên dưới, 100% ở biên trên; có thể vượt ngoài khoảng này.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra mua/bán chỉ vì chạm biên."
+  },
+  "VCP V2": {
+    "aliases": [
+      "VCP V2",
+      "VCP"
+    ],
+    "what": "Điểm nhận diện nền co hẹp biến động theo nhiều cửa sổ.",
+    "use": "Kiểm tra độ chặt của nền và vùng pivot.",
+    "read": "≥85: HIGH QUALITY VCP; ≥65: VCP CANDIDATE; dưới 65: NO VCP. Bằng chứng Confluence dùng ≥70.",
+    "rules": [
+      {
+        "min": 85,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 85."
+      },
+      {
+        "min": 65,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 65,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 65."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "60D": {
+    "aliases": [
+      "60D"
+    ],
+    "what": "Biên độ từ đáy tới đỉnh trong cửa sổ số phiên tương ứng.",
+    "use": "So các cửa sổ để nhận biết độ co hẹp dần.",
+    "read": "App cộng điểm khi cửa sổ sau nhỏ hơn 90% cửa sổ trước; không có ngưỡng đơn lẻ chung.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "30D": {
+    "aliases": [
+      "30D"
+    ],
+    "what": "Biên độ từ đáy tới đỉnh trong cửa sổ số phiên tương ứng.",
+    "use": "So các cửa sổ để nhận biết độ co hẹp dần.",
+    "read": "App cộng điểm khi cửa sổ sau nhỏ hơn 90% cửa sổ trước; không có ngưỡng đơn lẻ chung.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "15D": {
+    "aliases": [
+      "15D"
+    ],
+    "what": "Biên độ từ đáy tới đỉnh trong cửa sổ số phiên tương ứng.",
+    "use": "So các cửa sổ để nhận biết độ co hẹp dần.",
+    "read": "App cộng điểm khi cửa sổ sau nhỏ hơn 90% cửa sổ trước; không có ngưỡng đơn lẻ chung.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "7D": {
+    "aliases": [
+      "7D"
+    ],
+    "what": "Biên độ từ đáy tới đỉnh trong cửa sổ số phiên tương ứng.",
+    "use": "So các cửa sổ để nhận biết độ co hẹp dần.",
+    "read": "App cộng điểm khi cửa sổ sau nhỏ hơn 90% cửa sổ trước; không có ngưỡng đơn lẻ chung.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Pivot": {
+    "aliases": [
+      "Pivot"
+    ],
+    "what": "Mốc giá đỉnh của vùng nền được app chọn.",
+    "use": "Đối chiếu giá hiện tại với điểm phá vỡ.",
+    "read": "VCP dùng đỉnh của 19 phiên trước phiên cuối; cần volume và khoảng cách giá.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "O’Neil Patterns": {
+    "aliases": [
+      "O’Neil Patterns",
+      "O'Neil Patterns",
+      "Cup",
+      "Flat",
+      "Double",
+      "O’Neil",
+      "O'Neil"
+    ],
+    "what": "Điểm khớp các mẫu cốc tay cầm, nền phẳng hoặc hai đáy.",
+    "use": "Tìm mẫu cấu trúc để kiểm tra trên đồ thị.",
+    "read": "Điểm từng mẫu ≥70 được app đánh dấu detected.",
+    "rules": [
+      {
+        "min": 70,
+        "verdict": "good",
+        "why": "{value}: đạt mốc nhận diện mẫu ≥70."
+      },
+      {
+        "max": 70,
+        "exclusiveMax": true,
+        "verdict": "neutral",
+        "why": "{value}: chưa đạt mốc nhận diện mẫu 70."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Điểm khớp mẫu không phải xác suất thành công."
+  },
+  "Wyckoff Events": {
+    "aliases": [
+      "Wyckoff Events"
+    ],
+    "what": "Nhãn các sự kiện kiểm tra cung cầu trong vùng tích lũy hoặc phân phối.",
+    "use": "Xem dấu hiệu spring, sức mạnh, kiểm tra hỗ trợ và phá vỡ thất bại.",
+    "read": "ACCUMULATION C/MARKUP: cấu trúc hỗ trợ; DISTRIBUTION RISK: cảnh báo; NEUTRAL RANGE: chưa rõ.",
+    "rules": [
+      {
+        "match": "DISTRIBUTION",
+        "verdict": "caution",
+        "why": "{value}: app thấy dấu hiệu phân phối."
+      },
+      {
+        "match": "ACCUMULATION|MARKUP",
+        "verdict": "good",
+        "why": "{value}: có sự kiện cung cầu hỗ trợ."
+      },
+      {
+        "match": "NEUTRAL",
+        "verdict": "neutral",
+        "why": "{value}: chưa có sự kiện định hướng rõ."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Spring": {
+    "aliases": [
+      "Spring"
+    ],
+    "what": "Giá xuyên hỗ trợ rồi đóng trở lại phía trên.",
+    "use": "Đọc sự kiện cung cầu trong bối cảnh nền.",
+    "read": "✓ hoặc ⚠ là sự kiện app đã thấy; — nghĩa là chưa ghi nhận.",
+    "rules": [
+      {
+        "match": "—",
+        "verdict": "neutral",
+        "why": "{value}: chưa ghi nhận sự kiện này."
+      },
+      {
+        "match": "✓|⚠",
+        "verdict": "good",
+        "why": "{value}: app đã ghi nhận sự kiện; cần kiểm tra đồ thị."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "SOS": {
+    "aliases": [
+      "SOS"
+    ],
+    "what": "Giá vượt kháng cự với volume trên 1,25 lần trung bình.",
+    "use": "Đọc sự kiện cung cầu trong bối cảnh nền.",
+    "read": "✓ hoặc ⚠ là sự kiện app đã thấy; — nghĩa là chưa ghi nhận.",
+    "rules": [
+      {
+        "match": "—",
+        "verdict": "neutral",
+        "why": "{value}: chưa ghi nhận sự kiện này."
+      },
+      {
+        "match": "✓|⚠",
+        "verdict": "good",
+        "why": "{value}: app đã ghi nhận sự kiện; cần kiểm tra đồ thị."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "LPS": {
+    "aliases": [
+      "LPS"
+    ],
+    "what": "Giá kiểm tra lại vùng SOS với volume thấp.",
+    "use": "Đọc sự kiện cung cầu trong bối cảnh nền.",
+    "read": "✓ hoặc ⚠ là sự kiện app đã thấy; — nghĩa là chưa ghi nhận.",
+    "rules": [
+      {
+        "match": "—",
+        "verdict": "neutral",
+        "why": "{value}: chưa ghi nhận sự kiện này."
+      },
+      {
+        "match": "✓|⚠",
+        "verdict": "good",
+        "why": "{value}: app đã ghi nhận sự kiện; cần kiểm tra đồ thị."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Upthrust": {
+    "aliases": [
+      "Upthrust"
+    ],
+    "what": "Giá xuyên kháng cự rồi đóng trở lại bên dưới.",
+    "use": "Đọc sự kiện cung cầu trong bối cảnh nền.",
+    "read": "✓ hoặc ⚠ là sự kiện app đã thấy; — nghĩa là chưa ghi nhận.",
+    "rules": [
+      {
+        "match": "—",
+        "verdict": "neutral",
+        "why": "{value}: chưa ghi nhận sự kiện này."
+      },
+      {
+        "match": "✓|⚠",
+        "verdict": "caution",
+        "why": "{value}: app đã ghi nhận sự kiện; cần kiểm tra đồ thị."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Elder": {
+    "aliases": [
+      "Elder",
+      "Impulse"
+    ],
+    "what": "Màu xung lực kết hợp độ dốc EMA13 và MACD histogram.",
+    "use": "Xem xu hướng và động lượng có đồng hướng hay không.",
+    "read": "GREEN: cả hai tăng; RED: cả hai giảm; BLUE: không đồng thuận.",
+    "rules": [
+      {
+        "match": "RED",
+        "verdict": "caution",
+        "why": "{value}: xu hướng và động lượng cùng giảm."
+      },
+      {
+        "match": "GREEN",
+        "verdict": "good",
+        "why": "{value}: xu hướng và động lượng cùng tăng."
+      },
+      {
+        "match": "BLUE",
+        "verdict": "neutral",
+        "why": "{value}: hai thành phần chưa đồng thuận."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Triple Screen": {
+    "aliases": [
+      "Triple Screen"
+    ],
+    "what": "Nhãn phối hợp xu hướng tuần, ngày và xung lực Elder.",
+    "use": "Xem sự đồng thuận theo quy tắc của app.",
+    "read": "PASS: tuần/ngày tăng và không RED; AVOID: tuần/ngày giảm; còn lại WAIT.",
+    "rules": [
+      {
+        "match": "PASS",
+        "verdict": "good",
+        "why": "{value}: đạt bộ điều kiện gốc."
+      },
+      {
+        "match": "AVOID",
+        "verdict": "caution",
+        "why": "{value}: tuần và ngày cùng giảm."
+      },
+      {
+        "match": "WAIT",
+        "verdict": "neutral",
+        "why": "{value}: chưa đồng thuận."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Force Index": {
+    "aliases": [
+      "Force Index"
+    ],
+    "what": "Thay đổi giá một phiên nhân với khối lượng phiên đó.",
+    "use": "Đọc hướng và cường độ lực giá–khối lượng.",
+    "read": "Dương: giá tăng; âm: giá giảm; gần 0: lực đo được thấp.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Quy mô phụ thuộc mã; chưa có ngưỡng so sánh tốt/xấu chung."
+  },
+  "Anchored VWAP": {
+    "aliases": [
+      "Anchored VWAP",
+      "52W Low",
+      "52W High",
+      "Max Volume"
+    ],
+    "what": "Giá trung bình theo khối lượng tính từ một mốc neo.",
+    "use": "So giá với chi phí giao dịch bình quân từ mốc sự kiện.",
+    "read": "Neo tại đáy/đỉnh 52 tuần, phiên volume lớn nhất hoặc lần breakout. Giá trên ít nhất 3 neo là bằng chứng trong Confluence.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Một mức giá neo đứng riêng chưa đủ phân loại tốt/xấu."
+  },
+  "Tracker Score": {
+    "aliases": [
+      "Tracker Score",
+      "Score"
+    ],
+    "what": "Điểm tổng hợp setup, market fit, xu hướng, RS, rủi ro và volume.",
+    "use": "Xếp hạng các mã trong cùng nguồn dữ liệu.",
+    "read": "≥82: A+; ≥70: A; ≥58: B; ≥45: Watch; còn lại Risky; cờ Avoid có quyền ưu tiên.",
+    "rules": [
+      {
+        "min": 70,
+        "verdict": "good",
+        "why": "{value} đạt vùng cao từ 70."
+      },
+      {
+        "min": 45,
+        "verdict": "neutral",
+        "why": "{value} nằm trong vùng trung gian."
+      },
+      {
+        "max": 45,
+        "exclusiveMax": true,
+        "verdict": "caution",
+        "why": "{value} chưa đạt mốc 45."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Đọc Grade và cờ Avoid: điểm cao có thể vẫn bị loại do cấu trúc xấu."
+  },
+  "Grade": {
+    "aliases": [
+      "Grade"
+    ],
+    "what": "Hạng tổng hợp của mã sau khi engine xét điểm và cờ Avoid.",
+    "use": "Đọc nhanh nhóm xếp hạng.",
+    "read": "A+/A cao; B/Watch theo dõi; Risky/Avoid thận trọng.",
+    "rules": [
+      {
+        "match": "^(A\\+|A)$",
+        "verdict": "good",
+        "why": "{value}: thuộc nhóm điểm cao của app."
+      },
+      {
+        "match": "B|Watch",
+        "verdict": "neutral",
+        "why": "{value}: thuộc nhóm theo dõi."
+      },
+      {
+        "match": "Risky|Avoid",
+        "verdict": "caution",
+        "why": "{value}: có điểm thấp hoặc cờ tránh."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Market Fit": {
+    "aliases": [
+      "Market Fit"
+    ],
+    "what": "Điểm mức phù hợp giữa setup và regime hiện tại.",
+    "use": "Đọc setup trong bối cảnh thị trường thay vì tách rời.",
+    "read": "Full Engine dùng Market Fit ≥70 cùng Tracker Score ≥55 và không Avoid.",
+    "rules": [
+      {
+        "min": 70,
+        "verdict": "good",
+        "why": "{value}: đạt riêng mốc Market Fit 70."
+      },
+      {
+        "max": 70,
+        "exclusiveMax": true,
+        "verdict": "neutral",
+        "why": "{value}: chưa đạt riêng mốc Market Fit 70."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Chỉ vượt Market Fit không đồng nghĩa đã qua bộ lọc giao nhau."
+  },
+  "Risk Score": {
+    "aliases": [
+      "Risk Score"
+    ],
+    "what": "Điểm đánh giá cấu trúc rủi ro; điểm cao hơn là thuận lợi hơn theo app.",
+    "use": "Kiểm tra khoảng cách stop và chất lượng kế hoạch kỹ thuật.",
+    "read": "Risk Ready dùng ≥70 và Setup Score ≥40; một số pipeline còn yêu cầu thanh khoản.",
+    "rules": [
+      {
+        "min": 70,
+        "verdict": "good",
+        "why": "{value}: đạt riêng mốc Risk Score 70."
+      },
+      {
+        "max": 70,
+        "exclusiveMax": true,
+        "verdict": "neutral",
+        "why": "{value}: chưa đạt mốc Risk Ready 70."
+      }
+    ],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không phải phần trăm rủi ro; Risk Score khác cột Risk."
+  },
+  "Risk": {
+    "aliases": [
+      "Risk"
+    ],
+    "what": "Khoảng cách phần trăm từ giá hiện tại tới mức stop giả định.",
+    "use": "Ước lượng biên độ chịu đựng theo cấu trúc giá.",
+    "read": "Risk nhỏ hơn là stop gần hơn, nhưng stop quá sát cũng dễ bị nhiễu.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không phải mức lỗ chắc chắn hay rủi ro toàn danh mục."
+  },
+  "Trend": {
+    "aliases": [
+      "Trend",
+      "Trend / Stage 2"
+    ],
+    "what": "Trạng thái xu hướng hoặc điểm xu hướng từ các đường trung bình.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Momentum": {
+    "aliases": [
+      "Momentum"
+    ],
+    "what": "Điểm động lượng từ RSI và biến động giá gần đây.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Volume": {
+    "aliases": [
+      "Volume"
+    ],
+    "what": "Điểm khối lượng của module đang xem.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Pattern": {
+    "aliases": [
+      "Pattern"
+    ],
+    "what": "Điểm mẫu hình tốt nhất theo module đang xem.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Tích lũy": {
+    "aliases": [
+      "Tích lũy"
+    ],
+    "what": "Số mã được engine phân vào pha nền tích lũy.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Tăng giá": {
+    "aliases": [
+      "Tăng giá"
+    ],
+    "what": "Số mã được engine phân vào pha tăng.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Phân phối": {
+    "aliases": [
+      "Phân phối"
+    ],
+    "what": "Số mã được engine phân vào pha phân phối.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Giảm giá": {
+    "aliases": [
+      "Giảm giá"
+    ],
+    "what": "Số mã được engine phân vào pha giảm.",
+    "use": "Đối chiếu với các thành phần và bối cảnh của cùng module.",
+    "read": "Không suy tốt/xấu từ số lượng hoặc một điểm thành phần khi chưa biết đầy đủ bối cảnh.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Ngưỡng Leader Track, RS percentile": {
+    "aliases": [
+      "Ngưỡng Leader Track, RS percentile"
+    ],
+    "what": "Ngưỡng RS do bạn đặt để lọc nhóm Leader.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Ngưỡng Early Watch, RS percentile": {
+    "aliases": [
+      "Ngưỡng Early Watch, RS percentile"
+    ],
+    "what": "Ngưỡng RS do bạn đặt để lọc nhóm Early.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Volume breakout / Volume TB 50": {
+    "aliases": [
+      "Volume breakout / Volume TB 50"
+    ],
+    "what": "Tỷ lệ khối lượng cần có so với trung bình 50 phiên.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "GTGD TB 20 phiên tối thiểu, đơn vị tỷ VND": {
+    "aliases": [
+      "GTGD TB 20 phiên tối thiểu, đơn vị tỷ VND"
+    ],
+    "what": "Mức giá trị giao dịch bình quân tối thiểu, tính theo tỷ đồng.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Volume TB 20 phiên tối thiểu": {
+    "aliases": [
+      "Volume TB 20 phiên tối thiểu"
+    ],
+    "what": "Số cổ phiếu giao dịch bình quân tối thiểu mỗi phiên.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Giá tối thiểu, VND/cp": {
+    "aliases": [
+      "Giá tối thiểu, VND/cp"
+    ],
+    "what": "Giá thấp nhất được phép qua điều kiện thanh khoản.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Giá cách đỉnh 52 tuần tối đa": {
+    "aliases": [
+      "Giá cách đỉnh 52 tuần tối đa"
+    ],
+    "what": "Khoảng cách tối đa dưới đỉnh 52 tuần, biểu diễn dạng tỷ lệ.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Giá cao hơn đáy 52 tuần tối thiểu": {
+    "aliases": [
+      "Giá cao hơn đáy 52 tuần tối thiểu"
+    ],
+    "what": "Mức tăng tối thiểu trên đáy 52 tuần, dạng tỷ lệ.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Số ngày tính độ dốc MA200": {
+    "aliases": [
+      "Số ngày tính độ dốc MA200"
+    ],
+    "what": "Số phiên dùng so sánh độ dốc trung bình 200 phiên.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Mã chỉ số so sánh": {
+    "aliases": [
+      "Mã chỉ số so sánh"
+    ],
+    "what": "Mã benchmark dùng làm chuẩn sức mạnh tương đối.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Số phiên tìm nền giá": {
+    "aliases": [
+      "Số phiên tìm nền giá"
+    ],
+    "what": "Độ dài cửa sổ dùng tìm cấu trúc nền.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Khoảng cách tới pivot để coi là gần": {
+    "aliases": [
+      "Khoảng cách tới pivot để coi là gần"
+    ],
+    "what": "Khoảng cách dạng tỷ lệ dùng nhận diện giá gần pivot.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Nguồn miễn phí": {
+    "aliases": [
+      "Nguồn miễn phí"
+    ],
+    "what": "Nguồn dữ liệu mà tính năng cập nhật gốc đang chọn.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Số phiên lịch sử cần tải": {
+    "aliases": [
+      "Số phiên lịch sử cần tải"
+    ],
+    "what": "Số phiên lịch sử yêu cầu từ công cụ cập nhật.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Giới hạn số mã/lần, 0 = toàn bộ": {
+    "aliases": [
+      "Giới hạn số mã/lần, 0 = toàn bộ"
+    ],
+    "what": "Số mã tối đa mỗi lần tải; số 0 nghĩa là toàn bộ.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Số luồng tải song song": {
+    "aliases": [
+      "Số luồng tải song song"
+    ],
+    "what": "Số yêu cầu cập nhật chạy đồng thời.",
+    "use": "Hiểu điều kiện đang đặt trước khi chạy bộ lọc.",
+    "read": "Đây là tham số người dùng, không có giá trị tốt/xấu cố định. Giá trị hiển thị được đọc trực tiếp từ ô nhập.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Lớp giải thích không thay đổi giá trị hay gọi cập nhật dữ liệu."
+  },
+  "Risk (Multi Score)": {
+    "aliases": [
+      "Risk (Multi Score)"
+    ],
+    "what": "Điểm rủi ro Advanced Engine, từ 100 trừ tám lần ATR phần trăm.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Điểm cao nghĩa là biến động ATR thấp hơn; khác Risk % tới stop trong bảng chính.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "RS ngành": {
+    "aliases": [
+      "RS ngành"
+    ],
+    "what": "Trung bình RS percentile của các mã trong ngành.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Dùng xếp hạng ngành; không áp mốc Leader của một cổ phiếu cho cả ngành.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Lợi suất ngành 20D": {
+    "aliases": [
+      "Lợi suất ngành 20D"
+    ],
+    "what": "Trung bình lợi suất giá 20 phiên của các mã trong ngành.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Market Classic dùng return20Pct; dương là tăng và âm là giảm trong kỳ.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "RS ngành 3M": {
+    "aliases": [
+      "RS ngành 3M"
+    ],
+    "what": "Trung bình RS ba tháng của các mã trong ngành.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Dashboard dùng rs3m; khác lợi suất giá 20D ở Market Classic.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "A+ / A": {
+    "aliases": [
+      "A+ / A"
+    ],
+    "what": "Số mã thuộc hạng A+ hoặc A.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Đếm Grade gốc; số lượng lớn không tự nó bảo đảm thị trường tốt.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Regime Fit ≥ 70": {
+    "aliases": [
+      "Regime Fit ≥ 70"
+    ],
+    "what": "Số mã có Market Fit đạt ít nhất 70.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Chỉ đếm riêng điều kiện Market Fit.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Risk Ready": {
+    "aliases": [
+      "Risk Ready"
+    ],
+    "what": "Số mã có Risk Score từ 70 và Setup Score từ 40.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Các pipeline có thể còn yêu cầu thanh khoản.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Avoid / Warning": {
+    "aliases": [
+      "Avoid / Warning"
+    ],
+    "what": "Số mã có cờ tránh, phân phối hoặc Risk Score dưới 35.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Đây là số lượng cảnh báo, cần so với tổng số mã.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Avg Tracker Score": {
+    "aliases": [
+      "Avg Tracker Score"
+    ],
+    "what": "Trung bình Tracker Score trong universe hiện tại.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Không dùng ngưỡng Grade từng cổ phiếu để đánh giá trung bình toàn mẫu.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Avg Risk Score": {
+    "aliases": [
+      "Avg Risk Score"
+    ],
+    "what": "Trung bình Risk Score trong universe hiện tại.",
+    "use": "Đọc giá trị trong bối cảnh của cùng mẫu dữ liệu.",
+    "read": "Cao hơn nghĩa là điểm rủi ro theo app tốt hơn; không phải rủi ro danh mục.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": "Không suy ra chất lượng toàn bộ thị trường chỉ từ một số riêng lẻ."
+  },
+  "Giá": {
+    "aliases": [
+      "Giá"
+    ],
+    "what": "Giá đóng cửa của phiên dữ liệu đang hiển thị.",
+    "use": "Đối chiếu ngày dữ liệu, các đường trung bình, pivot và stop.",
+    "read": "Một mức giá đứng riêng không xác định chất lượng hay định giá cổ phiếu.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "GTGD TB20": {
+    "aliases": [
+      "GTGD TB20"
+    ],
+    "what": "Giá trị giao dịch bình quân 20 phiên, tính bằng tỷ đồng.",
+    "use": "Đọc mức thanh khoản trước khi xem setup.",
+    "read": "Đối chiếu ngưỡng Thanh khoản bạn đang đặt trong cấu hình.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Cách đỉnh 52W": {
+    "aliases": [
+      "Cách đỉnh 52W"
+    ],
+    "what": "Khoảng cách phần trăm từ giá hiện tại tới đỉnh 52 tuần.",
+    "use": "Xem vị trí giá trong biên độ một năm.",
+    "read": "Âm nghĩa là giá đang dưới đỉnh; không đánh giá chất lượng chỉ bằng khoảng cách này.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Data": {
+    "aliases": [
+      "Data"
+    ],
+    "what": "Nhóm tuổi dữ liệu so với ngày chuẩn của dataset.",
+    "use": "Kiểm tra tín hiệu có đang dùng dữ liệu đủ gần không.",
+    "read": "D0 là ngày chuẩn của dataset; D-1 là phiên trước đó, không đồng nghĩa ngày lịch hôm nay.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Ngày": {
+    "aliases": [
+      "Ngày"
+    ],
+    "what": "Ngày của phiên dữ liệu cuối cùng đang hiển thị.",
+    "use": "Đối chiếu độ mới của giá và tín hiệu.",
+    "read": "Ngày của từng mã có thể khác ngày chỉ số hoặc nguồn cập nhật.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Sàn": {
+    "aliases": [
+      "Sàn"
+    ],
+    "what": "Sàn giao dịch của mã theo dữ liệu đang nạp.",
+    "use": "Phân biệt HOSE, HNX và UPCOM.",
+    "read": "Đây là thông tin mô tả, không phải chỉ số tốt/xấu.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  },
+  "Ngành": {
+    "aliases": [
+      "Ngành"
+    ],
+    "what": "Nhóm ngành của mã theo dữ liệu phân loại.",
+    "use": "Đặt sức mạnh của mã trong bối cảnh ngành.",
+    "read": "Ngành chưa phân loại có thể thiếu dữ liệu; không tự suy ra ngành khác.",
+    "rules": [],
+    "source": "Mã/văn bản Tracker",
+    "note": ""
+  }
+};
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[’']/g,'').toLowerCase().replace(/\s+/g,' ').trim(),aliases=new Map();Object.entries(TRACKER_GLOSSARY).forEach(([k,g])=>g.aliases.forEach(a=>aliases.set(norm(a),k)));
+const KEY='tracker_ui_help_v1',records=new Map(),cardRecords=new WeakMap(),seenChips=new WeakMap();let enabled=true,timer,dialog,overlay,opener;try{enabled=JSON.parse(localStorage.getItem(KEY)||'true')!==false}catch(_){}
+const pendingCells=new WeakSet();
+const cellObserver=new IntersectionObserver(items=>{items.forEach(it=>{if(!it.isIntersecting)return;const node=it.target;cellObserver.unobserve(node);try{const key=aliases.get(norm(node.dataset.label));if(!key||node.querySelector(':scope>.th-cell-info'))return;const b=info(key,()=>clean(node));b.classList.add('th-cell-info');node.append(b);node.dataset.help='1'}catch(e){console.warn('Giải thích ô dữ liệu:',e)}})},{rootMargin:'100px'});
+const labels={good:'✓ Tốt',neutral:'• Trung tính',caution:'! Thận trọng',unknown:'— Chưa đủ cơ sở'};
+const disclaimer='Chỉ số tham khảo kỹ thuật, không phải khuyến nghị đầu tư; nên kết hợp với các chỉ báo khác và quản trị rủi ro.';
+const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7m0-11v1" stroke-linecap="round"/></svg>';
+function clean(node){if(!node)return'';const c=node.cloneNode(true);c.querySelectorAll('.th-help-ui,.cux-summary,.cux-dot,.tracker-fold-button,.dx-rs-bar,.dx-sparkline').forEach(n=>n.remove());return c.textContent.trim().replace(/\s+/g,' ')}
+function numeric(value){let s=String(value).replace(/−/g,'-').match(/[-+]?\d[\d.,]*/)?.[0];if(!s)return NaN;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(!/%/.test(value)&&/^[-+]?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');const n=Number(s),suffix=String(value).match(/\d[\d.,]*\s*(tỷ|triệu|k|m|b)(?:\s|$)/i)?.[1]?.toLowerCase(),scale=({k:1e3,m:1e6,b:1e9,'triệu':1e6,'tỷ':1e9})[suffix]||1;return Number.isFinite(n)?n*scale:NaN}
+function assess(key,value){const g=TRACKER_GLOSSARY[key],n=numeric(value);if(!value||/^(—|N\/A|NA|NaN|null|undefined)$/.test(value))return{verdict:'unknown',why:'Chưa có giá trị hợp lệ để diễn giải.'};for(const r of g.rules){let ok=r.match?new RegExp(r.match,'i').test(value):Number.isFinite(n)&&(r.min===undefined||(r.exclusiveMin?n>r.min:n>=r.min))&&(r.max===undefined||(r.exclusiveMax?n<r.max:n<=r.max));if(ok)return{verdict:r.verdict,why:r.why.replaceAll('{value}',value)}}return{verdict:'unknown',why:value+' — '+g.what+' Chưa có ngưỡng độc lập đủ cơ sở để đánh giá.'}}
+function close(){dialog?.remove();overlay?.remove();dialog=overlay=null;opener?.setAttribute('aria-expanded','false');if(opener?.isConnected)opener.focus();opener=null}
+function open(key,value,button){close();opener=button;button.setAttribute('aria-expanded','true');const g=TRACKER_GLOSSARY[key],a=assess(key,value);overlay=document.createElement('div');overlay.className='th-help-overlay th-help-ui';dialog=document.createElement('section');dialog.className='th-help-dialog th-help-ui';dialog.id='trackerHelpDialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','trackerHelpTitle');dialog.setAttribute('aria-describedby','trackerHelpDescription');const h=document.createElement('h3');h.id='trackerHelpTitle';h.textContent=key;const exit=document.createElement('button');exit.type='button';exit.className='th-help-close';exit.textContent='×';exit.setAttribute('aria-label','Đóng giải thích');exit.onclick=close;dialog.append(h,exit);const desc=document.createElement('div');desc.id='trackerHelpDescription';for(const [name,content] of [['Hiện tại',value?value+' · '+labels[a.verdict]:'Tra cứu cột / chỉ số'],['Là gì',g.what],['Dùng để làm gì',g.use],['Cách đọc',g.read],['Nguồn',g.source]]){const p=document.createElement('p'),b=document.createElement('b');b.textContent=name+': ';p.append(b,document.createTextNode(content));desc.append(p)}if(value){const p=document.createElement('p');p.textContent=a.why;desc.append(p)}if(g.rules.length){const table=document.createElement('table');table.setAttribute('aria-label','Điều kiện đánh giá');g.rules.forEach(r=>{const tr=document.createElement('tr');for(const t of [r.match||[(r.min!==undefined?(r.exclusiveMin?'> ':'≥ ')+r.min:''),(r.max!==undefined?(r.exclusiveMax?'< ':'≤ ')+r.max:'')].filter(Boolean).join(' và '),labels[r.verdict]]){const td=document.createElement('td');td.textContent=t;tr.append(td)}table.append(tr)});desc.append(table)}if(g.note){const p=document.createElement('p');p.textContent='Lưu ý: '+g.note;desc.append(p)}const foot=document.createElement('p');foot.className='th-disclaimer';foot.textContent=disclaimer;desc.append(foot);dialog.append(desc);document.body.append(overlay,dialog);const r=button.getBoundingClientRect();dialog.style.left=Math.max(12,Math.min(r.left,innerWidth-dialog.offsetWidth-12))+'px';dialog.style.top=Math.max(12,Math.min(r.bottom+6,innerHeight-dialog.offsetHeight-12))+'px';overlay.onclick=close;dialog.addEventListener('keydown',ev=>{if(ev.key==='Escape'){ev.preventDefault();close()}if(ev.key==='Tab'){const fs=[...dialog.querySelectorAll('button,[href],input,[tabindex="0"]')];if(fs.length===1){ev.preventDefault();fs[0].focus()}else if(ev.shiftKey&&document.activeElement===fs[0]){ev.preventDefault();fs.at(-1).focus()}else if(!ev.shiftKey&&document.activeElement===fs.at(-1)){ev.preventDefault();fs[0].focus()}}});exit.focus()}
+function info(key,getValue){const b=document.createElement('button');b.type='button';b.className='th-info th-help-ui';b.innerHTML=icon;b.setAttribute('aria-label','Giải thích '+key);b.setAttribute('aria-haspopup','dialog');b.setAttribute('aria-expanded','false');b.setAttribute('aria-controls','trackerHelpDialog');b.onclick=e=>{e.preventDefault();e.stopPropagation();open(key,getValue(),b)};return b}
+function valueOf(card,key){const kpi=card.querySelector(':scope>.v2-kpi,:scope>.t140-kpi,:scope>.v');if(kpi)return clean(kpi);if(key==='RS V2'||key==='RS Rating')return clean(card.querySelector('.v2-scorebar b'));if(key==='Market Timing')return clean(card.querySelector('.v2-scorebar b'));if(key==='Anchored VWAP')return clean(card.querySelector(':scope>.v2-sub'));if(key==='Multi Score')return card.querySelectorAll('.v2-scorebar').length+' điểm thành phần';if(key==='Sector Rotation'){const row=card.querySelector('.t140-sector-row,.v2-heat .cell');return clean(row)}if(key==='4 chu kỳ cổ phiếu')return [...card.querySelectorAll(':scope>div')].filter(n=>n.querySelector('b')).map(clean).join(' · ');if(key==='Top Setups — Evidence Ranking')return card.querySelectorAll('tbody tr[data-v2ticker]').length+' mã xếp hạng';return''}
+function update(r){const value=r.getValue(),sig=value;if(sig===r.signature)return;r.signature=sig;const a=assess(r.key,value);if(r.badge){r.summaryValue.textContent=value.length>70?value.slice(0,67)+'…':value;r.summaryValue.title=value;r.badge.textContent=labels[a.verdict];r.badge.dataset.verdict=a.verdict;r.brief.textContent=(a.verdict==='unknown'?a.why:TRACKER_GLOSSARY[r.key].what+' '+a.why);r.brief.title=r.brief.textContent;r.badge.title=TRACKER_GLOSSARY[r.key].what+' '+a.why}}
+function attachCard(card){const label=card.querySelector(':scope>h2,:scope>h3,:scope>.v2-sub:first-child,:scope>.t140-muted:first-child,:scope>.k,:scope>.v2-between>div>h2');if(!label)return;const key=aliases.get(norm(clean(label)));if(!key)return;let r=cardRecords.get(card);if(r){update(r);return}const getValue=()=>valueOf(card,key);const badge=document.createElement('span');badge.className='th-badge th-help-ui';const brief=document.createElement('p');brief.className='th-brief th-help-ui';const head=document.createElement('div');head.className='th-header-help th-help-ui';const summaryValue=document.createElement('b');summaryValue.className='th-summary-value';head.append(summaryValue,badge,info(key,getValue));label.after(head);const kpi=card.querySelector(':scope>.v2-kpi,:scope>.t140-kpi,:scope>.v');(kpi||head).after(brief);r={key,badge,brief,getValue,summaryValue};cardRecords.set(card,r);records.set(card,r);card.dataset.help='1';update(r)}
+function chip(node,key,getValue){const prior=seenChips.get(node);const value=getValue();const a=assess(key,value);const tooltip=TRACKER_GLOSSARY[key].what+' '+a.why;if(node.title!==tooltip)node.title=tooltip;if(prior)return;node.dataset.helpChip='1';if(!node.hasAttribute('tabindex'))node.tabIndex=0;node.setAttribute('aria-haspopup','dialog');node.addEventListener('click',ev=>{ev.stopPropagation();open(key,getValue(),node)});node.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();open(key,getValue(),node)}});let hold;node.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch')hold=setTimeout(()=>open(key,getValue(),node),500)});['pointerup','pointercancel','pointerleave'].forEach(name=>node.addEventListener(name,()=>clearTimeout(hold)));seenChips.set(node,{key})}
+function scan(){observer.disconnect();try{
+for(const [node] of records)if(!node.isConnected)records.delete(node);
+document.body.classList.toggle('th-help-off',!enabled);
+document.querySelectorAll('.v2-card,.t140-card,.regime-box').forEach(attachCard);
+document.querySelectorAll('th,.setting-group>.field>label').forEach(label=>{if(label.dataset.help)return;let key=aliases.get(norm(clean(label)));if(label.tagName==='TH'&&label.closest('table')?.querySelector('th')&&/Confluence/.test(clean(label.closest('thead')))){if(clean(label)==='Base')key='Base Quality';if(clean(label)==='Volume')key='Volume Intelligence';if(clean(label)==='VCP')key='VCP V2'}if(!key)return;const control=label.parentElement.querySelector('input,select');const get=()=>label.tagName==='TH'?'':control?(control.tagName==='SELECT'?clean(control.selectedOptions[0]):control.value):'';label.append(info(key,get));label.dataset.help='1'});
+document.querySelectorAll('.v2-card .v2-chip,.v2-card .v2-scorebar,.v2-card .v2-between,.t140-sector-row').forEach(n=>{if(n.closest('thead,tbody,.th-help-ui'))return;let key,valueNode;if(n.matches('.v2-chip')){const s=clean(n);key=[...aliases].filter(([a])=>norm(s)===a||norm(s).startsWith(a+' ')).sort((a,b)=>b[0].length-a[0].length)[0]?.[1];valueNode=n}else if(n.matches('.t140-sector-row')){const targets=[...n.children];const rs=targets.find(c=>/^RS\s+\d/.test(clean(c)));if(rs)chip(rs,'RS ngành',()=>clean(rs).replace(/^RS\s+/,''));const ret=targets.at(-1);if(ret&&/%/.test(clean(ret)))chip(ret,'Lợi suất ngành 20D',()=>clean(ret));return}else{const l=n.firstElementChild;key=aliases.get(norm(clean(l)));valueNode=n.querySelector('b')||n.lastElementChild;if(n.closest('.v2-card')?.querySelector('h2')&&clean(n.closest('.v2-card').querySelector('h2'))==='Anchored VWAP'&&clean(l)==='Breakout')key='Anchored VWAP'}if(key==='Risk'&&clean(n.closest('.v2-card')?.querySelector('h2'))==='Multi Score')key='Risk (Multi Score)';if(key&&valueNode)chip(n,key,()=>clean(valueNode));});
+document.querySelectorAll('.t140-card').forEach(card=>{if(clean(card.querySelector('h2'))!=='4 chu kỳ cổ phiếu')return;card.querySelectorAll(':scope>div').forEach(n=>{const key=aliases.get(norm(clean(n.querySelector(':scope>span'))));const b=n.querySelector(':scope>b');if(key&&b)chip(n,key,()=>clean(b))})});
+document.querySelectorAll('.v2-heat .cell').forEach(n=>{const label=n.querySelector('span');if(label)chip(label,'RS ngành 3M',()=>clean(label))});
+// Các giá trị phụ nằm trong câu được giữ nguyên; thêm nút riêng cho từng giá trị đọc được.
+document.querySelectorAll('.v2-card>.v2-sub').forEach(n=>{if(n.dataset.helpSub)return;const s=clean(n),items=[];for(const [rx,key] of [[/Distribution Days:\s*([\d]+)/,'Distribution Days'],[/> MA200:\s*([\d.,]+%)/,'Breadth > MA200'],[/BandWidth\s*([\d.,]+%)/,'BandWidth'],[/%B\s*([\d.,]+%)/,'%B'],[/Force Index\s*([-+\d.,]+)/,'Force Index'],[/Triple Screen:\s*(PASS|WAIT|AVOID)/,'Triple Screen'],[/Pivot\s*([\d.,]+)/,'Pivot']]){const m=s.match(rx);if(m)items.push([key,rx])}if(items.length){const box=document.createElement('span');box.className='th-help-ui';items.forEach(([key,rx])=>box.append(info(key,()=>clean(n).match(rx)?.[1]||'')));n.append(box);n.dataset.helpSub='1'}});
+document.querySelectorAll('#resultBody [data-label],.pipeline-stock-card [data-label]').forEach(n=>{if(pendingCells.has(n)||!aliases.has(norm(n.dataset.label)))return;pendingCells.add(n);cellObserver.observe(n)});
+document.querySelectorAll('.cux-tools').forEach(bar=>{if(bar.querySelector('.th-help-switch'))return;const l=document.createElement('label');l.className='th-help-switch th-help-ui';const c=document.createElement('input');c.type='checkbox';c.setAttribute('role','switch');c.checked=enabled;c.onchange=()=>{enabled=c.checked;try{localStorage.setItem(KEY,JSON.stringify(enabled))}catch(_){}document.body.classList.toggle('th-help-off',!enabled);document.querySelectorAll('.th-help-switch input').forEach(x=>x.checked=enabled)};l.append(c,document.createTextNode('Hiện giải thích'));bar.append(l)});
+}catch(e){console.warn('Giải thích chỉ số:',e)}finally{observer.observe(document.body,{childList:true,subtree:true,characterData:true})}}
+const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(scan,160)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialog)close()});document.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(scan,160)});scan();
+}catch(e){console.warn('Không thể khởi tạo lớp giải thích:',e)}})();
 </script>
 </body>
 </html>
