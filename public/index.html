@@ -5067,6 +5067,33 @@ body:not(#_) [data-v="settings"]{--dx-icon:url("data:image/svg+xml,%3Csvg%20xmln
 body:not(#_) [data-v2="guide"]{--dx-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%205v16M12%205C8%202%204%203%202%204v15c4-1%207-1%2010%202%203-3%206-3%2010-2V4c-3-1-7-2-10%201z%22%2F%3E%3C%2Fsvg%3E");}
 
 </style>
+<style id="collapseUX">
+@media screen{
+body:not(#_) [data-cux="1"]>.tracker-fold-button{display:none!important;}
+body:not(#_) [data-cux="1"]>.tracker-fold-head{padding-right:0!important;}
+body:not(#_) .cux-trigger{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;min-height:44px!important;box-sizing:border-box!important;padding:10px!important;margin:0!important;border:0!important;border-radius:10px!important;background:transparent!important;color:var(--text,#e5edf8)!important;text-align:left!important;cursor:pointer!important;line-height:1.4!important;text-transform:none!important;letter-spacing:0!important;font:600 13px Inter,system-ui!important;flex-wrap:wrap!important;}
+body:not(#_) .cux-trigger:hover{background:var(--row-hover,#1b3048)!important;transform:none!important;}
+body:not(#_) .cux-trigger:focus-visible{outline:2px solid var(--accent,#22d3ee)!important;outline-offset:2px!important;}
+body:not(#_) .cux-chevron{width:18px;height:18px;flex:none;transition:transform .22s ease;}
+body:not(#_) .cux-trigger[aria-expanded=true] .cux-chevron{transform:rotate(90deg);}
+body:not(#_) .cux-title{flex:1;min-width:110px;overflow-wrap:anywhere;}
+body:not(#_) .cux-summary{display:flex;gap:4px;flex-wrap:wrap;max-width:100%;color:var(--muted,#9aabc3);font-size:10px;}
+body:not(#_) .cux-trigger[aria-expanded=true] .cux-summary{display:none;}
+body:not(#_) .cux-chip{padding:3px 6px;border:1px solid var(--line,#26364d);border-radius:6px;background:var(--surface2,#142238);overflow-wrap:anywhere;max-width:100%;}
+body:not(#_) .cux-dot{width:7px;height:7px;border-radius:50%;background:var(--accent,#22d3ee);flex:none;}
+body:not(#_) .cux-dot[hidden]{display:none!important;}
+body:not(#_) .cux-piece{transition:max-height .22s cubic-bezier(.2,.7,.2,1),opacity .22s ease;}
+body:not(#_) .cux-piece.cux-hidden{max-height:0!important;min-height:0!important;overflow:hidden!important;opacity:0!important;margin-top:0!important;margin-bottom:0!important;padding-top:0!important;padding-bottom:0!important;border-top-width:0!important;border-bottom-width:0!important;pointer-events:none!important;visibility:hidden!important;}
+body:not(#_) #filterConfigPanel>.panel-body{align-items:start!important;}
+body:not(#_) #filterConfigPanel .setting-group{align-self:start!important;min-width:0!important;border:1px solid var(--line,#26364d)!important;border-radius:12px!important;padding:8px!important;background:var(--surface,#101b2e)!important;}
+body:not(#_) .cux-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap;grid-column:1/-1;padding:8px 0;}
+body:not(#_) .cux-tools button,body:not(#_) .cux-tools label{min-height:44px;display:inline-flex;align-items:center;gap:8px;color:var(--text,#e5edf8);font-size:12px;}
+body:not(#_) .cux-tools button{background:var(--surface2,#142238);border:1px solid var(--line,#26364d);border-radius:10px;padding:8px 12px;cursor:pointer;}
+@media(max-width:800px){body:not(#_) #filterConfigPanel>.panel-body{display:grid!important;grid-template-columns:minmax(0,1fr)!important;}body:not(#_) .cux-summary{flex-basis:100%;padding-left:28px;box-sizing:border-box;}}
+@media(prefers-reduced-motion:reduce){body:not(#_) .cux-piece,body:not(#_) .cux-chevron{transition:none!important;}}
+}
+
+</style>
 </head>
 <body class="tracker-app-v127">
   <div class="app">
@@ -8768,6 +8795,41 @@ function enhance(){safe(()=>{
  });}
 const obs=new MutationObserver(changes=>{if(changes.some(m=>m.target===document.body&&m.attributeName==='class'))for(const c of charts.values())paintSafe(c);clearTimeout(timer);timer=setTimeout(enhance,120)});obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});enhance();
 }catch(e){console.warn('Không thể bật lớp thiết kế Tracker:',e)}})();
+
+</script>
+<script id="collapseUXScript">
+(()=>{'use strict';try{
+const KEY='tracker_ui_collapse_v1';let saved={};try{const value=JSON.parse(localStorage.getItem(KEY)||'{}');if(value&&typeof value==='object'&&!Array.isArray(value))saved=value}catch(_){}
+const entries=new Map();let serial=0,timer;const guard=f=>{try{return f()}catch(e){console.warn('Thu gọn giao diện:',e)}};
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(_){}};
+const svg='<svg class="cux-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
+function defaults(input){if(input.tagName==='SELECT'){const opts=[...input.options],marked=opts.filter(o=>o.defaultSelected);return (marked.length?marked:opts.slice(0,1)).map(o=>o.value).join('\0')}if(/checkbox|radio/.test(input.type))return input.defaultChecked;return input.defaultValue}
+function value(input){if(input.tagName==='SELECT')return [...input.selectedOptions].map(o=>o.value).join('\0');if(/checkbox|radio/.test(input.type))return input.checked;return input.value}
+function summary(e){const fields=[...e.card.querySelectorAll(':scope>.field')],chips=[];let changed=false;
+fields.forEach(field=>{const input=field.querySelector('input,select,textarea');if(!input)return;const label=field.querySelector('label');const name=input.dataset.short||label?.dataset.short||(label?.textContent.trim().split(/\s+/).slice(0,2).join(' ')||'');const text=input.tagName==='SELECT'?[...input.selectedOptions].map(o=>o.textContent.trim()).join(', '):/checkbox|radio/.test(input.type)?(input.checked?'Bật':'Tắt'):input.value;chips.push((name+' '+text).trim());const d=defaults(input),v=value(input);if(input.type==='number'&&v!==''&&d!==''?Number(v)!==Number(d):v!==d)changed=true});
+if(!chips.length&&e.setting){const quality=e.card.querySelector('#activeQualityLabel');if(quality)chips.push('Nhóm đang chọn: '+quality.textContent.trim())}
+const text=chips.slice(0,3);if(chips.length>3)text.push('+'+(chips.length-3));const key=JSON.stringify(text);if(e.summary.dataset.text!==key){e.summary.replaceChildren(...text.map(t=>{const s=document.createElement('span');s.className='cux-chip';s.textContent=t;return s}));e.summary.dataset.text=key}e.dot.hidden=!changed;
+}
+function apply(e,closed,save=true){e.closed=closed;e.card.classList.remove('is-folded');e.button.setAttribute('aria-expanded',String(!closed));e.pieces.forEach(p=>{if(!p.isConnected)return;if(closed){p.style.maxHeight=p.scrollHeight+'px';void p.offsetHeight;p.classList.add('cux-hidden');p.inert=true;p.setAttribute('aria-hidden','true')}else{p.classList.remove('cux-hidden');p.inert=false;p.removeAttribute('aria-hidden');p.style.maxHeight=p.scrollHeight+'px';setTimeout(()=>{if(!e.closed)p.style.maxHeight=e.originalHeights.get(p)},230)}});if(save){saved[e.key]=closed;persist()}summary(e);toolsLabel()}
+function group(){return [...entries.values()].filter(e=>e.setting&&e.card.isConnected)}
+function toolsLabel(){const btn=document.getElementById('cuxAll');if(btn)btn.textContent=group().some(e=>!e.closed)?'Thu gọn tất cả':'Mở tất cả'}
+function toggle(e){if(e.closed&&e.setting&&saved.accordion)group().filter(x=>x!==e).forEach(x=>apply(x,true));apply(e,!e.closed)}
+function enhance(){guard(()=>{observer.disconnect();for(const [card] of entries)if(!card.isConnected)entries.delete(card);
+document.querySelectorAll('.tracker-foldable').forEach(card=>{if(card.dataset.cux)return;const old=card.querySelector(':scope>.tracker-fold-button'),head=card.querySelector(':scope>.tracker-fold-head');if(!old||!head)return;
+const setting=card.matches('.setting-group'),titleNode=setting?head:(head.querySelector('.panel-title,h2,h3')||head),title=[...titleNode.childNodes].filter(n=>n.nodeType===3||n.nodeType===1&&!n.matches('button,input,select,a,label')).map(n=>n.textContent).join(' ').trim().replace(/\s+/g,' ');if(!title)return;
+const key=setting?'settings:'+title:(card.closest('.t140-view,.v2-view')?.id||'screener')+':'+title;
+const button=document.createElement('button');button.type='button';button.className='cux-trigger';button.id='cux-head-'+(++serial);button.innerHTML=svg;const titleSpan=document.createElement('span');titleSpan.className='cux-title';titleSpan.textContent=title;button.append(titleSpan);const sum=document.createElement('span');sum.className='cux-summary';button.append(sum);const dot=document.createElement('span');dot.className='cux-dot';dot.title='Có giá trị khác mặc định';dot.setAttribute('aria-label','Có giá trị khác mặc định');dot.hidden=true;button.append(dot);
+// Giữ nguyên phần tử tiêu đề và điều khiển cũ; chỉ thay nút trình bày bên trong.
+if(titleNode.querySelector('button,input,select,a,label')){head.prepend(button);titleSpan.textContent='Thu gọn / mở rộng '+title}else{titleSpan.textContent='';while(titleNode.firstChild)titleSpan.append(titleNode.firstChild);titleNode.append(button)}
+const pieces=[...card.children].filter(n=>n!==head&&n!==old&&n.tagName!=='SCRIPT'&&n.tagName!=='STYLE');pieces.forEach((p,i)=>{p.classList.add('cux-piece');if(!p.id)p.id='cux-region-'+serial+'-'+i;p.setAttribute('role','region');p.setAttribute('aria-labelledby',button.id)});button.setAttribute('aria-controls',pieces.map(p=>p.id).join(' '));
+const e={card,button,summary:sum,dot,pieces,key,setting,closed:false,originalHeights:new Map(pieces.map(p=>[p,p.style.maxHeight]))};entries.set(card,e);card.dataset.cux='1';old.tabIndex=-1;old.setAttribute('aria-hidden','true');old.addEventListener('click',ev=>{ev.preventDefault();ev.stopImmediatePropagation()},true);button.addEventListener('click',ev=>{ev.stopPropagation();toggle(e)});button.addEventListener('keydown',ev=>{if(!setting)return;const list=group(),i=list.indexOf(e);let target;if(ev.key==='ArrowDown')target=list[(i+1)%list.length];if(ev.key==='ArrowUp')target=list[(i-1+list.length)%list.length];if(ev.key==='Home')target=list[0];if(ev.key==='End')target=list.at(-1);if(target){ev.preventDefault();ev.stopPropagation();target.button.focus()}});apply(e,typeof saved[key]==='boolean'?saved[key]:card.classList.contains('is-folded'),false);
+});
+const panel=document.querySelector('#filterConfigPanel>.panel-body');if(panel&&!document.getElementById('cuxTools')){const toolbar=document.createElement('div');toolbar.id='cuxTools';toolbar.className='cux-tools';const all=document.createElement('button');all.type='button';all.id='cuxAll';all.addEventListener('click',()=>{const close=group().some(e=>!e.closed);if(!close&&saved.accordion){saved.accordion=false;check.checked=false}group().forEach(e=>apply(e,close));persist()});const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=!!saved.accordion;check.id='cuxAccordion';check.addEventListener('change',()=>{saved.accordion=check.checked;if(check.checked){let first=true;group().forEach(e=>{if(!e.closed){if(first)first=false;else apply(e,true)}})}persist()});label.append(check,document.createTextNode('Chế độ accordion'));toolbar.append(all,label);panel.prepend(toolbar);toolsLabel()}
+for(const e of entries.values())summary(e);
+observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+})}
+const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(enhance,120)});document.addEventListener('input',ev=>{const card=ev.target.closest('.setting-group');const e=entries.get(card);if(e)guard(()=>summary(e))});document.addEventListener('change',ev=>{const e=entries.get(ev.target.closest('.setting-group'));if(e)guard(()=>summary(e))});enhance();
+}catch(e){console.warn('Không thể nâng cấp phần thu gọn:',e)}})();
 
 </script>
 </body>
