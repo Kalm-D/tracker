@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Python for the scheduled refresh
         if: github.event_name != 'push'
@@ -82,7 +84,21 @@ jobs:
             echo "No market data change to commit."
           else
             git commit -m "data: refresh shared market snapshot"
-            git push
+            # Giữ các commit giao diện mới trước khi công bố snapshot.
+            published=false
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                published=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$published" != "true" ]; then
+              echo "Không thể công bố snapshot sau 3 lần đồng bộ."
+              exit 1
+            fi
           fi
 
       - name: Configure GitHub Pages
