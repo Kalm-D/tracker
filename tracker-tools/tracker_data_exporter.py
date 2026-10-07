@@ -207,7 +207,26 @@ def fetch_universe_from_vnstock(exchange_filter: str = "ALL") -> List[Dict[str, 
             try:
                 df = listing.all_symbols()
                 if df is not None and len(df):
-                    candidates.extend(normalize_universe_df(df))
+                    items = normalize_universe_df(df)
+                    # all_symbols chỉ có mã và tên: bổ sung sàn từ bảng niêm yết xác thực.
+                    # Không thay universe, không gọi lịch sử giá thêm, không suy đoán theo ticker.
+                    try:
+                        by_exchange = listing.symbols_by_exchange()
+                        if by_exchange is not None and len(by_exchange):
+                            if "type" in by_exchange.columns:
+                                by_exchange = by_exchange[by_exchange["type"].astype(str).str.lower().eq("stock")]
+                            known = {}
+                            for item in normalize_universe_df(by_exchange):
+                                if item["exchange"] in {"HOSE", "HNX", "UPCOM"}:
+                                    known[item["ticker"]] = item["exchange"]
+                            for item in items:
+                                if item["exchange"] not in {"HOSE", "HNX", "UPCOM"}:
+                                    item["exchange"] = known.get(item["ticker"], "")
+                            missing = sum(item["exchange"] not in {"HOSE", "HNX", "UPCOM"} for item in items)
+                            print(f"Niêm yết {src}: {len(items) - missing}/{len(items)} mã có sàn xác thực; {missing} mã còn thiếu.")
+                    except Exception as exc:
+                        eprint(f"Chưa bổ sung được sàn từ {src}: {exc}. Giữ UNKNOWN, không suy đoán.")
+                    candidates.extend(items)
                     if candidates:
                         break
             except Exception:
@@ -491,5 +510,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 

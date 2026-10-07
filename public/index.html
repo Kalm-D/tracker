@@ -5243,6 +5243,161 @@ body:not(#_) .cux-tools>button::before{content:'';display:inline-block;width:14p
 body:not(#_) .cux-chevron{border:1px solid var(--line2)!important;border-radius:9px!important;background:var(--surface2)!important}
 }
 </style>
+<style id="pipelineRowsUX">
+/* Chỉ ghi đè cách trình bày danh sách Pipeline, không tác động bảng kết quả gốc. */
+body:not(#_) #sidePipeline .pipeline-stock-list.dx6-list:not(.cux-hidden){display:block!important;padding:0!important;overflow:visible!important;max-height:none!important;width:100%!important;min-width:0!important;background:var(--surface2)!important}
+body:not(#_) #sidePipeline .dx6-bar{display:flex!important;align-items:center!important;justify-content:space-between!important;flex-wrap:wrap!important;gap:8px!important;padding:12px 16px!important;color:var(--muted)!important;font-size:12px!important}
+body:not(#_) #sidePipeline .dx6-density{display:flex!important;align-items:center!important;gap:6px!important}
+body:not(#_) #sidePipeline .dx6-density button{min-height:32px!important;padding:4px 10px!important;border-radius:18px!important;border:1px solid var(--line2)!important;background:var(--surface)!important;color:var(--text)!important;font-size:12px!important}
+body:not(#_) #sidePipeline .dx6-density button[aria-pressed=true]{color:var(--accent)!important;border-color:var(--accent)!important;background:var(--row-hover)!important}
+body:not(#_) #sidePipeline .dx6-scroll{overflow:auto!important;max-height:65vh!important;max-width:100%!important;min-width:0!important;overscroll-behavior:contain!important;position:relative!important;isolation:isolate!important;border-block:1px solid var(--line)!important}
+body:not(#_) #sidePipeline .dx6-columns,body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card{display:grid!important;grid-template-columns:var(--dx6-columns)!important;min-width:var(--dx6-width)!important;width:100%!important;box-sizing:border-box!important;gap:0!important;align-items:stretch!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;transform:none!important;box-shadow:none!important;overflow:visible!important}
+body:not(#_) #sidePipeline .dx6-columns{position:sticky!important;top:0!important;z-index:5!important;background:var(--thead)!important;border-bottom:1px solid var(--line2)!important;min-height:44px!important}
+body:not(#_) #sidePipeline .dx6-heading{display:flex!important;align-items:center!important;gap:4px!important;padding:8px 10px!important;min-width:0!important;color:var(--muted)!important;font-size:10px!important;text-transform:uppercase!important;letter-spacing:.025em!important;position:relative!important}
+body:not(#_) #sidePipeline .dx6-heading>button.dx6-sort{border:0!important;background:transparent!important;color:inherit!important;font:inherit!important;text-align:left!important;padding:0!important;flex:1!important;min-height:28px!important;cursor:pointer!important}
+body:not(#_) #sidePipeline .dx6-heading .th-info{position:static!important;flex:none!important;width:22px!important;height:28px!important;min-height:28px!important;min-width:22px!important;padding:3px!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card{min-height:56px!important;background:var(--surface)!important;border-bottom:1px solid var(--line)!important;cursor:pointer!important;transition:background .15s!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card:nth-child(even){background:var(--surface2)!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card:hover,body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card:focus-visible{background:var(--row-hover)!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>[data-label]{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;position:relative!important;min-width:0!important;min-height:0!important;padding:8px 10px!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-sizing:border-box!important;color:var(--text)!important;overflow-wrap:normal!important;word-break:normal!important;white-space:normal!important;font-size:12px!important;line-height:1.3!important;font-variant-numeric:tabular-nums!important;grid-column:var(--dx6-col)!important;grid-row:1!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>[data-label]::before{display:none!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.dx6-number{justify-content:flex-end!important;text-align:right!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.stock-main,body:not(#_) #sidePipeline .dx6-columns>.dx6-heading:first-child{position:sticky!important;left:0!important;z-index:3!important;background:var(--surface)!important;box-shadow:1px 0 var(--line2)!important;grid-column:1!important}
+body:not(#_) #sidePipeline .dx6-columns>.dx6-heading:first-child{background:var(--thead)!important;z-index:6!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.stock-main{flex-wrap:wrap!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card:hover>.stock-main{background:var(--row-hover)!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .ticker{font-weight:750!important;color:var(--accent)!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .pill.good{background:#166534!important;color:#f0fdf4!important;border-color:#34d399!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .pill.info{background:#1d4ed8!important;color:#eff6ff!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .pill.warn{background:#f5b82e!important;color:#3b2906!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .pill.bad{background:#b91c1c!important;color:#fff1f2!important}
+body:not(#_):not(.t140-soft-theme) .dx6-scroll .pipeline-stock-card .dx-pos{color:#34d399!important}
+body:not(#_):not(.t140-soft-theme) .dx6-scroll .pipeline-stock-card .dx-neg{color:#fb7185!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-list{--accent:#0e7490!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-scroll .pipeline-stock-card .dx-pos{color:#15803d!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-scroll .pipeline-stock-card .dx-neg{color:#b91c1c!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .pill{white-space:normal!important;align-self:center!important;line-height:1.2!important;padding:4px 7px!important;min-height:24px!important;font-size:11px!important;max-width:100%!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .dx-spark{display:block!important;width:64px!important;height:24px!important;flex:none!important;margin:0!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .dx-rs-bar{display:inline-block!important;width:50px!important;height:6px!important;flex:none!important;margin:0!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .th-cell-info{display:none!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.dx6-meta-cell{display:none!important}
+body:not(#_) #sidePipeline .dx6-exceptions{display:flex!important;gap:4px!important;flex-wrap:wrap!important;width:100%!important;font-size:10px!important;color:#f5b82e!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-exceptions{color:#92400e!important}
+body:not(#_) #sidePipeline .dx6-exchange{border:1px solid var(--line2)!important;border-radius:6px!important;padding:3px 5px!important;font-weight:650!important;font-size:10px!important}
+body:not(#_) #sidePipeline .dx6-exchange[data-exchange=HOSE]{color:#67e8f9!important;background:#143e4c!important;border-color:#22728a!important}
+body:not(#_) #sidePipeline .dx6-exchange[data-exchange=HNX]{color:#c7d2fe!important;background:#303350!important;border-color:#646a9a!important}
+body:not(#_) #sidePipeline .dx6-exchange[data-exchange=UPCOM]{color:#cbd5e1!important;background:#2b394c!important;border-color:#64748b!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-exchange[data-exchange=HOSE]{color:#155e75!important;background:#cffafe!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-exchange[data-exchange=HNX]{color:#3730a3!important;background:#e0e7ff!important}
+body:not(#_).t140-soft-theme #sidePipeline .dx6-exchange[data-exchange=UPCOM]{color:#334155!important;background:#e2e8f0!important}
+body:not(#_) #sidePipeline .dx6-foot{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;padding:12px 16px!important;color:var(--muted)!important;font-size:12px!important}
+body:not(#_) #sidePipeline .dx6-old-more{display:none!important}
+body:not(#_) #sidePipeline .dx6-list[data-density=compact] .pipeline-stock-card{min-height:40px!important}
+body:not(#_) #sidePipeline .dx6-list[data-density=compact] .pipeline-stock-card>[data-label]{padding-block:5px!important}
+body:not(#_) #sidePipeline .dx6-detail-icon{width:32px!important;min-width:32px!important;height:32px!important;padding:6px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+body:not(#_) #sidePipeline .dx6-detail-icon svg{width:18px!important;height:18px!important}
+body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .actions-cell .btn{min-height:32px!important;height:32px!important;padding:5px 9px!important;font-size:12px!important;white-space:nowrap!important}
+body:not(#_) .dx6-quality-warning{padding:10px 14px!important;border-left:3px solid #f5b82e!important;background:var(--surface2)!important;color:var(--text)!important;font-size:13px!important;margin:12px 0!important}
+body:not(#_) #sidePipeline .dx6-mobile-expand,body:not(#_) #sidePipeline .dx6-mobile-exchange,body:not(#_) #sidePipeline .dx6-mobile-trend{display:none!important}
+@media(max-width:768px){
+ body:not(#_) #sidePipeline .dx6-scroll{overflow-x:hidden!important}
+ body:not(#_) #sidePipeline .dx6-columns{display:none!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;min-width:0!important;width:100%!important;padding:8px 12px!important;gap:6px 12px!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>[data-label]{display:none!important;grid-column:auto!important;grid-row:auto!important;position:static!important;padding:0!important;font-size:12px!important;background:transparent!important;box-shadow:none!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.stock-main,body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>[data-label="Giá"]{display:flex!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.stock-main{grid-column:1!important;grid-row:1!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>[data-label="Giá"]{grid-column:2!important;grid-row:1!important;justify-content:flex-end!important}
+ body:not(#_) #sidePipeline .dx6-mobile-line{display:grid!important;grid-template-columns:auto auto minmax(0,1fr) 44px!important;align-items:center!important;gap:6px!important;grid-column:1/-1!important;grid-row:2!important;font-size:11px!important}
+ body:not(#_) #sidePipeline .dx6-mobile-expand{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;font-size:11px!important;color:var(--accent)!important;background:transparent!important;border:0!important;padding:6px!important;box-shadow:none!important}
+ body:not(#_) #sidePipeline .dx6-mobile-expand svg{width:18px!important;height:18px!important;transition:transform .2s!important}
+ body:not(#_) #sidePipeline .dx6-mobile-expand[aria-expanded=true] svg{transform:rotate(180deg)!important}
+ body:not(#_) #sidePipeline .dx6-mobile-item{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;min-width:0!important}
+ body:not(#_) #sidePipeline .dx6-mobile-exchange{display:inline-flex!important}
+ body:not(#_) #sidePipeline .dx6-mobile-trend{display:inline-block!important;max-width:80px!important;min-height:20px!important;font-size:9px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;padding:3px 4px!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card>.stock-main{flex-wrap:nowrap!important;gap:4px!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card.dx6-expanded>[data-label]:not(.stock-main):not([data-label="Giá"]){display:flex!important;justify-content:space-between!important;grid-column:1/-1!important;padding:6px 0!important;border-bottom:1px solid var(--line)!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card.dx6-expanded>[data-label]:not(.stock-main):not([data-label="Giá"])::before{display:block!important;font-size:11px!important;color:var(--muted)!important;margin:0!important;text-transform:none!important;letter-spacing:0!important;flex:1!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .dx-spark,body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .dx-rs-bar{display:none!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .actions-cell{min-height:44px!important}
+ body:not(#_) #sidePipeline .dx6-bar,body:not(#_) #sidePipeline .dx6-foot{padding:10px 12px!important}
+ body:not(#_) #sidePipeline .dx6-detail-icon{min-width:44px!important;width:44px!important;height:44px!important}
+ body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card .actions-cell .btn{min-height:44px!important;height:44px!important}
+}
+body:not(#_) #sidePipeline .dx6-mobile-line{display:none}
+@media(prefers-reduced-motion:reduce){body:not(#_) #sidePipeline .dx6-scroll .pipeline-stock-card{transition:none!important}}
+@media print{body:not(#_) #sidePipeline .dx6-scroll{max-height:none!important;overflow:visible!important}body:not(#_) #sidePipeline .dx6-density,body:not(#_) #sidePipeline .dx6-foot button{display:none!important}}
+
+/* Bốn tầng đã được duyệt: không thay hàm render hay sự kiện của ứng dụng. */
+body:not(#_) .dx6-workspace:not(.t140-view){display:block!important;min-width:0!important}
+body:not(#_).t140-soft-theme .dx6-workspace{--accent:#0e7490!important}
+body:not(#_):not(.t140-soft-theme) .dx6-workspace :is(.v2-good,.t140-good,.dx-pos){color:#34d399!important}
+body:not(#_):not(.t140-soft-theme) .dx6-workspace :is(.v2-bad,.t140-bad,.dx-neg){color:#fb7185!important}
+body:not(#_) .dx6-tier{margin-block:16px!important;min-width:0!important}
+body:not(#_) .dx6-tier-grid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:16px!important;align-items:start!important;min-width:0!important;grid-auto-flow:row!important;grid-auto-rows:auto!important}
+body:not(#_) .dx6-tier-grid>.v2-card,body:not(#_) .dx6-tier-grid>.t140-card{grid-column:span var(--dx6-span,4)!important;grid-row:auto!important;min-width:0!important;width:auto!important;height:auto!important;margin:0!important;box-sizing:border-box!important;align-self:start!important;padding:16px!important;border-radius:16px!important}
+body:not(#_) #filterConfigPanel .setting-group .field{display:flex!important;flex-direction:column!important;gap:6px!important;margin-block:12px!important;min-width:0!important}
+body:not(#_) #filterConfigPanel .setting-group .field label{font-size:12px!important;color:var(--muted)!important;margin:0!important;line-height:1.4!important}
+body:not(#_) #filterConfigPanel .setting-group .field :is(input,select){min-height:36px!important;box-sizing:border-box!important;max-width:100%!important;width:100%!important}
+body:not(#_) .dx6-kpi-grid{align-items:stretch!important}
+body:not(#_) .dx6-tier-grid.dx6-dense{grid-auto-rows:1px!important;row-gap:0!important;grid-auto-flow:row dense!important}
+body:not(#_) .dx6-tier-grid.dx6-dense>.dx6-module{grid-row-end:span var(--dx6-rows,1)!important;grid-row-start:auto!important;align-self:start!important}
+body:not(#_) .dx6-kpi-grid>.dx6-kpi{align-self:stretch!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto 1fr auto auto!important;gap:8px 4px!important;border-left:3px solid var(--dx6-verdict,var(--muted))!important;min-height:176px!important}
+body:not(#_) .dx6-kpi>.v2-sub:first-child,body:not(#_) .dx6-kpi>.t140-muted:first-child{grid-column:1!important;grid-row:1!important;margin:0!important;font-size:11px!important;text-transform:uppercase!important;letter-spacing:.04em!important;padding:0!important;background:none!important;display:flex!important;align-items:center!important;color:var(--muted)!important}
+body:not(#_) .dx6-kpi>.th-header-help{grid-column:2!important;grid-row:1!important;display:flex!important;align-items:center!important;gap:4px!important;margin:0!important}
+body:not(#_) .dx6-kpi>.th-header-help>.th-summary-value{display:none!important}
+body:not(#_) .dx6-kpi>.v2-kpi,body:not(#_) .dx6-kpi>.t140-kpi{grid-column:1/-1!important;grid-row:2!important;display:flex!important;align-items:center!important;margin:0!important;font-size:30px!important;line-height:1.15!important;font-weight:750!important;min-height:40px!important;color:var(--text)!important}
+body:not(#_) .dx6-kpi[data-dx6-text-kpi=true]>.v2-kpi,body:not(#_) .dx6-kpi[data-dx6-text-kpi=true]>.t140-kpi{font-size:23px!important}
+body:not(#_) .dx6-kpi>.th-brief{grid-column:1/-1!important;grid-row:3!important;margin:0!important;line-height:1.55!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;font-size:12px!important}
+body:not(#_) .dx6-kpi>.v2-sub:not(:first-child),body:not(#_) .dx6-kpi>.t140-muted:not(:first-child){grid-column:1/-1!important;grid-row:4!important;margin:0!important;font-size:12px!important}
+body:not(#_) .dx6-kpi :is(.tracker-fold-button,.px-block-toggle,.cux-trigger,.cux-summary,.px-block-brief){display:none!important}
+body:not(#_) .dx6-kpi .th-badge{font-size:10px!important;white-space:nowrap!important}
+body:not(#_) .dx6-kpi .th-info{width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important}
+body:not(#_) .dx6-workspace .th-info svg{width:18px!important;height:18px!important;flex:none!important}
+body:not(#_) .dx6-workspace .th-info{padding:4px!important}
+body:not(#_) .dx6-module{border-left:1px solid var(--line)!important;min-height:0!important}
+body:not(#_) .dx6-module-head{display:flex!important;align-items:center!important;gap:8px!important;margin:0 0 12px!important;min-height:36px!important;min-width:0!important;flex-wrap:wrap!important}
+body:not(#_) .dx6-module-head h2,body:not(#_) .dx6-module-head h3{display:flex!important;align-items:center!important;min-width:0!important;flex:1!important;font-size:14px!important;font-weight:650!important;line-height:1.3!important;margin:0!important}
+body:not(#_) .dx6-module-head .th-header-help{display:flex!important;align-items:center!important;gap:4px!important;margin:0 0 0 auto!important;flex:none!important}
+body:not(#_) .dx6-module-head .th-header-help.cux-hidden{display:flex!important;max-height:none!important;visibility:visible!important;opacity:1!important}
+body:not(#_) .dx6-module-head .th-summary-value{display:none!important}
+body:not(#_) .dx6-module-head .th-info{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important}
+body:not(#_) .dx6-module-head .cux-trigger{display:flex!important;width:auto!important;max-width:100%!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;gap:8px!important;min-height:36px!important;text-align:left!important;font-size:14px!important}
+body:not(#_) .dx6-module-head .cux-chevron{width:32px!important;height:32px!important;box-sizing:border-box!important;padding:7px!important;flex:none!important;border-radius:9px!important;border:1px solid var(--line2)!important;background:var(--surface2)!important}
+body:not(#_) .dx6-module-head .px-block-toggle{width:32px!important;height:32px!important;min-height:32px!important;flex:none!important;margin:0!important;grid-row:auto!important;grid-column:auto!important}
+body:not(#_) .dx6-module .v2-kpi{font-size:26px!important;margin:8px 0!important;color:var(--text)!important}
+body:not(#_) .dx6-module .v2-sub,body:not(#_) .dx6-module .th-brief{font-size:12px!important;line-height:1.6!important}
+body:not(#_) .dx6-module .v2-between{font-size:13px!important;gap:8px!important}
+body:not(#_) .dx6-module .v2-scorebar .bar{height:6px!important}
+body:not(#_) .dx6-module .v2-chip{font-size:11px!important;min-height:24px!important;padding:3px 8px!important}
+body:not(#_) .dx6-module .v2-tablewrap{overflow:auto!important;min-width:0!important;max-width:100%!important}
+body:not(#_) .dx6-module .v2-table{min-width:1100px!important;table-layout:auto!important}
+body:not(#_) .dx6-module .v2-table :is(th,td){white-space:nowrap!important;max-width:none!important;overflow:visible!important;text-overflow:clip!important}
+body:not(#_) .dx6-chart-card{grid-column:span 8!important}
+body:not(#_) .dx6-chart-card .dx-ranges{justify-content:flex-end!important;gap:4px!important;margin:0 0 8px!important}
+body:not(#_) .dx6-chart-card .dx-ranges button{font-size:11px!important;min-height:32px!important;padding:4px 10px!important}
+body:not(#_) .dx6-tier-title{display:flex!important;align-items:center!important;gap:12px!important;color:var(--muted)!important;margin:0 0 12px!important;font-size:11px!important;font-weight:650!important;text-transform:uppercase!important;letter-spacing:.07em!important}
+body:not(#_) .dx6-tier-title::after{content:''!important;flex:1!important;height:1px!important;background:var(--line)!important}
+body:not(#_) .dx6-group-toggle{display:flex!important;align-items:center!important;gap:8px!important;background:transparent!important;border:0!important;color:inherit!important;font:inherit!important;padding:0!important;min-height:36px!important;cursor:pointer!important}
+body:not(#_) .dx6-group-toggle svg{height:24px!important;width:24px!important;transition:transform .2s!important}
+body:not(#_) .dx6-group-toggle[aria-expanded=true] svg{transform:rotate(90deg)!important}
+body:not(#_) .dx6-group-content{display:grid!important;grid-template-rows:1fr!important;transition:grid-template-rows .22s!important}
+body:not(#_) .dx6-group-inner{overflow:hidden!important;min-height:0!important}
+body:not(#_) .dx6-tier[data-closed=true]>.dx6-group-content{grid-template-rows:0fr!important}
+body:not(#_) .dx6-tier[data-closed=true]>.dx6-group-content>.dx6-group-inner{padding:0!important;margin:0!important}
+body:not(#_) .dx6-quicknav{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;overflow:auto!important;margin:8px 0 16px!important;padding:8px!important;background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:12px!important;position:sticky!important;top:80px!important;z-index:7!important;max-width:100%!important}
+body:not(#_) .dx6-quicknav a{flex:none!important;font-size:12px!important;text-decoration:none!important;color:var(--muted)!important;border-radius:16px!important;padding:6px 10px!important;white-space:nowrap!important}
+body:not(#_) .dx6-quicknav a:hover{color:var(--accent)!important;background:var(--row-hover)!important}
+body:not(#_) .dx6-tier{scroll-margin-top:150px!important}
+body:not(#_) .dx6-worker-status{font-size:11px!important;padding:4px 8px!important;border:1px solid var(--line)!important;border-radius:12px!important;margin-left:auto!important;color:var(--muted)!important}
+body:not(#_) .dx6-system .v2-toolbar{display:flex!important;flex-wrap:wrap!important;gap:8px!important}
+body:not(#_) .dx6-system .v2-toolbar button{min-height:32px!important;font-size:12px!important;padding:5px 10px!important}
+body:not(#_) .dx6-system #v2ClearDataset{color:var(--neg)!important;border-color:var(--neg)!important}
+@media(max-width:1024px){body:not(#_) .dx6-tier-grid>.v2-card,body:not(#_) .dx6-tier-grid>.t140-card{grid-column:span 6!important}body:not(#_) .dx6-tier-grid>.dx6-chart-card,body:not(#_) .dx6-tier-grid>.dx6-full{grid-column:1/-1!important}}
+@media(max-width:768px){body:not(#_) .dx6-tier-grid>.dx6-module{grid-column:1/-1!important}body:not(#_) .dx6-module-head .cux-trigger,body:not(#_) .dx6-module-head .px-block-toggle,body:not(#_) .dx6-module-head .th-info{min-height:44px!important}body:not(#_) .dx6-quicknav{top:66px!important}body:not(#_) .dx6-kpi-grid{gap:12px!important}body:not(#_) .dx6-kpi>.th-header-help{grid-column:1/-1!important;grid-row:2!important}body:not(#_) .dx6-kpi>.v2-kpi,body:not(#_) .dx6-kpi>.t140-kpi{grid-row:3!important}body:not(#_) .dx6-kpi>.th-brief{grid-row:4!important}body:not(#_) .dx6-kpi>.v2-sub:not(:first-child),body:not(#_) .dx6-kpi>.t140-muted:not(:first-child){grid-row:5!important}}
+@media(max-width:480px){body:not(#_) .dx6-kpi-grid>.dx6-kpi{grid-column:1/-1!important}body:not(#_) .dx6-kpi{min-height:150px!important}}
+@media(prefers-reduced-motion:reduce){body:not(#_) .dx6-group-content,body:not(#_) .dx6-group-toggle svg{transition:none!important}body:not(#_) .dx6-tier{scroll-behavior:auto!important}}
+
+</style>
 </head>
 <body class="tracker-app-v127">
   <div class="app">
@@ -5801,11 +5956,65 @@ body:not(#_) .cux-chevron{border:1px solid var(--line2)!important;border-radius:
       if (row.some(v => v.trim() !== "")) rows.push(row);
       if (rows.length < 2) return [];
       const headers = rows[0].map(h => h.trim().toLowerCase());
-      return rows.slice(1).map(r => {
+      return resolveRowExchanges(rows.slice(1).map(r => {
         const obj = {};
         headers.forEach((h, idx) => obj[h] = (r[idx] ?? "").trim());
         return normalizeRow(obj);
-      }).filter(Boolean);
+      }).filter(Boolean));
+    }
+
+    // Chỉ chuẩn hóa thông tin sàn; không thay dữ liệu giá, ngày hoặc khối lượng.
+    function exchangeColumnKey(value) {
+      return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[\s_\-\uFEFF]/g, '');
+    }
+
+    function normalizeExchangeValue(value) {
+      const key = exchangeColumnKey(value).toUpperCase();
+      if (['HOSE', 'HSX', 'HOSESTOCK', 'HOCHIMINH', 'HOSTC'].includes(key)) return 'HOSE';
+      if (['HNX', 'HASTC', 'HANOI', 'HNXSTOCK'].includes(key)) return 'HNX';
+      if (['UPCOM', 'UPCOMSTOCK', 'UPCO', 'UPC'].includes(key)) return 'UPCOM';
+      if (key === 'INDEX') return 'INDEX';
+      return 'UNKNOWN';
+    }
+
+    function exchangeFromRow(row) {
+      const aliases = ['exchange', 'exchangecode', 'floor', 'floorcode', 'san', 'sangiaodich', 'market', 'marketcode', 'comgroupcode', 'board'];
+      const entries = Object.entries(row || {});
+      for (const alias of aliases) {
+        for (const [key, value] of entries) {
+          if (exchangeColumnKey(key) !== alias) continue;
+          const exchange = normalizeExchangeValue(value);
+          if (exchange !== 'UNKNOWN') return exchange;
+        }
+      }
+      return 'UNKNOWN';
+    }
+
+    function resolveRowExchanges(rows, slot = '', references = []) {
+      const own = new Map(), lookup = new Map();
+      const collect = (target, row) => {
+        const exchange = exchangeFromRow(row), ticker = String(row.ticker || '').trim().toUpperCase();
+        if (!ticker || exchange === 'UNKNOWN') return;
+        if (!target.has(ticker)) target.set(ticker, new Set());
+        target.get(ticker).add(exchange);
+      };
+      rows.forEach(row => collect(own, row));
+      references.forEach(row => collect(lookup, row));
+      const unique = (map, ticker) => map.get(ticker)?.size === 1 ? [...map.get(ticker)][0] : 'UNKNOWN';
+      const expected = normalizeExchangeValue(slot);
+      return rows.map(row => {
+        const ticker = String(row.ticker || '').trim().toUpperCase();
+        let exchange = exchangeFromRow(row);
+        if (exchange === 'UNKNOWN') exchange = unique(own, ticker);
+        if (exchange === 'UNKNOWN' && expected !== 'UNKNOWN') exchange = expected;
+        if (exchange === 'UNKNOWN') exchange = unique(lookup, ticker);
+        return { ...row, exchange };
+      });
+    }
+
+    function knownExchangeReferences() {
+      // Cache Data Center cũ chỉ có thống kê, không có bảng mã→sàn: không suy đoán từ thống kê đó.
+      return Object.values(state.dataCenter?.slots || {}).flatMap(item => item?.rows || []);
     }
 
     function normalizeRow(obj) {
@@ -5832,7 +6041,7 @@ body:not(#_) .cux-chevron{border:1px solid var(--line2)!important;border-radius:
 
       return {
         ticker,
-        exchange: String(obj.exchange || obj.floor || obj.san || "UNKNOWN").trim().toUpperCase(),
+        exchange: exchangeFromRow(obj),
         sector: String(obj.sector || obj.industry || obj.nganh || "Chưa phân loại").trim(),
         date: normalizeDate(date),
         open, high, low, close, volume
@@ -6600,11 +6809,7 @@ body:not(#_) .cux-chevron{border:1px solid var(--line2)!important;border-radius:
 
     function normalizeRowsForSlot(rows, slot) {
       const expected = exchangeSlotKey(slot);
-      return rows.map(r => {
-        const x = { ...r };
-        if (!x.exchange || x.exchange === "UNKNOWN") x.exchange = expected;
-        return x;
-      });
+      return resolveRowExchanges(rows, expected, knownExchangeReferences());
     }
 
     function saveDataCenterCache() {
@@ -6913,6 +7118,7 @@ body:not(#_) .cux-chevron{border:1px solid var(--line2)!important;border-radius:
 
     function runScreener() {
       if (!state.rawRows.length) loadDemoData(false);
+      state.rawRows = resolveRowExchanges(state.rawRows, "", knownExchangeReferences());
       state.fullSeries = buildSeries(state.rawRows);
       state.quality = analyzeDataQuality(state.fullSeries);
       rebuildPipelineForActiveQuality();
@@ -10717,5 +10923,67 @@ let initial=card.classList.contains('is-folded');try{const saved=JSON.parse(loca
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('pxModeHint')?.remove();document.getElementById('pxTickers')?.remove();document.querySelectorAll('[data-px-chip][aria-expanded]').forEach(n=>n.setAttribute('aria-expanded','false'))}});document.addEventListener('pointerdown',e=>{if(!e.target.closest('.cux-mode-info,#pxModeHint'))document.getElementById('pxModeHint')?.remove();if(!e.target.closest('#pxTickers,[data-px-chip]')){document.getElementById('pxTickers')?.remove();document.querySelectorAll('[data-px-chip][aria-expanded]').forEach(n=>n.setAttribute('aria-expanded','false'))}});document.addEventListener('pointerup',()=>clearTimeout(window.pxHintTimer));document.addEventListener('pointerdown',e=>{const i=e.target.closest('.cux-mode-info');if(!i)return;window.pxHintTimer=setTimeout(()=>{document.getElementById('pxModeHint')?.remove();const box=document.createElement('div');box.id='pxModeHint';box.className='cux-popover';box.setAttribute('role','tooltip');box.textContent=hint;document.body.append(box);const r=i.getBoundingClientRect();box.style.left=Math.max(12,Math.min(r.left,innerWidth-box.offsetWidth-12))+'px';box.style.top=Math.min(r.bottom+8,innerHeight-box.offsetHeight-12)+'px'},450)});const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(scan,120)});document.addEventListener('click',e=>{const bar=e.target.closest('.cux-tools');if(!bar)return;if(e.target.closest('button')&&bar.querySelector('input')?.checked&&e.target.closest('button').textContent.trim()==='Mở tất cả'){e.preventDefault();e.stopImmediatePropagation()}},true);document.addEventListener('change',()=>{clearTimeout(timer);timer=setTimeout(scan,0)});scan();
 }catch(e){console.warn('Không thể nâng cấp Pipeline:',e)}})();
 </script>
+<script id="pipelineRowsUXScript">
+(()=>{'use strict';try{
+// Chỉ sắp xếp bản sao và dựng cách nhìn mới; không sửa state.stages hay hàm rowHtml.
+const KEY='tracker_ui_density_v1',views=new Set(),records=new WeakMap();let density='comfortable',timer,exchangeRows,missingCount=0;
+try{if(localStorage.getItem(KEY)==='compact')density='compact'}catch(_){}
+const text=n=>(n?.textContent||'').trim(),escape=window.escapeHtml||((s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+const safe=f=>{try{return f()}catch(e){console.warn('Danh sách mã:',e)}},svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7m0-7L10 14"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
+const number=t=>{let s=String(t).replace(/−/g,'-').match(/[-+]?\d[\d.,]*/)?.[0];if(!s)return NaN;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(/^[-+]?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');return Number(s)};
+const important=['Mã','Sàn','Ngành','Giá','GTGD TB20','Trend','Cách đỉnh 52W','RS Percentile','RS 3M','RS 6M','RS Trend','Base / VCP'];
+const widths={'Mã':130,'Sàn':82,'Ngành':164,'Giá':102,'GTGD TB20':114,'Trend':208,'Cách đỉnh 52W':124,'RS Percentile':148,'RS 3M':102,'RS 6M':102,'RS Trend':116,'Base / VCP':144,'Breakout':144,'Setup':174,'Grade':80,'Tracker Score':124,'Market Fit':112,'Risk Score':164,'Risk':88,'Action':180,'Thao tác':144};
+const numeric=new Set(['Giá','GTGD TB20','Cách đỉnh 52W','RS Percentile','RS 3M','RS 6M','Tracker Score','Market Fit','Risk Score','Risk']);
+function source(detail){return typeof state!=='undefined'?(state.stages?.[detail.dataset.stage]||[]):[]}
+function cellsFromMetric(x){const doc=new DOMParser().parseFromString('<table><tbody>'+rowHtml(x)+'</tbody></table>','text/html');const row=document.createElement('article');row.className='pipeline-stock-card';row.setAttribute('aria-label',x.ticker);doc.querySelectorAll('td').forEach(td=>{const cell=document.createElement('div');for(const a of td.attributes)cell.setAttribute(a.name,a.value);while(td.firstChild)cell.append(td.firstChild);row.append(cell)});row.querySelectorAll('[data-detail]').forEach(b=>b.addEventListener('click',()=>openDetail(b.dataset.detail)));row.querySelectorAll('[data-watch]').forEach(b=>b.addEventListener('click',()=>toggleWatch(b.dataset.watch)));return row}
+function help(label,target){const canonical=[...document.querySelectorAll('#resultTableWrap th')].find(n=>text(n.childNodes[0])===label||text(n).replace(/\s+/g,' ').startsWith(label));const original=canonical?.querySelector('.th-info');if(!original)return;const b=original.cloneNode(true);b.removeAttribute('id');b.onclick=e=>{e.stopPropagation();original.click()};target.append(b)}
+function prepare(row,r){if(row.dataset.dx6Row)return;row.dataset.dx6Row='1';row.setAttribute('role','row');row.tabIndex=0;const ticker=text(row.querySelector('.ticker'));row.setAttribute('aria-label',ticker+' — mở chi tiết');row.addEventListener('click',e=>{if(e.target.closest('button,a,input,select,.th-help-ui'))return;openDetail(ticker)});row.addEventListener('keydown',e=>{if(e.target!==row)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(ticker)}});
+const main=row.querySelector('[data-label="Mã"]');const ex=row.querySelector('[data-label="Sàn"]');const date=row.querySelector('[data-label="Ngày"]'),quality=row.querySelector('[data-label="Data"]');
+row.querySelectorAll(':scope>[data-label]').forEach(cell=>{const label=cell.dataset.label;cell.setAttribute('role','cell');cell.style.setProperty('--dx6-col',r.columns.indexOf(label)+1);if(numeric.has(label))cell.classList.add('dx6-number');if(['Ngày','Data'].includes(label))cell.classList.add('dx6-meta-cell');if(label==='Cách đỉnh 52W'){const n=number(text(cell));if(Number.isFinite(n)){cell.style.setProperty('color',n>=-5?'var(--pos)':n<=-20?'var(--neg)':'var(--muted)','important')}}});
+if(ex){const value=text(ex).replace(/UNKNOWN/g,'').trim();if(!value||/^(nan|none|null|n\/a|-)$/i.test(value)){for(const n of [...ex.childNodes])if(n.nodeType===3)n.textContent='—';ex.title='Chưa có thông tin sàn'}else{const span=document.createElement('span');span.className='dx6-exchange';span.dataset.exchange=value;for(const n of [...ex.childNodes])if(n.nodeType===3)span.append(n);ex.prepend(span)}}
+if(date&&quality&&(text(date)!==r.date||text(quality).replace(/ⓘ/g,'').trim()!=='D0')){const note=document.createElement('span');note.className='dx6-exceptions';note.textContent=text(date)+' · '+text(quality).replace(/ⓘ/g,'').trim();note.title='Dữ liệu khác ngày chuẩn hoặc chất lượng D0';main.append(note)}
+const detail=row.querySelector('[data-detail]');if(detail){detail.classList.add('dx6-detail-icon');detail.title='Chi tiết '+ticker;detail.setAttribute('aria-label','Chi tiết '+ticker);detail.innerHTML=svg}
+const line=document.createElement('div');line.className='dx6-mobile-line';line.setAttribute('aria-label','Xem nhanh '+ticker);const exChip=ex?.querySelector('.dx6-exchange');if(exChip){const badge=exChip.cloneNode(true);badge.classList.add('dx6-mobile-exchange');main.append(badge)}const trend=row.querySelector('[data-label="Trend"] .pill');if(trend){const badge=trend.cloneNode(true);badge.classList.add('dx6-mobile-trend');badge.title=text(trend);main.append(badge)}for(const name of ['RS Percentile','RS 3M','Action']){const cell=row.querySelector('[data-label="'+name+'"]');if(!cell)continue;const c=document.createElement('span');c.textContent=(name==='RS Percentile'?'RS ':name==='RS 3M'?'3M ':'')+text(cell).replace(/ⓘ/g,'').trim();c.title=name+': '+c.textContent;c.className='dx6-mobile-item';c.dataset.metric=name;if(name==='RS 3M'){const value=number(text(cell));if(Number.isFinite(value)&&value!==0)c.style.color=value>0?'var(--good)':'var(--bad)'}line.append(c)}const expand=document.createElement('button');expand.type='button';expand.className='dx6-mobile-expand';expand.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';expand.title='Xem đủ cột';expand.setAttribute('aria-label','Xem đủ cột của '+ticker);expand.setAttribute('aria-expanded','false');expand.onclick=e=>{e.stopPropagation();const open=row.classList.toggle('dx6-expanded');expand.setAttribute('aria-expanded',String(open));expand.title=open?'Thu gọn cột':'Xem đủ cột';expand.setAttribute('aria-label',expand.title+' của '+ticker)};line.append(expand);row.append(line)}
+function ordered(r){if(!r.sort)return [...r.rows];const key=r.sort,dir=r.dir==='ascending'?1:-1;const fields={'Mã':'ticker','Sàn':'exchange','Ngành':'sector','Giá':'close','GTGD TB20':'avgValue20B','Trend':'trendStage','Cách đỉnh 52W':'highGapPct','RS Percentile':'rsPercentile','RS 3M':'rs3m','RS 6M':'rs6m','RS Trend':'rsTrend','Base / VCP':'baseStatus','Breakout':'breakoutStatus','Setup':'setupSummary','Grade':'trackerGrade','Tracker Score':'trackerScore','Market Fit':'marketFitScore','Risk Score':'riskScore','Risk':'riskPct','Action':'trackerAction'};const f=fields[key];if(!f)return [...r.rows];return [...r.rows].sort((a,b)=>{const va=a[f],vb=b[f];if(typeof va==='number'&&typeof vb==='number')return dir*(va-vb);return dir*String(va??'').localeCompare(String(vb??''),'vi',{numeric:true})})}
+function render(r){const rows=ordered(r),visible=rows.slice(0,r.limit);const set=new Set(visible.map(x=>x.ticker));for(const row of [...r.body.children])if(!set.has(text(row.querySelector('.ticker'))))row.remove();visible.forEach(x=>{let row=r.cache.get(x.ticker);if(!row){row=cellsFromMetric(x);r.cache.set(x.ticker,row)}prepare(row,r);r.body.append(row)});r.count.textContent='Hiển thị '+visible.length+' / '+rows.length+' mã';r.more.hidden=visible.length>=rows.length;r.more.textContent='Hiện thêm '+Math.min(50,rows.length-visible.length)+' mã';r.head.querySelectorAll('[data-sort-label]').forEach(b=>{const active=b.dataset.sortLabel===r.sort;b.parentElement.setAttribute('aria-sort',active?r.dir:'none');b.textContent=b.dataset.sortLabel+(active?(r.dir==='ascending'?' ↑':' ↓'):'')});}
+function upgrade(detail,list){if(records.has(list))return;const rows=source(detail);if(!rows.length)return;const originals=[...list.querySelectorAll(':scope>.pipeline-stock-card')];if(!originals.length)return;const labels=[...originals[0].children].map(n=>n.dataset.label).filter(Boolean);const columns=[...important.filter(k=>labels.includes(k)),...labels.filter(k=>!important.includes(k)&&!['Ngày','Data','Thao tác'].includes(k)),...labels.filter(k=>k==='Thao tác')];
+const r={detail,list,rows:[...rows],columns,cache:new Map(),limit:Math.min(50,rows.length),date:typeof state!=='undefined'?state.quality?.standardDate:'',sort:null,dir:'ascending'};records.set(list,r);views.add(r);list.classList.add('dx6-list');list.dataset.density=density;
+const dates=rows.map(x=>x.date).filter(Boolean);if(!r.date)r.date=dates.sort().at(-1)||'—';const d0=rows.filter(x=>x.date===r.date&&x.dataQualityLabel==='D0').length;
+const bar=document.createElement('div');bar.className='dx6-bar';const meta=document.createElement('span');meta.textContent='Dữ liệu ngày '+r.date+' · Chất lượng D0 ('+d0+'/'+rows.length+' mã)';bar.append(meta);const controls=document.createElement('div');controls.className='dx6-density';controls.setAttribute('role','group');controls.setAttribute('aria-label','Mật độ hàng');for(const [key,label]of [['compact','Gọn'],['comfortable','Thoải mái']]){const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.density=key;b.setAttribute('aria-pressed',String(density===key));b.onclick=e=>{e.stopPropagation();density=key;try{localStorage.setItem(KEY,key)}catch(_){}views.forEach(v=>{if(!v.list.isConnected)return;v.list.dataset.density=key;v.list.querySelectorAll('.dx6-density button').forEach(n=>n.setAttribute('aria-pressed',String(n.dataset.density===key)))})};controls.append(b)}bar.append(controls);
+const scroll=document.createElement('div');scroll.className='dx6-scroll';scroll.setAttribute('role','table');scroll.setAttribute('aria-label','Danh sách mã '+detail.dataset.stage);scroll.tabIndex=0;scroll.style.setProperty('--dx6-columns',columns.map(k=>(widths[k]||140)+'px').join(' '));scroll.style.setProperty('--dx6-width',columns.reduce((n,k)=>n+(widths[k]||140),0)+'px');const head=document.createElement('div');head.className='dx6-columns';head.setAttribute('role','row');r.head=head;
+columns.forEach(label=>{const cell=document.createElement('div');cell.className='dx6-heading';cell.setAttribute('role','columnheader');const b=document.createElement('button');b.type='button';b.className='dx6-sort';b.dataset.sortLabel=label;b.textContent=label;b.title='Sắp xếp hiển thị theo '+label;b.onclick=e=>{e.stopPropagation();r.dir=r.sort===label&&r.dir==='ascending'?'descending':'ascending';r.sort=label;render(r)};cell.append(b);help(label,cell);head.append(cell)});const body=document.createElement('div');body.setAttribute('role','rowgroup');body.className='dx6-body';r.body=body;scroll.append(head,body);originals.forEach(row=>r.cache.set(text(row.querySelector('.ticker')),row));
+const old=list.querySelector('.pipeline-more');if(old){old.classList.add('dx6-old-more');old.tabIndex=-1;old.setAttribute('aria-hidden','true')}const foot=document.createElement('div');foot.className='dx6-foot';r.count=document.createElement('span');r.count.setAttribute('aria-live','polite');r.more=document.createElement('button');r.more.type='button';r.more.className='btn small';r.more.onclick=()=>{r.limit+=50;render(r)};foot.append(r.count,r.more);list.prepend(bar,scroll);list.append(foot);render(r)}
+function missingExchanges(){if(typeof state==='undefined'||!state.rawRows)return;if(exchangeRows!==state.rawRows){exchangeRows=state.rawRows;missingCount=new Set(state.rawRows.filter(x=>!x.exchange||x.exchange==='UNKNOWN').map(x=>x.ticker)).size}const panel=document.querySelector('#qualityPanel .panel-body')||document.getElementById('qualityPanel');if(!panel)return;let box=panel.querySelector('.dx6-quality-warning');if(!box){box=document.createElement('p');box.className='dx6-quality-warning';box.setAttribute('role','status');panel.append(box)}const value=missingCount?missingCount.toLocaleString('vi-VN')+' mã thiếu thông tin sàn. Kiểm tra cột exchange trong CSV hoặc nhập bằng 3 ô HOSE/HNX/UPCOM.':'';if(box.textContent!==value)box.textContent=value;box.hidden=!missingCount;}
+function unknownDisplay(){document.querySelectorAll('[data-label="Sàn"],#resultBody td[data-label="Sàn"],.header-search-meta,#modalTitle').forEach(cell=>{for(const node of cell.childNodes){if(node.nodeType===3&&/\bUNKNOWN\b/.test(node.textContent)){node.textContent=node.textContent.replace(/\bUNKNOWN\b/g,'—');cell.title='Chưa có thông tin sàn'}}})}
+function scan(){observer.disconnect();for(const r of views)if(!r.list.isConnected)views.delete(r);document.querySelectorAll('#sidePipeline>details.quick-stage[open]').forEach(d=>{const list=d.querySelector('.pipeline-stock-list');if(list)upgrade(d,list)});missingExchanges();unknownDisplay();observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['open']})}
+const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>safe(scan),120)});document.addEventListener('toggle',e=>{if(e.target.matches('details.quick-stage')){clearTimeout(timer);timer=setTimeout(()=>safe(scan),130)}},true);safe(scan);
+}catch(e){console.warn('Không thể nâng cấp bảng Pipeline:',e)}})();
+
+(()=>{'use strict';try{
+// Reparent giữ nguyên node, id, canvas và handler; không sao chép công cụ tương tác.
+const KEY='tracker_ui_collapse_v1',roots=new WeakSet();let timer;const svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
+const measured=new WeakSet();let measureTimer;const resize=new ResizeObserver(()=>{clearTimeout(measureTimer);measureTimer=setTimeout(masonry,60)});
+function masonry(){document.querySelectorAll('.dx6-tier-grid:not(.dx6-kpi-grid)').forEach(g=>{if(!g.getClientRects().length)return;g.classList.add('dx6-dense');for(const c of g.children){if(!measured.has(c)){measured.add(c);resize.observe(c)}const n=String(Math.ceil(c.getBoundingClientRect().height+16));if(c.style.getPropertyValue('--dx6-rows')!==n)c.style.setProperty('--dx6-rows',n)}})}
+const text=n=>(n?.textContent||'').trim(),clean=n=>{const c=n?.cloneNode(true);c?.querySelectorAll('.cux-summary,.th-header-help,.px-block-brief,.th-info').forEach(x=>x.remove());return text(c).replace(/\s+/g,' ')},title=c=>clean(c.querySelector(':scope>h2,:scope>h3,:scope>.v2-sub,:scope>.t140-muted,:scope>.v2-between h2'));
+function store(k,v){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');s[k]=v;localStorage.setItem(KEY,JSON.stringify(s))}catch(_){}}
+function group(root,name,kind){const s=document.createElement('section');s.className='dx6-tier';s.dataset.tier=kind;s.id='dx6-'+root.closest('.v2-view,.t140-view')?.id+'-'+kind+'-'+name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/gi,'').toLowerCase();const h=document.createElement('h3');h.className='dx6-tier-title';const content=document.createElement('div');content.className='dx6-group-content';const inner=document.createElement('div');inner.className='dx6-group-inner';const grid=document.createElement('div');grid.className='dx6-tier-grid';if(kind==='kpi')grid.classList.add('dx6-kpi-grid');inner.append(grid);content.append(inner);s.append(h,content);root.append(s);
+if(kind==='analysis'||kind==='system'){const b=document.createElement('button');b.type='button';b.className='dx6-group-toggle';b.innerHTML=svg;const nameNode=document.createElement('span');nameNode.textContent=name;b.append(nameNode);b.id=s.id+'-heading';content.id=s.id+'-content';b.setAttribute('aria-controls',content.id);content.setAttribute('role','region');content.setAttribute('aria-labelledby',b.id);const key='workspace:'+s.id;let closed=kind==='system';try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(typeof saved[key]==='boolean')closed=saved[key]}catch(_){}function set(v,persist){s.dataset.closed=String(v);b.setAttribute('aria-expanded',String(!v));content.inert=v;content.setAttribute('aria-hidden',String(v));if(persist)store(key,v);if(!v)setTimeout(()=>window.dispatchEvent(new Event('resize')),230)}b.onclick=()=>set(s.dataset.closed!=='true',true);h.append(b);set(closed,false)}else h.textContent=name;return{s,grid}}
+function module(card,span=4){card.classList.add('dx6-module');card.style.setProperty('--dx6-span',span);if(span===12)card.classList.add('dx6-full');const head=card.querySelector(':scope>h2,:scope>h3,:scope>.v2-between');if(head&&!head.parentElement.classList.contains('dx6-module-head')){const wrap=document.createElement('div');wrap.className='dx6-module-head';head.before(wrap);wrap.append(head);const help=card.querySelector(':scope>.th-header-help');if(help)wrap.append(help);const ranges=card.querySelector(':scope>.dx-ranges');if(ranges&&card.querySelector('canvas'))wrap.append(ranges)}const verdict=card.querySelector('.th-badge')?.dataset.verdict;card.style.setProperty('--dx6-verdict',({good:'var(--pos)',neutral:'#f5b82e',caution:'var(--neg)'})[verdict]||'var(--muted)')}
+function kpi(card){card.classList.add('dx6-kpi');card.style.setProperty('--dx6-span','3');card.classList.remove('is-folded','px-block-closed','cux-closed');card.querySelectorAll(':scope>.cux-piece').forEach(p=>{p.classList.remove('cux-hidden');p.inert=false;p.removeAttribute('aria-hidden');p.style.maxHeight=''});const value=text(card.querySelector(':scope>.v2-kpi,:scope>.t140-kpi'));card.dataset.dx6TextKpi=String(/[A-Za-z]/.test(value)||value.length>12);const v=card.querySelector('.th-badge')?.dataset.verdict;card.style.setProperty('--dx6-verdict',({good:'var(--pos)',neutral:'#f5b82e',caution:'var(--neg)'})[v]||'var(--muted)')}
+function arrange(root,view){if(roots.has(root)&&root.querySelector(':scope>.dx6-quicknav'))return;const cards=[...root.children].filter(c=>c.matches('.v2-card,.t140-card'));if(!cards.length)return;if(view==='lab'&&!cards.some(c=>c.querySelector('canvas')))return;roots.add(root);root.classList.add('dx6-workspace');const map=new Map(cards.map(c=>[title(c),c])),find=name=>map.get(name)||cards.find(c=>title(c).includes(name));const nav=document.createElement('nav');nav.className='dx6-quicknav';nav.setAttribute('aria-label','Điều hướng nội dung '+view);root.prepend(nav);const sections=[];const kp=group(root,'Chỉ số chính','kpi');sections.push(kp);const work=group(root,'Bảng & biểu đồ','work');sections.push(work);
+function put(section,names,spans){names.forEach((name,i)=>{const c=find(name);if(!c)return;section.grid.append(c);if(section===kp)kpi(c);else module(c,Array.isArray(spans)?spans[i]:spans||4);map.delete(title(c));cards.splice(cards.indexOf(c),1)})}
+if(view==='dashboard'){put(kp,['MARKET HEALTH','O’NEIL MARKET','BREADTH > MA50','LEADERSHIP']);put(work,['Top Setups — Evidence Ranking','Market Timing','Sector Rotation'],[8,4,12]);const system=group(root,'Dữ liệu & hệ thống','system');sections.push(system);put(system,['Data Engine V2'],12);system.s.classList.add('dx6-system');const status=document.getElementById('v2EngineStatus');if(status){status.classList.add('dx6-worker-status');nav.append(status)}const labels={v2SaveDataset:'Lưu offline',v2LoadDataset:'Tải',v2ClearDataset:'Xóa'};for(const [id,name]of Object.entries(labels)){const b=document.getElementById(id);if(b)b.textContent=name}}
+if(view==='lab'){put(kp,['CONFLUENCE','BASE QUALITY','MTF','WEINSTEIN']);put(work,['Advanced Chart','Multi Score'],[8,4]);const chart=work.grid.querySelector('canvas')?.closest('.v2-card');chart?.classList.add('dx6-chart-card');for(const [name,items]of [['Sức mạnh tương đối',['RS V2']],['Khối lượng & biến động',['Volume Intelligence','Bollinger']],['Mẫu hình & chu kỳ',['VCP V2','O’Neil Patterns','Wyckoff Events']],['Hành động & rủi ro',['Elder','Anchored VWAP']],['Bằng chứng tổng hợp',['Explainable Evidence']]]){const g=group(root,name,'analysis');sections.push(g);put(g,items,items.length===1?12:items.length===2?6:4)}}
+if(view==='overview'){put(kp,['Regime','Breadth > MA50','Breadth > MA200','Breakout hiện tại']);put(work,['Sector Rotation','4 chu kỳ cổ phiếu','Top Ranking'],[8,4,12]);const g=group(root,'Khối lượng theo kỳ','analysis');sections.push(g);cards.filter(c=>title(c).startsWith('Top 10 khối lượng')).forEach(c=>{g.grid.append(c);module(c,6);cards.splice(cards.indexOf(c),1)})}
+if(view==='watchlist')put(work,['Watchlist nâng cao'],12);
+if(view==='settings'){put(work,['Appearance','Backup / Restore'],[6,6]);const g=group(root,'Hiển thị & chất lượng dữ liệu','analysis');sections.push(g);put(g,['Mobile / PWA-like','Data Quality'],[6,6]);const system=group(root,'Dữ liệu & hệ thống','system');sections.push(system);put(system,['Diagnostics / Self-test'],12);system.s.classList.add('dx6-system')}
+for(const c of cards){if(c.querySelector('.lab-picker')){root.prepend(c);continue}if(view==='lab'&&title(c)==='Research Lab v2'){root.prepend(c);continue}const g=sections.find(s=>s.s.dataset.tier==='analysis')||work;g.grid.append(c);module(c,12)}
+sections.forEach(({s,grid})=>{if(!grid.children.length){s.remove();return}const a=document.createElement('a');a.href='#'+s.id;a.textContent=s.querySelector('h3').textContent;a.onclick=()=>{if(s.dataset.closed==='true')s.querySelector('.dx6-group-toggle')?.click()};nav.append(a)});window.dispatchEvent(new Event('resize'))}
+function scan(){observer.disconnect();for(const [sel,view]of [['#t140-v2dashboard>.v2-grid','dashboard'],['#t140-v2lab>.v2-grid','lab'],['#t140-overview>.t140-grid','overview'],['#t140-settings>.t140-grid','settings'],['#t140-watchlist>.t140-grid','watchlist']])document.querySelectorAll(sel).forEach(r=>arrange(r,view));document.querySelectorAll('.dx6-kpi').forEach(kpi);document.querySelectorAll('.dx6-module').forEach(c=>{const h=c.querySelector('.dx6-module-head');const help=c.querySelector(':scope>.th-header-help');if(h&&help)h.append(help);const headerHelp=h?.querySelector('.th-header-help');if(headerHelp){headerHelp.inert=false;headerHelp.removeAttribute('aria-hidden');headerHelp.classList.remove('cux-hidden')}});observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-verdict','class','aria-hidden','inert']})}
+const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>{try{scan();masonry()}catch(e){console.warn('Bố cục theo công năng:',e)}},160)});window.addEventListener('resize',()=>{clearTimeout(measureTimer);measureTimer=setTimeout(masonry,60)});scan();masonry();
+}catch(e){console.warn('Không thể tổ chức các tầng giao diện:',e)}})();
+
+</script>
 </body>
 </html>
+
