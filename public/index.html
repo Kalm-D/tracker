@@ -5543,7 +5543,7 @@ body:not(#_).mx-active .modal-head{position:sticky!important;top:0!important;z-i
 body:not(#_).mx-active .modal-head h2{font-size:20px!important}
 body:not(#_).mx-active .modal-body{padding:12px!important;min-width:0!important}
 body:not(#_).mx-active .detail-grid{grid-template-columns:minmax(0,1fr)!important}
-body:not(#_).mx-active :is(#priceCanvas,#v2AdvCanvas){width:100%!important;max-width:100%!important;height:clamp(228px,61vw,430px)!important;touch-action:pan-y!important}
+body:not(#_).mx-active :is(#priceCanvas,#v2AdvCanvas){width:100%!important;max-width:100%!important;height:clamp(228px,61vw,430px)!important;touch-action:pan-y pinch-zoom!important}
 body:not(#_).mx-active .dx-ranges{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;overflow-x:auto!important;max-width:100%!important;width:100%!important}
 body:not(#_).mx-active .dx-ranges button{min-height:44px!important;flex:none!important;font-size:12px!important;padding:6px 10px!important}
 body:not(#_).mx-active .mx-chart-tip{display:block!important;font-size:12px!important;line-height:1.4!important;color:var(--text)!important;background:var(--surface2)!important;border:1px solid var(--line)!important;padding:8px!important;border-radius:10px!important;min-height:34px!important}
@@ -5592,6 +5592,20 @@ body:not(#_) :is(.th-info,.cux-trigger,.px-block-toggle){min-width:44px!importan
 })();
 
 </script>
+<style id="trackerTouchStability">
+/* Canvas inspection is an interaction, not selectable page content on iOS. */
+body:not(#_) :is(#priceCanvas,#v2AdvCanvas,.dx-ranges,.mx-chart-tip){
+  -webkit-user-select:none!important;
+  user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+@media screen{
+  body:not(#_) #sidePipeline>.quick-stage>.cux-piece{transition:none!important}
+}
+@media screen and (max-width:768px){
+  body:not(#_) .cux-piece{transition:none!important}
+}
+</style>
 </head>
 <body class="tracker-app-v127">
   <div class="app">
@@ -8467,10 +8481,14 @@ body:not(#_) :is(.th-info,.cux-trigger,.px-block-toggle){min-width:44px!importan
         list.querySelector('.pipeline-more')?.addEventListener('click', () => renderCards(detail, limit + 20));
         list.querySelectorAll('[data-detail]').forEach(btn => btn.addEventListener('click', () => openDetail(btn.dataset.detail)));
         list.querySelectorAll('[data-watch]').forEach(btn => btn.addEventListener('click', () => toggleWatch(btn.dataset.watch)));
+        // Finish the row layout in this task, before the browser paints the list.
+        list.dispatchEvent(new CustomEvent('tracker:pipeline-rendered', { bubbles: true }));
       };
       wrap.querySelectorAll('.quick-stage').forEach(detail => {
-        if (detail.open) renderCards(detail);
-        detail.addEventListener('toggle', () => { if (detail.open && !detail.querySelector('.pipeline-stock-list').children.length) renderCards(detail); });
+        const prepareCards = () => { if (!detail.querySelector('.pipeline-stock-list').children.length) renderCards(detail); };
+        detail.addEventListener('tracker:pipeline-prepare', prepareCards);
+        if (detail.open) prepareCards();
+        detail.addEventListener('toggle', () => { if (detail.open) prepareCards(); });
       });
       const selected = getSelectedStages();
       const filters = $("engineStageFilters");
@@ -9388,6 +9406,8 @@ function chart(cv,x,opt,fallback){
  if(!cv) return;
  let c=charts.get(cv);
  if(!c){c={cv,x,opt,fallback,count:opt.count,hover:null};charts.set(cv,c);cv.dataset.dx='chart';
+ cv.addEventListener('selectstart',e=>e.preventDefault());
+ cv.addEventListener('contextmenu',e=>e.preventDefault());
  const ranges=document.createElement('div');ranges.className='dx-ranges';ranges.dataset.dx='ranges';ranges.setAttribute('aria-label','Số phiên hiển thị');
  [['Mặc định',opt.count],['3M',63],['6M',126],['1Y',252],['All',Infinity]].forEach(([label,count])=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-pressed',String(label==='Mặc định'));b.addEventListener('click',()=>{c.count=count;c.hover=null;for(const bt of ranges.children)bt.setAttribute('aria-pressed',String(bt===b));paintSafe(c)});ranges.append(b)});cv.before(ranges);
  const move=e=>{const r=cv.getBoundingClientRect(),t=e.touches?.[0]||e;c.hover={x:t.clientX-r.left,y:t.clientY-r.top};schedulePaint(c)};
@@ -9473,8 +9493,25 @@ function fill(){e.summary.replaceChildren(...vals.slice(0,keep).map(make));if(va
 }
 function members(g){return [...entries.values()].filter(e=>e.group===g&&e.card.isConnected)}
 function labelTools(){groups.forEach((g,key)=>{const label=members(key).some(e=>!e.closed)?'Thu gọn tất cả':'Mở tất cả';if(g.all.textContent!==label)g.all.textContent=label})}
-function apply(e,closed,save=true){clearTimeout(e.end);e.closed=closed;e.card.classList.remove('is-folded');e.card.classList.toggle('cux-closed',closed);e.button.setAttribute('aria-expanded',String(!closed));if(e.native&&!closed)e.card.open=true;e.pieces.forEach(p=>{if(closed){p.style.maxHeight=p.scrollHeight+'px';void p.offsetHeight}p.classList.toggle('cux-hidden',closed);p.inert=closed;if(closed)p.setAttribute('aria-hidden','true');else p.removeAttribute('aria-hidden');if(!closed){p.style.maxHeight=p.scrollHeight+'px'}});
-e.end=setTimeout(()=>{if(e.native&&e.closed)e.card.open=false;if(!e.closed){e.pieces.forEach(p=>p.style.maxHeight=e.heights.get(p)||'');if(e.card.querySelector('canvas'))window.dispatchEvent(new Event('resize'))}},matchMedia('(prefers-reduced-motion: reduce)').matches?0:230);if(save){saved[e.key]=closed;persist()}renderSummary(e);labelTools()}
+function apply(e,closed,save=true){
+ clearTimeout(e.end);e.closed=closed;
+ const pipeline=e.native&&e.card.matches('.quick-stage');
+ const instant=pipeline||matchMedia('(max-width:768px)').matches||matchMedia('(prefers-reduced-motion:reduce)').matches;
+ if(pipeline&&!closed)e.card.dispatchEvent(new Event('tracker:pipeline-prepare'));
+ e.card.classList.remove('is-folded');e.card.classList.toggle('cux-closed',closed);
+ e.button.setAttribute('aria-expanded',String(!closed));
+ if(e.native&&!closed)e.card.open=true;
+ e.pieces.forEach(p=>{
+  if(!instant&&closed){p.style.maxHeight=p.scrollHeight+'px';void p.offsetHeight}
+  p.classList.toggle('cux-hidden',closed);p.inert=closed;
+  if(closed)p.setAttribute('aria-hidden','true');else p.removeAttribute('aria-hidden');
+  if(instant)p.style.maxHeight=e.heights.get(p)||'';
+  else if(!closed)p.style.maxHeight=p.scrollHeight+'px';
+ });
+ const finish=()=>{if(e.native&&e.closed)e.card.open=false;if(!e.closed){e.pieces.forEach(p=>p.style.maxHeight=e.heights.get(p)||'');if(e.card.querySelector('canvas'))window.dispatchEvent(new Event('resize'))}};
+ if(instant)finish();else e.end=setTimeout(finish,230);
+ if(save){saved[e.key]=closed;persist()}renderSummary(e);labelTools()
+}
 function toggle(e){if(e.closed&&saved['accordion:'+e.group])members(e.group).filter(x=>x!==e).forEach(x=>apply(x,true));apply(e,!e.closed)}
 function toolbar(group,container){if(groups.has(group)&&groups.get(group).bar.isConnected)return;const bar=document.createElement('div');bar.className='cux-tools';const all=document.createElement('button');all.type='button';const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.setAttribute('role','switch');check.checked=!!saved['accordion:'+group];label.append(check,document.createTextNode('Chế độ accordion'));bar.append(all,label);if(group==='settings'){bar.id='cuxTools';all.id='cuxAll';check.id='cuxAccordion'}container.append(bar);groups.set(group,{bar,all,check});all.onclick=()=>{const close=members(group).some(e=>!e.closed);if(!close){saved['accordion:'+group]=false;check.checked=false}members(group).forEach(e=>apply(e,close));persist()};check.onchange=()=>{saved['accordion:'+group]=check.checked;if(check.checked){let first=true;members(group).forEach(e=>{if(!e.closed){if(first)first=false;else apply(e,true)}})}persist()};}
 function enhanceCard(card,head,native=false){if(card.dataset.cux||card.dataset.pxBlock||!head)return;const setting=card.matches('.setting-group'),view=card.closest('.t140-view,.v2-view')?.id||'screener',group=setting?'settings':card.matches('.quick-stage')?'pipeline':view;
@@ -9503,7 +9540,7 @@ function layout(){clearTimeout(pending);for(const c of observed)if(!c.isConnecte
 function schedule(){clearTimeout(pending);pending=setTimeout(()=>{try{layout()}catch(e){console.warn('Bố cục thẻ:',e)}},60)}
 const ro=new ResizeObserver(schedule),mo=new MutationObserver(schedule);TrackerViewRuntime.observe(mo,{childList:true,subtree:true});
 // Tạo hai khung vẽ rõ ràng để max-height chuyển từ 0 sang chiều cao nội dung.
-const animate=new MutationObserver(ms=>{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;ms.forEach(m=>{const card=m.target;if(!card.matches('[data-cux="1"]')||card.classList.contains('cux-closed')||!String(m.oldValue).split(' ').includes('cux-closed'))return;card.querySelectorAll(':scope>.cux-piece').forEach(p=>{const height=p.scrollHeight;if(!height)return;if(!baseOverflow.has(p))baseOverflow.set(p,p.style.overflow);const overflow=baseOverflow.get(p);p.style.maxHeight='0px';p.style.overflow='hidden';void p.offsetHeight;requestAnimationFrame(()=>{if(card.classList.contains('cux-closed'))return;p.style.maxHeight=height+'px';setTimeout(()=>{if(!card.classList.contains('cux-closed')){p.style.maxHeight='';p.style.overflow=overflow;schedule()}},225)})})})});TrackerViewRuntime.observe(animate,{subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});window.addEventListener('resize',schedule);document.addEventListener('transitionend',e=>{if(e.target.classList.contains('cux-piece'))schedule()});document.addEventListener('click',e=>{const trigger=e.target.closest('.cux-trigger');if(!trigger)return;setTimeout(()=>{schedule();if(trigger.getAttribute('aria-expanded')==='true'){const card=trigger.closest('[data-cux="1"]'),r=(card||trigger).getBoundingClientRect();if(r.height<innerHeight&&(r.top<0||r.bottom>innerHeight))(card||trigger).scrollIntoView({block:'nearest',behavior:'auto'});/* Khối không có canvas không cần kích hoạt vẽ lại mọi biểu đồ. */}},250)});layout();
+const animate=new MutationObserver(ms=>{if(matchMedia('(prefers-reduced-motion:reduce)').matches||matchMedia('(max-width:768px)').matches)return;ms.forEach(m=>{const card=m.target;if(card.matches('.quick-stage')||!card.matches('[data-cux="1"]')||card.classList.contains('cux-closed')||!String(m.oldValue).split(' ').includes('cux-closed'))return;card.querySelectorAll(':scope>.cux-piece').forEach(p=>{const height=p.scrollHeight;if(!height)return;if(!baseOverflow.has(p))baseOverflow.set(p,p.style.overflow);const overflow=baseOverflow.get(p);p.style.maxHeight='0px';p.style.overflow='hidden';void p.offsetHeight;requestAnimationFrame(()=>{if(card.classList.contains('cux-closed'))return;p.style.maxHeight=height+'px';setTimeout(()=>{if(!card.classList.contains('cux-closed')){p.style.maxHeight='';p.style.overflow=overflow;schedule()}},225)})})})});TrackerViewRuntime.observe(animate,{subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});window.addEventListener('resize',schedule);document.addEventListener('transitionend',e=>{if(e.target.classList.contains('cux-piece'))schedule()});document.addEventListener('click',e=>{const trigger=e.target.closest('.cux-trigger');if(!trigger)return;setTimeout(()=>{schedule();if(!matchMedia('(max-width:768px)').matches&&!trigger.closest('.quick-stage')&&trigger.getAttribute('aria-expanded')==='true'){const card=trigger.closest('[data-cux="1"]'),r=(card||trigger).getBoundingClientRect();if(r.height<innerHeight&&(r.top<0||r.bottom>innerHeight))(card||trigger).scrollIntoView({block:'nearest',behavior:'auto'});/* Khối không có canvas không cần kích hoạt vẽ lại mọi biểu đồ. */}},250)});layout();
 }catch(e){console.warn('Không thể nâng cấp bố cục:',e)}})();
 </script>
 <script id="trackerHelpScript">
@@ -11244,7 +11281,7 @@ const line=document.createElement('div');line.className='dx6-mobile-line';line.s
 function ordered(r){if(!r.sort)return [...r.rows];const key=r.sort,dir=r.dir==='ascending'?1:-1;const fields={'Mã':'ticker','Sàn':'exchange','Ngành':'sector','Giá':'close','GTGD TB20':'avgValue20B','Trend':'trendStage','Cách đỉnh 52W':'highGapPct','RS Percentile':'rsPercentile','RS 3M':'rs3m','RS 6M':'rs6m','RS Trend':'rsTrend','Base / VCP':'baseStatus','Breakout':'breakoutStatus','Setup':'setupSummary','Grade':'trackerGrade','Tracker Score':'trackerScore','Market Fit':'marketFitScore','Risk Score':'riskScore','Risk':'riskPct','Action':'trackerAction'};const f=fields[key];if(!f)return [...r.rows];return [...r.rows].sort((a,b)=>{const va=a[f],vb=b[f];if(typeof va==='number'&&typeof vb==='number')return dir*(va-vb);return dir*String(va??'').localeCompare(String(vb??''),'vi',{numeric:true})})}
 function render(r){const rows=ordered(r),visible=rows.slice(0,r.limit);const set=new Set(visible.map(x=>x.ticker));for(const row of [...r.body.children])if(!set.has(text(row.querySelector('.ticker'))))row.remove();visible.forEach(x=>{let row=r.cache.get(x.ticker);if(!row){row=cellsFromMetric(x);r.cache.set(x.ticker,row)}prepare(row,r);r.body.append(row)});r.count.textContent='Hiển thị '+visible.length+' / '+rows.length+' mã';r.more.hidden=visible.length>=rows.length;r.more.textContent='Hiện thêm '+Math.min(50,rows.length-visible.length)+' mã';r.head.querySelectorAll('[data-sort-label]').forEach(b=>{const active=b.dataset.sortLabel===r.sort;b.parentElement.setAttribute('aria-sort',active?r.dir:'none');b.textContent=b.dataset.sortLabel+(active?(r.dir==='ascending'?' ↑':' ↓'):'')});}
 function upgrade(detail,list){if(records.has(list))return;const rows=source(detail);if(!rows.length)return;const originals=[...list.querySelectorAll(':scope>.pipeline-stock-card')];if(!originals.length)return;const labels=[...originals[0].children].map(n=>n.dataset.label).filter(Boolean);const columns=[...important.filter(k=>labels.includes(k)),...labels.filter(k=>!important.includes(k)&&!['Ngày','Data','Thao tác'].includes(k)),...labels.filter(k=>k==='Thao tác')];
-const r={detail,list,rows:[...rows],columns,cache:new Map(),limit:Math.min(50,rows.length),date:typeof state!=='undefined'?state.quality?.standardDate:'',sort:null,dir:'ascending'};records.set(list,r);views.add(r);list.classList.add('dx6-list');list.dataset.density=density;
+const r={detail,list,rows:[...rows],columns,cache:new Map(),limit:Math.min(originals.length,rows.length),date:typeof state!=='undefined'?state.quality?.standardDate:'',sort:null,dir:'ascending'};records.set(list,r);views.add(r);list.classList.add('dx6-list');list.dataset.density=density;
 const dates=rows.map(x=>x.date).filter(Boolean);if(!r.date)r.date=dates.sort().at(-1)||'—';const d0=rows.filter(x=>x.date===r.date&&x.dataQualityLabel==='D0').length;
 const bar=document.createElement('div');bar.className='dx6-bar';const meta=document.createElement('span');meta.textContent='Dữ liệu ngày '+r.date+' · Chất lượng D0 ('+d0+'/'+rows.length+' mã)';bar.append(meta);const controls=document.createElement('div');controls.className='dx6-density';controls.setAttribute('role','group');controls.setAttribute('aria-label','Mật độ hàng');for(const [key,label]of [['compact','Gọn'],['comfortable','Thoải mái']]){const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.density=key;b.setAttribute('aria-pressed',String(density===key));b.onclick=e=>{e.stopPropagation();density=key;try{localStorage.setItem(KEY,key)}catch(_){}views.forEach(v=>{if(!v.list.isConnected)return;v.list.dataset.density=key;v.list.querySelectorAll('.dx6-density button').forEach(n=>n.setAttribute('aria-pressed',String(n.dataset.density===key)))})};controls.append(b)}bar.append(controls);
 const scroll=document.createElement('div');scroll.className='dx6-scroll';scroll.setAttribute('role','table');scroll.setAttribute('aria-label','Danh sách mã '+detail.dataset.stage);scroll.tabIndex=0;scroll.style.setProperty('--dx6-columns',columns.map(k=>(widths[k]||140)+'px').join(' '));scroll.style.setProperty('--dx6-width',columns.reduce((n,k)=>n+(widths[k]||140),0)+'px');const head=document.createElement('div');head.className='dx6-columns';head.setAttribute('role','row');r.head=head;
@@ -11253,7 +11290,11 @@ const old=list.querySelector('.pipeline-more');if(old){old.classList.add('dx6-ol
 function missingExchanges(){if(typeof state==='undefined'||!state.rawRows)return;if(exchangeRows!==state.rawRows){exchangeRows=state.rawRows;missingCount=new Set(state.rawRows.filter(x=>!x.exchange||x.exchange==='UNKNOWN').map(x=>x.ticker)).size}const panel=document.querySelector('#qualityPanel .panel-body')||document.getElementById('qualityPanel');if(!panel)return;let box=panel.querySelector('.dx6-quality-warning');if(!box){box=document.createElement('p');box.className='dx6-quality-warning';box.setAttribute('role','status');panel.append(box)}const value=missingCount?missingCount.toLocaleString('vi-VN')+' mã thiếu thông tin sàn. Kiểm tra cột exchange trong CSV hoặc nhập bằng 3 ô HOSE/HNX/UPCOM.':'';if(box.textContent!==value)box.textContent=value;if(box.hidden!==!missingCount)box.hidden=!missingCount;}
 function unknownDisplay(){document.querySelectorAll('[data-label="Sàn"],#resultBody td[data-label="Sàn"],.header-search-meta,#modalTitle').forEach(cell=>{for(const node of cell.childNodes){if(node.nodeType===3&&/\bUNKNOWN\b/.test(node.textContent)){node.textContent=node.textContent.replace(/\bUNKNOWN\b/g,'—');cell.title='Chưa có thông tin sàn'}}})}
 function scan(){observer.disconnect();for(const r of views)if(!r.list.isConnected)views.delete(r);document.querySelectorAll('#sidePipeline>details.quick-stage[open]').forEach(d=>{const list=d.querySelector('.pipeline-stock-list');if(list)upgrade(d,list)});missingExchanges();unknownDisplay();TrackerViewRuntime.observe(observer,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['open']})}
-const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>safe(scan),120)});document.addEventListener('toggle',e=>{if(e.target.matches('details.quick-stage')){clearTimeout(timer);timer=setTimeout(()=>safe(scan),130)}},true);safe(scan);
+document.addEventListener('tracker:pipeline-rendered',e=>{
+ const list=e.target,detail=list.closest('#sidePipeline>details.quick-stage');
+ if(detail)safe(()=>upgrade(detail,list));
+});
+const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>safe(scan),120)});safe(scan);
 }catch(e){console.warn('Không thể nâng cấp bảng Pipeline:',e)}})();
 
 (()=>{'use strict';try{
@@ -11337,11 +11378,26 @@ function results(){const wrap=document.getElementById('resultTableWrap'),body=do
 const shown=!wrap.classList.contains('is-hidden');resultTools.hidden=!shown;cls(wrap,s.mode==='cards'?'mx-cards':'mx-table');if(wrap.classList.contains('mx-cards')!==(s.mode==='cards'))wrap.classList.toggle('mx-cards',s.mode==='cards');if(wrap.classList.contains('mx-table')!==(s.mode==='table'))wrap.classList.toggle('mx-table',s.mode==='table');resultList.hidden=s.mode!=='cards';resultFooter.hidden=s.mode!=='cards';resultTools.querySelectorAll('[data-mx-mode]').forEach(b=>{const v=String(b.dataset.mxMode===s.mode);if(b.getAttribute('aria-pressed')!==v)b.setAttribute('aria-pressed',v)});const sortKey=typeof state!=='undefined'?state.sortKey:'',name=plain(document.querySelector('#resultTableWrap th[data-sort="'+sortKey+'"]'))||'Tracker Score';const sort=resultTools.querySelector('[data-mx-sort]');if(sort.textContent!=='Sắp xếp: '+name+' ▾')sort.textContent='Sắp xếp: '+name+' ▾';
 const rows=[...body.querySelectorAll(':scope>tr')],signature=rows.map(r=>r.textContent).join('|');if(signature===resultSignature)return;resultSignature=signature;resultLimit=50;draw();function draw(){resultList.replaceChildren();rows.slice(0,resultLimit).forEach(r=>{const n=stock(r);if(n)resultList.append(n)});const dates=rows.map(r=>plain(r.querySelector('[data-label="Ngày"]'))).filter(Boolean),day=dates.sort().at(-1)||'';resultMeta.textContent=rows.length?'Dữ liệu ngày '+day+' · '+rows.filter(r=>plain(r.querySelector('[data-label="Data"]'))==='D0').length+'/'+rows.length+' mã D0':'';resultFooter.replaceChildren(el('span','mx-meta','Hiển thị '+Math.min(resultLimit,rows.length)+' / '+rows.length+' mã'));if(rows.length>resultLimit)resultFooter.append(button('Hiện thêm 50 mã',null,()=>{resultLimit+=50;draw()},'btn'));} }
 // Dùng lại bộ vẽ; chỉ bật crosshair sau khi chạm giữ 250 ms.
-const charts=new WeakSet();function chart(cv){if(charts.has(cv))return;charts.add(cv);const chartTicker=text(cv.closest('.v2-card')?.querySelector('h2')).split(/\s|—|-/)[0];attr(cv,'data-mx','chart');const tip=root('div','mx-chart-tip');tip.textContent='Chạm giữ 250 ms rồi kéo ngang để đọc phiên.';cv.before(tip);const full=button('Xem ngang',null,()=>{const a=sheet('Biểu đồ · xoay ngang để xem rộng hơn',true);const ranges=cv.parentElement.querySelector('.dx-ranges');if(ranges)a.restore.push(move(ranges,a.body));a.restore.push(move(tip,a.body));a.restore.push(move(cv,a.body));a.foot.remove();window.dispatchEvent(new Event('resize'))},'btn small');cv.before(full);let hold=0,active=false,startX=0,startY=0,lastTouch=null;
-const reset=()=>{clearTimeout(hold);active=false;cv.dispatchEvent(new MouseEvent('mouseleave',{bubbles:false}))};
+const charts=new WeakSet();function chart(cv){if(charts.has(cv))return;charts.add(cv);const chartTicker=text(cv.closest('.v2-card')?.querySelector('h2')).split(/\s|—|-/)[0];attr(cv,'data-mx','chart');const tip=root('div','mx-chart-tip');tip.textContent='Chạm giữ 250 ms rồi kéo ngang để đọc phiên.';cv.before(tip);const full=button('Xem ngang',null,()=>{const a=sheet('Biểu đồ · xoay ngang để xem rộng hơn',true);const ranges=cv.parentElement.querySelector('.dx-ranges');if(ranges)a.restore.push(move(ranges,a.body));a.restore.push(move(tip,a.body));a.restore.push(move(cv,a.body));a.foot.remove();window.dispatchEvent(new Event('resize'))},'btn small');cv.before(full);let hold=0,frame=0,active=false,startX=0,startY=0,lastTouch=null;
+const reset=()=>{clearTimeout(hold);cancelAnimationFrame(frame);hold=0;frame=0;active=false;lastTouch=null;cv.dispatchEvent(new MouseEvent('mouseleave',{bubbles:false}))};
 const display=e=>{const t=e.touches?.[0]||lastTouch;if(!t)return;lastTouch=t;cv.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY,bubbles:false}));const ticker=cv.id==='priceCanvas'?text(document.getElementById('modalTitle')).split(/\s|—|-/)[0]:chartTicker,metric=typeof state!=='undefined'?state.metrics.find(m=>m.ticker===ticker):null;const range=cv.parentElement.querySelector('.dx-ranges button[aria-pressed=true]')?.textContent||'Mặc định',count=({'3M':63,'6M':126,'1Y':252,'All':Infinity})[range]||(cv.id==='priceCanvas'?160:180),rows=metric?.rows?.slice(-count);if(!rows?.length)return;const rect=cv.getBoundingClientRect(),i=Math.round(Math.max(0,Math.min(1,(t.clientX-rect.left-12)/(rect.width-82)))*(rows.length-1)),r=rows[i],prev=rows[i-1],fmt=n=>Number.isFinite(+n)?(+n).toLocaleString('vi-VN'):'—',pct=prev?.close?((r.close/prev.close-1)*100).toFixed(2)+'%':'—';tip.textContent=r.date+' · O '+fmt(r.open)+' · H '+fmt(r.high)+' · L '+fmt(r.low)+' · C '+fmt(r.close)+' · KL '+fmt(r.volume)+' · '+pct};
-on(cv,'touchstart',e=>{e.stopImmediatePropagation();const t=e.touches[0];startX=t.clientX;startY=t.clientY;lastTouch=t;active=false;hold=setTimeout(()=>{if(session!==s)return;active=true;display({touches:[lastTouch]})},250)},{capture:true,passive:true});
-on(cv,'touchmove',e=>{const t=e.touches[0];lastTouch=t;e.stopImmediatePropagation();if(!active){if(Math.hypot(t.clientX-startX,t.clientY-startY)>10)clearTimeout(hold);return}if(Math.abs(t.clientX-startX)>=Math.abs(t.clientY-startY)){e.preventDefault();display(e)}},{capture:true,passive:false});on(cv,'touchend',reset,{capture:true,passive:true});on(cv,'touchcancel',reset,{capture:true,passive:true});reset.node=cv;s.undo.push(reset)}
+on(cv,'touchstart',e=>{
+ e.stopImmediatePropagation();clearTimeout(hold);cancelAnimationFrame(frame);frame=0;active=false;
+ if(e.touches.length!==1){reset();return}
+ const t=e.touches[0];startX=t.clientX;startY=t.clientY;lastTouch=t;
+ hold=setTimeout(()=>{hold=0;if(session!==s||!cv.isConnected||!lastTouch)return;active=true;display({touches:[lastTouch]})},250);
+},{capture:true,passive:true});
+on(cv,'touchmove',e=>{
+ e.stopImmediatePropagation();
+ if(e.touches.length!==1){reset();return}
+ const t=e.touches[0];lastTouch=t;
+ if(!active){if(Math.hypot(t.clientX-startX,t.clientY-startY)>10){clearTimeout(hold);hold=0}return}
+ // Once inspecting, keep the page still even if the finger drifts vertically.
+ if(e.cancelable)e.preventDefault();
+ if(!frame)frame=requestAnimationFrame(()=>{frame=0;if(active&&session===s&&cv.isConnected)display({touches:[lastTouch]})});
+},{capture:true,passive:false});
+const end=e=>{e.stopImmediatePropagation();reset()};
+on(cv,'touchend',end,{capture:true,passive:true});on(cv,'touchcancel',end,{capture:true,passive:true});reset.node=cv;s.undo.push(reset)}
 const kpis=new WeakSet();function dots(grid){if(kpis.has(grid))return;kpis.add(grid);const dot=root('div','mx-dots');dot.setAttribute('aria-label','Chọn thẻ chỉ số');const cards=[...grid.children];cards.forEach((card,i)=>{const b=button('Chỉ số '+(i+1)+': '+text(card.querySelector('.v2-sub,.t140-muted')),null,()=>grid.scrollTo({left:card.offsetLeft-grid.offsetLeft,behavior:reduced()?'auto':'smooth'}),'');b.setAttribute('aria-current',String(i===0));dot.append(b)});grid.after(dot);const update=()=>{const i=Math.round(grid.scrollLeft/((cards[0]?.getBoundingClientRect().width||1)+12));[...dot.children].forEach((b,j)=>{const val=String(i===j);if(b.getAttribute('aria-current')!==val)b.setAttribute('aria-current',val)})};on(grid,'scroll',update,{passive:true})}
 const secondaries=new WeakSet();function secondary(g){if(secondaries.has(g)||g.dataset.closed==='true')return;secondaries.add(g);cls(g,'mx-secondary');const content=g.querySelector('.dx6-group-content'),b=g.querySelector('.dx6-group-toggle');attr(content,'inert','');attr(content,'aria-hidden','true');attr(b,'aria-expanded','false');on(b,'click',e=>{if(g.classList.contains('mx-revealed'))return;e.preventDefault();e.stopImmediatePropagation();cls(g,'mx-revealed');content.inert=false;content.setAttribute('aria-hidden','false');b.setAttribute('aria-expanded','true');s.attrs.get(content)?.delete('inert');s.attrs.get(content)?.delete('aria-hidden');s.attrs.get(b)?.delete('aria-expanded');setTimeout(()=>window.dispatchEvent(new Event('resize')),230)},true)}
 const watch=new WeakMap();function watchCards(table){const rows=[...table.querySelectorAll('tbody>tr')],sig=rows.map(r=>r.textContent+'|'+[...r.querySelectorAll('input')].map(i=>i.value).join('|')).join('|');let record=watch.get(table);if(record?.sig===sig)return;if(!record){const list=root('div','mx-cards-list');table.after(list);cls(table,'mx-watch-original');record={list,sig:''};watch.set(table,record)}record.sig=sig;record.list.replaceChildren();if(rows.length===1&&rows[0].children.length===1){record.list.append(el('p','mx-meta',plain(rows[0])));return}for(const row of rows){const card=stock(row,true);if(!card)continue;const ticker=plain(row.children[0]);card.onclick=()=>{if(typeof openDetail==='function')openDetail(ticker)};card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click()}};const menu=button('Thao tác '+ticker,'menu',()=>{const a=sheet('Watchlist · '+ticker);const edit=button('Sửa thông tin theo dõi',null,()=>{closeSheet();const f=sheet('Sửa Watchlist · '+ticker);for(const input of row.querySelectorAll('input')){const label=el('label','field',({group:'Nhóm',entry:'Giá quan tâm',target:'Mục tiêu',stop:'Stop',thesis:'Luận điểm'})[input.dataset.f]||'Thông tin');label.style.display='block';label.style.marginBottom='12px';f.body.append(label);f.restore.push(move(input,label))}f.foot.append(button('Xong',null,()=>{row.querySelectorAll('input').forEach(i=>i.dispatchEvent(new Event('change',{bubbles:true})));f.body.querySelectorAll('input').forEach(i=>i.dispatchEvent(new Event('change',{bubbles:true})));closeSheet()},'btn primary'))},'mx-menu-item');a.body.append(edit);for(const original of row.querySelectorAll('button'))a.body.append(button(plain(original),null,()=>{closeSheet();original.click()},'mx-menu-item'))},'mx-icon');on(menu,'click',e=>e.stopPropagation());card.append(menu);record.list.append(card)}}
