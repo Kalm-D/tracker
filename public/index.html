@@ -5886,6 +5886,8 @@ body:not(#_):not(#__).mx-active .mx-sheet {display:flex!important;flex-direction
 body:not(#_):not(#__).mx-active .mx-sheet-body {flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;}
 body:not(#_):not(#__).mx-active :is(.mx-sheet-head,.mx-sheet-foot) {flex:none!important;}
 }
+body:not(#_):not(#__) .cux-mode-info {display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:0!important;}
+body:not(#_):not(#__) .cux-mode-info::before {content:"";width:18px;height:18px;background:var(--muted);mask:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v6M12 7v1'/%3E%3C/svg%3E");}
 
 </style>
 </head>
