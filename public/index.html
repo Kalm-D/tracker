@@ -5912,6 +5912,11 @@ body:not(#_):not(#__).mx-active .mx-nav button span {font-size:10px!important;li
 @media screen and (max-width:389px) {
 body:not(#_):not(#__).mx-active .mx-nav button span {font-size:9px!important;}
 }
+@media screen and (max-width:768px) {
+body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg) {justify-content:flex-start!important;}
+body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item>svg {flex:none!important;}
+body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {content:attr(aria-label);min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;}
+}
 
 </style>
 </head>
