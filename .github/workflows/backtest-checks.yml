@@ -1,0 +1,20 @@
+name: Backtest correctness
+on:
+  pull_request:
+  push:
+    branches: [main, feat/backtest-engine]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/check-scripts.cjs
+      - run: node --test tests/*.test.cjs
+      - run: node tools/audit-data.cjs

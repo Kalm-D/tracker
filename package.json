@@ -1,0 +1,11 @@
+{
+  "name": "tracker-backtest",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "audit:data": "node tools/audit-data.cjs",
+    "runner": "node server/server.cjs"
+  },
+  "engines": {"node": ">=22"}
+}
