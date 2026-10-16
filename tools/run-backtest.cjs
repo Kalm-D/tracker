@@ -1,0 +1,10 @@
+const fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib'),crypto=require('node:crypto');
+const B=require('../public/backtest/engine.js');
+const [dataFile,configFile,output]=process.argv.slice(2);
+if(!dataFile||!configFile||!output)throw new Error('Usage: node tools/run-backtest.cjs snapshot.json.gz config.json result.json');
+let raw=fs.readFileSync(dataFile);if(raw[0]===31&&raw[1]===139)raw=zlib.gunzipSync(raw);
+const payload=JSON.parse(raw),saved=JSON.parse(fs.readFileSync(configFile));
+const result=B.run(payload,saved.config||saved,saved.settings);
+result.dataHash=crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+fs.mkdirSync(path.dirname(path.resolve(output)),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2));
+console.log(JSON.stringify({dataHash:result.dataHash,audit:result.audit,results:result.results.map(r=>({method:r.method,summary:r.summary})),benchmarks:result.benchmarks.map(({curve,...r})=>r)}));

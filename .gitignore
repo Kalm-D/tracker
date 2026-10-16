@@ -1,0 +1,7 @@
+.backtest-jobs/
+.env
+.env.*
+!.env.example
+node_modules/
+work/
+*.log
