@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'public/index.html'
+      - 'public/**'
       - '.github/workflows/tracker-ui-pages.yml'
   workflow_dispatch:
 permissions:
