@@ -94,6 +94,11 @@
       .map(m=>candidate(m,s.regime,method,c,settings));
   }
   function drawdown(points) {let peak=points[0]?.equity||0,worst=0;for(const p of points){peak=Math.max(peak,p.equity);if(peak>0)worst=Math.max(worst,1-p.equity/peak);}return worst;}
+  function splitPeriods(curve,date) {
+    const first=curve.findIndex(p=>p.date>=date);assert(first>0&&first<curve.length,'Mốc ngoài mẫu phải nằm sau ngày bắt đầu và trong kỳ.');
+    const period=(name,points)=>({name,from:points[0].date,to:points.at(-1).date,sessions:points.length-1,initialEquity:points[0].equity,finalEquity:points.at(-1).equity,return:points.at(-1).equity/points[0].equity-1,maxDrawdown:drawdown(points)});
+    return [period('in_sample',curve.slice(0,first)),period('out_of_sample',curve.slice(first-1))];
+  }
   function summarize(trades,curve,capital) {
     const closed=trades.filter(t=>t.status==='closed'),wins=closed.filter(t=>t.pnl>0),losses=closed.filter(t=>t.pnl<=0),last=curve.at(-1);
     const days=(Date.parse(last.date)-Date.parse(curve[0].date))/86400000;
@@ -196,6 +201,7 @@
     }
     const methods=c.method==='both'?['market','personal']:[c.method];
     const results=methods.map(m=>simulate(prepared,snapshots,dates,c,cfg,m,hooks.progress,hooks.cancelled));
+    if(c.outOfSampleStart){assert(c.outOfSampleStart>dates[0]&&c.outOfSampleStart<=dates.at(-1),'Mốc ngoài mẫu phải sau phiên đầu và không vượt ngày kết thúc.');for(const r of results)r.periods=splitPeriods(r.curve,c.outOfSampleStart);}
     const baselineDate=cal[startIndex-1];
     const benchmarks=[];
     for(const ticker of [...new Set(['VNINDEX','VN30',c.benchmark])]) {
@@ -216,5 +222,5 @@
     for(let i=c.length-2;i>=251;i--){if(snapshot(p,c[i].date,settings).regime.key!==latest.key){censored=false;break;}start=c[i].date;}
     return {key:latest.key,label:latest.label,start,end:c.at(-1).date,censored,definition:'Đoạn liên tiếp có cùng Market Regime, tính lại cuối mỗi phiên; không phải toàn bộ chu kỳ kinh tế.'};
   }
-  return {VERSION,RULE_VERSION,DEFAULTS,LIMITATIONS,config,prepare,snapshot,candidate,candidates,simulate,run,currentCycle,drawdown,summarize};
+  return {VERSION,RULE_VERSION,DEFAULTS,LIMITATIONS,config,prepare,snapshot,candidate,candidates,simulate,run,currentCycle,drawdown,splitPeriods,summarize};
 });

@@ -91,7 +91,7 @@ node tools/run-backtest.cjs snapshot.json.gz saved-result.json replay-result.jso
 
 CLI dùng `config` + `settings` từ kết quả trước. Snapshot tải từ tab là JSON; CLI nhận cả JSON/GZ. Giữ cả commit nguồn ứng dụng vì version text không chứa nội dung code. Kết quả deterministic không gồm thời gian chạy; worker thêm `createdAt` ngoài phép tính. Không dùng demo/synthetic fixture trong báo cáo lợi nhuận thật.
 
-Giữ riêng giai đoạn chọn tham số và kiểm định ngoài mẫu, khóa cấu hình trước khi chạy phần sau; không chọn preset bằng return đẹp nhất. Với snapshot ~3 tháng chạy được, chưa thể có kiểm định đủ nhiều regime/5–10 năm. Muốn mở rộng cần nguồn lịch sử có quyền sử dụng, chuỗi OHLC/corporate action nhất quán, lịch niêm yết/hủy niêm yết và lịch giao dịch/giới hạn theo thời kỳ. Exporter hiện hữu có `--sessions`/`--calendar-days`; tăng số phiên không tự giải quyết thiếu mã hủy niêm yết hoặc adjustment. Không tự mua dữ liệu.
+Ô “Ngoài mẫu từ ngày” tùy chọn chia đường NAV liên tục thành hai giai đoạn, giữ cấu hình cố định và chuyển tiếp tiền/vị thế qua ranh giới. Mỗi đoạn có vốn đầu/cuối, return, drawdown và số phiên riêng. Đây không phải hai portfolio khởi tạo lại hoặc thuật toán walk-forward. Chọn mốc trước khi xem kết quả và lưu config; không chọn preset bằng return đẹp nhất. Với snapshot ~3 tháng chạy được, chưa thể có kiểm định đủ nhiều regime/5–10 năm. Muốn mở rộng cần nguồn lịch sử có quyền sử dụng, chuỗi OHLC/corporate action nhất quán, lịch niêm yết/hủy niêm yết và lịch giao dịch/giới hạn theo thời kỳ. Exporter hiện hữu có `--sessions`/`--calendar-days`; tăng số phiên không tự giải quyết thiếu mã hủy niêm yết hoặc adjustment. Không tự mua dữ liệu.
 
 ## Chi phí và phần còn chờ
 

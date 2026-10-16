@@ -45,6 +45,7 @@ test('new filters reject nonfinite thresholds and demo data fails closed',()=>{
   assert.throws(()=>B.prepare({meta:{isDemo:false},symbols:[{ticker:'AAA',rows:[['2026-01-01',1,2,1,1,10],['2026-01-01',1,2,1,1,10]]}]}));
 });
 test('known max drawdown is peak to trough, not average of trade returns',()=>{assert.ok(Math.abs(B.drawdown([100,120,90,110].map(equity=>({equity})))-.25)<1e-12);});
+test('holdout starts at the prior NAV boundary and preserves continuous capital',()=>{const periods=B.splitPeriods([100,110,99,120].map((equity,i)=>({date:'2026-01-0'+(i+1),equity})),'2026-01-03');assert.equal(periods[1].initialEquity,110);assert.equal(periods[0].finalEquity,110);assert.ok(Math.abs((1+periods[0].return)*(1+periods[1].return)-1.2)<1e-10);});
 const raw=zlib.gunzipSync(fs.readFileSync(require('node:path').join(__dirname,'../public/data/market.json.gz'))),payload=JSON.parse(raw),prepared=B.prepare(payload);
 const actualCalendar=prepared.series.get('VNINDEX').map(r=>r.date);
 test('shared formulas produce identical results to original source on real data',()=>{
