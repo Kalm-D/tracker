@@ -1,7 +1,7 @@
 {
   "source": "Vnstock / VCI",
   "classification": "ICB cấp 3",
-  "updatedAt": "2026-10-12T11:17:50.387411+00:00",
+  "updatedAt": "2026-10-19T11:21:47.487534+00:00",
   "sectors": {
     "A+ FUND": "Quỹ đầu tư",
     "A32": "Hàng cá nhân",
@@ -195,7 +195,7 @@
     "BTB": "Bia và đồ uống",
     "BTD": "Xây dựng và Vật liệu",
     "BTG": "Hàng công nghiệp",
-    "BTH": "Điện tử & Thiết bị điện",
+    "BTH": "Bất động sản",
     "BTN": "Xây dựng và Vật liệu",
     "BTP": "Sản xuất & Phân phối Điện",
     "BTS": "Xây dựng và Vật liệu",
@@ -1012,7 +1012,7 @@
     "LUMINOUS GROWTH": "Quỹ đầu tư",
     "M10": "Hàng cá nhân",
     "MA1": "Bất động sản",
-    "MAC": "Công nghiệp nặng",
+    "MAC": "Vận tải",
     "MAFBAL": "Quỹ đầu tư",
     "MAFEQI": "Quỹ đầu tư",
     "MAFF": "Quỹ đầu tư",
@@ -2049,6 +2049,14 @@
     "YBC": "Xây dựng và Vật liệu",
     "YBM": "Khai khoáng",
     "YEG": "Truyền thông",
-    "YTC": "Thiết bị và Dịch vụ Y tế"
+    "YTC": "Thiết bị và Dịch vụ Y tế",
+    "ABIF": "Quỹ đầu tư",
+    "B-VIETNAMRMF": "Quỹ đầu tư",
+    "B-VIETNAMSSF": "Quỹ đầu tư",
+    "DVV": "Truyền thông",
+    "FUEVCDIV": "Quỹ đầu tư",
+    "PHY": "Dược phẩm",
+    "STPF": "Quỹ đầu tư",
+    "VCBF-CB": "Quỹ đầu tư"
   }
 }
