@@ -1,6 +1,24 @@
 (function (root) {
   "use strict";
   const LIVE_CACHE_KEY = "tracker.shared.live.v1";
+  const gzipFallbackUrl = new URL("./fflate.min.js", document.currentScript?.src || new URL("./shared/market-data.js", document.baseURI)).href;
+  let gzipFallbackPromise;
+
+  function loadGzipFallback() {
+    if (root.fflate?.gunzipSync) return Promise.resolve(root.fflate);
+    if (!gzipFallbackPromise) {
+      gzipFallbackPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = gzipFallbackUrl;
+        script.onload = () => root.fflate?.gunzipSync
+          ? resolve(root.fflate)
+          : reject(new Error("Không tải được bộ giải nén dữ liệu."));
+        script.onerror = () => reject(new Error("Không tải được bộ giải nén dữ liệu."));
+        document.head.appendChild(script);
+      }).catch(error => { gzipFallbackPromise = null; throw error; });
+    }
+    return gzipFallbackPromise;
+  }
 
   function finite(value, fallback = 0) {
     const n = Number(value);
@@ -165,9 +183,17 @@
 
   async function parsePayload(response, absolute) {
     if (!absolute.endsWith(".gz")) return response.json();
-    if (!("DecompressionStream" in root)) throw new Error("Trình duyệt không hỗ trợ giải nén snapshot giá.");
-    const stream = response.body.pipeThrough(new root.DecompressionStream("gzip"));
-    return new root.Response(stream).json();
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (typeof root.DecompressionStream === "function") {
+      try {
+        const stream = new root.Response(bytes).body.pipeThrough(new root.DecompressionStream("gzip"));
+        return await new root.Response(stream).json();
+      } catch (_) {
+        // Older Safari builds may expose the API but fail to decode gzip.
+      }
+    }
+    const gzip = await loadGzipFallback();
+    return JSON.parse(gzip.strFromU8(gzip.gunzipSync(bytes)));
   }
 
   async function load(url = "./data/market.json.gz") {
