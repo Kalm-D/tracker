@@ -14,3 +14,7 @@ Prompt hệ thống xem câu hỏi, web và BCTC là dữ liệu không đáng t
 - Chưa có cảnh báo ngân sách theo provider hoặc kiểm tra billing tự động. Chỉ cấu hình dự án free, không bật billing; cờ trong ứng dụng không chặn được phí nếu quản trị cấu hình sai tài khoản.
 
 Không đưa mật khẩu thật, API key, cookie, dữ liệu job hoặc .env vào commit. .ai-jobs và .env.* được ignore. Mật khẩu thử UI là thông tin tạm trong tiến trình preview, không có trong source.
+
+## Bổ sung v0.2
+
+Biểu mẫu vốn/danh mục chỉ được code tính. projectEvidence loại vốn, holdings, số lượng và tổng lãi/lỗ cá nhân trước khi gọi model. Client không thể tự gán verified/reported cho số giả định. Cấu hình chiến lược có whitelist, kiểm tra tiền/vị thế/ngành và giới hạn số học. Kịch bản không có quyền đặt lệnh.

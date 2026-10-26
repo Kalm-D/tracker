@@ -23,3 +23,7 @@ Lịch sử đang lưu trong thư mục riêng của Node, chưa đồng bộ đ
 ## Phạm vi giữ nguyên
 
 public/index.html chỉ thêm hai script AI và một comment. Các công thức, engine, CSV, data, exporter, workflow dữ liệu, tab và UI cũ không sửa. Flag mặc định tắt trên GitHub Pages. Không triển khai v0.2, không merge main hoặc deploy production.
+
+## Phần bổ sung v0.2
+
+Người dùng đã cho phép bắt đầu v0.2 ngày 26/10/2026. Xem STRATEGY_RISK.md và V0_2_REPORT.md. Thêm strategy-config.cjs/risk.cjs/strategy.cjs, request schemaVersion=2 khi có chiến lược, evidence tính toán và Strategy UI riêng. Các đoạn v0.1 ở trên là lịch sử; không còn là phạm vi được phép duy nhất. Engine/dữ liệu cũ vẫn không thay đổi.

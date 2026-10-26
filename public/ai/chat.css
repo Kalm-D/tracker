@@ -4,3 +4,5 @@
 .tai :is(input,textarea,select){background:#fff!important;color:#18392f!important;border-color:#c8d8d1!important;box-shadow:none!important}.tai :is(table,thead,tbody,tr,th,td){background:#fff!important;color:#18392f!important}.tai :is(h2,h3,strong,summary){color:#18392f!important}
 
 :host{all:initial;color-scheme:light}
+
+.tai-compose{max-height:52%;overflow:auto;flex-shrink:0}.tai-strategy-tools>label{margin-top:10px}.tai-strategy-fields{padding-top:8px}.tai .tai-ack{display:flex;align-items:flex-start;gap:9px;font-weight:400}.tai .tai-ack input{width:auto!important;min-width:16px;order:-1;margin-top:4px}.tai-strategy-card h3{margin-top:12px}.tai-strategy-card td{white-space:normal;min-width:100px}.tai-strategy-card th{white-space:normal}@media(max-height:650px){.tai-compose{max-height:58%}}
