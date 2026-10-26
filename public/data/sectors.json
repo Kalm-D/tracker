@@ -1,7 +1,7 @@
 {
   "source": "Vnstock / VCI",
   "classification": "ICB cấp 3",
-  "updatedAt": "2026-10-19T11:21:47.487534+00:00",
+  "updatedAt": "2026-10-26T11:28:35.241682+00:00",
   "sectors": {
     "A+ FUND": "Quỹ đầu tư",
     "A32": "Hàng cá nhân",
@@ -2057,6 +2057,8 @@
     "FUEVCDIV": "Quỹ đầu tư",
     "PHY": "Dược phẩm",
     "STPF": "Quỹ đầu tư",
-    "VCBF-CB": "Quỹ đầu tư"
+    "VCBF-CB": "Quỹ đầu tư",
+    "": "Quỹ đầu tư",
+    "HGI": "Sản xuất thực phẩm"
   }
 }
