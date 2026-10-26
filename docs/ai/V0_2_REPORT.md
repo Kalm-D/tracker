@@ -42,4 +42,6 @@ Chưa bắt đầu v0.3. Chưa merge main hoặc deploy production. Xem IMPLEMEN
 
 ## Git bàn giao
 
-Mã được giữ cục bộ ở nhánh feature/tracker-ai-v0.2, commit code 009246d. Việc tải 22 tệp v0.2 lên repository công khai đang bị xét duyệt tự động chặn, cần xác nhận riêng. Chưa có PR hay kết quả GitHub CI cho v0.2; 63/63 PASS là kết quả cục bộ.
+Người dùng đã cho phép công khai v0.2 và tiếp tục v0.3 ngày 26/10/2026. Mã v0.2 đã công khai tại commit 423f6c08227220653c4249213ae4e8df67d7b062, nhánh feature/tracker-ai-v0.2.
+
+PR nháp #12: https://github.com/Kalm-D/tracker/pull/12 — xếp trên PR v0.1 #11, chưa merge. GitHub CI Backtest correctness PASS: https://github.com/Kalm-D/tracker/actions/runs/40274041004. Website chính thức chưa thay đổi. v0.3 được phát triển riêng trên feature/tracker-ai-v0.3.

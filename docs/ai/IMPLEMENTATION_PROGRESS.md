@@ -38,4 +38,4 @@ Không merge main, không deploy website chính thức, không bật billing ho�
 
 ## Trạng thái công bố v0.2
 
-Mã v0.2 đã lưu trong commit cục bộ 009246df44e3646bb8166ebefe9c535c941a75cc (22 tệp thay đổi). Nhánh remote feature/tracker-ai-v0.2 mới được tạo tại commit nền, chưa chứa mã mới. Lần tải source bằng GitHub create_tree bị xét duyệt tự động từ chối vì chưa có xác nhận công khai riêng cho payload 22 tệp v0.2; xác nhận trước chỉ áp dụng 27 tệp v0.1. Chưa tạo PR v0.2, chưa chạy GitHub CI v0.2. Cần người dùng xác nhận payload/destination trước khi thử lại; không dùng phương thức khác để vượt chặn.
+Đã được người dùng duyệt công khai ngày 26/10/2026. Commit code 423f6c08227220653c4249213ae4e8df67d7b062. PR nháp #12: https://github.com/Kalm-D/tracker/pull/12. CI PASS: https://github.com/Kalm-D/tracker/actions/runs/40274041004. Chưa merge/deploy. Người dùng đồng thời cho phép tiếp tục v0.3; công việc đó nằm trên nhánh feature/tracker-ai-v0.3, không thay đổi kết luận Partial của v0.2.
