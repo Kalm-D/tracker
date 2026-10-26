@@ -22,4 +22,4 @@ Không tự chạy v0.2, không merge main, không deploy production, không b�
 
 ## Trạng thái bàn giao Git
 
-Mã đã kiểm thử được giữ bằng commit cục bộ. Nhánh remote feature/tracker-multi-ai mới chỉ được tạo tại commit nền, chưa có mã AI. Việc tải 27 tệp thay đổi lên repository công khai bị kiểm tra phê duyệt tự động từ chối vì chưa có xác nhận trực tiếp của người dùng ngoài tệp đính kèm. Chưa tạo PR. Cần người dùng xác nhận đúng repository và payload trước khi gửi lại. Không dùng phương thức khác để vượt qua từ chối.
+Ngày 26/10/2026, người dùng đã xác nhận trực tiếp cho phép tải 27 tệp lên repository công khai Kalm-D/tracker và tạo PR nháp. Mã đã được đẩy lên nhánh feature/tracker-multi-ai tại commit 4fdb8666149c3e191c85c7b8aa3859107f5e0af6; bản cục bộ tương ứng là feb116a. PR nháp: https://github.com/Kalm-D/tracker/pull/11. Chưa merge main hoặc deploy production. v0.1 vẫn Partial, chưa được phép bắt đầu v0.2.
