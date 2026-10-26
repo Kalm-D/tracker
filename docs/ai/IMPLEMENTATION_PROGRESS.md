@@ -1,25 +1,41 @@
-# Tiến độ Tracker Multi-AI
+# Tiến độ Tracker Multi-AI — v0.2
 
-Ngày: 26/10/2026. Phiên bản được phép: **v0.1** (chỉ v0.1).
-Trạng thái: **Partial / các phần chạy độc lập đã triển khai và kiểm thử; chưa hoàn thành v0.1**.
-Nhánh: feature/tracker-multi-ai. Commit nền main: ff375dde18660ff9f1d3eef1138c1905f6791add.
+Ngày 26/10/2026, người dùng trực tiếp yêu cầu “tiếp tục với ver kế tiếp”. Phiên bản hiện được phép: **v0.2**.
+Trạng thái: **Partial / chưa nghiệm thu toàn bộ**. v0.1 còn các phần API/BCTC/cloud chưa hoàn tất, được giữ rõ trong báo cáo.
 
-Đã có Chatbox độc lập, owner login, 6 module vai trò v0.1, quant worker dùng engine cũ, BCTC adapter, đọc nguồn chính thức, RSS, Gateway Gemini/Groq có free guard, task/history/cancel, Critic code, kiểm thử và tài liệu.
+Nhánh làm việc: feature/tracker-ai-v0.2.
+Commit nền v0.1: cdfa3541bb2048a4720323c536b275ebecd00e08 trên feature/tracker-multi-ai.
+PR v0.1: https://github.com/Kalm-D/tracker/pull/11 — chưa merge.
 
-Chạy thật: Data/Manager/Technical/Critic bằng code, đọc công bố Fed, RSS. Đã thử Fundamental ACB nhưng nguồn bị chặn. Chưa gọi LLM; 0 usage provider thực. Chưa có Strategy/Risk/Backtest/Monitoring Agent mới.
+## Đã có
 
-## Bước tiếp theo trong chính v0.1
+Đủ 8 vai trò module của v0.1/v0.2. Strategy/Risk bằng code, ba chiến lược độc lập, phép tính vốn/lô/bước giá/phí/thuế/slippage/thanh khoản/ngành/R:R, stress gap, P/E/P/B ba kịch bản, nguồn và cấu hình có version/hash, giao diện nhập giả định và báo cáo, giữ lịch sử trước đó.
 
-1. Người dùng cấu hình bí mật ở secret manager: GEMINI_API_KEY/GEMINI_MODEL hoặc GROQ_API_KEY/GROQ_MODEL; xác minh Free Tier và billing OFF, sau đó bật cờ xác nhận. Không gửi key trong chat.
-2. Khắc phục môi trường Vnstock theo thiết lập SDK chính thức, xác minh điều khoản/Community/CI trước khi dùng; chạy ACB và so sánh MBB/TCB thật.
-3. Cài/kiểm thử parser PDF trên tài liệu thật, kiểm tra đơn vị và ngày công bố BCTC; đánh giá semantic financial validation.
-4. Chạy Technical/Fundamental/News/Critic bằng model thật và kiểm thử phản biện/prompt injection, xem token/quota. Bổ sung kiểm soát RPM/TPM theo tài khoản.
-5. Thống nhất nơi chạy Node Quant/Python trên cloud miễn phí và cấu hình Cloudflare/D1 sau khi xác nhận tài khoản/giới hạn; chưa có staging cloud.
-6. Kiểm tra Safari/iPhone thật, keyboard, HTTPS/cookie deployment.
-7. Chạy lại kiểm thử và báo cáo nghiệm thu v0.1. Chỉ khi đủ điều kiện mới xin phê duyệt v0.2.
+Code/data/engine cũ, CSV, exporter, workflow và tab Tracker được giữ nguyên. Chỉ thêm hook script UI chiến lược trong index. Public Feature Flag vẫn tắt.
 
-Không tự chạy v0.2, không merge main, không deploy production, không bật billing. Đọc file này, git status và commit hiện tại trước khi tiếp tục. Không làm lại phần PASS nếu không có thay đổi liên quan.
+## Tiếp tục đúng phạm vi
 
-## Trạng thái bàn giao Git
+1. Xem git status/log, báo cáo V0_2_REPORT.md và kết quả test cuối.
+2. Cấu hình secret API model trên đúng máy chủ; không gửi key trong chat. Chưa có model thật đã chạy.
+3. Khắc phục Vnstock/runtime theo thiết lập/điều khoản chính thức. Chuẩn hóa kỳ TTM, BVPS, ngày công bố và unit, rồi kiểm chứng chất lượng doanh nghiệp/cổ tức. Không biến facts test hoặc EPS tự nhập thành BCTC đã xác minh.
+4. Chạy nghiệm thu thật cho Strategy, Risk và Critic, giữ kết luận Chờ khi chưa đủ điều kiện.
+5. Hoàn thiện backend cloud miễn phí hợp lệ, Cloudflare/D1 và kiểm thử Safari/iPhone thật. Chưa có staging cloud/production.
+6. Chỉ sau báo cáo v0.2 mới xin phê duyệt v0.3; không tự triển khai Backtest/Monitoring Agent.
 
-Ngày 26/10/2026, người dùng đã xác nhận trực tiếp cho phép tải 27 tệp lên repository công khai Kalm-D/tracker và tạo PR nháp. Mã đã được đẩy lên nhánh feature/tracker-multi-ai tại commit 4fdb8666149c3e191c85c7b8aa3859107f5e0af6; bản cục bộ tương ứng là feb116a. PR nháp: https://github.com/Kalm-D/tracker/pull/11. Chưa merge main hoặc deploy production. v0.1 vẫn Partial, chưa được phép bắt đầu v0.2.
+## Kiểm thử cần dùng
+
+    node tools/check-scripts.cjs
+    node --test tests/*.test.cjs
+    node tools/audit-data.cjs
+
+Cần đủ lịch sử git cho test engine tại commit 007e5c36. Các test mới dùng dữ liệu giả lập có nhãn chỉ để kiểm tra code, cùng kiểm tra Engine trên snapshot thật. Không có phí model API phát sinh.
+
+## Cách xem
+
+Bản preview trong phiên phát triển v0.2: http://127.0.0.1:8792/ trên máy hiện tại. Mật khẩu thử chỉ tồn tại trong tiến trình, không commit. Để tự chạy lâu dài, dùng tools/setup-ai.cjs và .env.ai như DEPLOYMENT.md; đổi cổng nếu 8790 đang được một preview khác dùng.
+
+Không merge main, không deploy website chính thức, không bật billing hoặc tự bắt đầu v0.3.
+
+## Trạng thái công bố v0.2
+
+Mã v0.2 đã lưu trong commit cục bộ 009246df44e3646bb8166ebefe9c535c941a75cc (22 tệp thay đổi). Nhánh remote feature/tracker-ai-v0.2 mới được tạo tại commit nền, chưa chứa mã mới. Lần tải source bằng GitHub create_tree bị xét duyệt tự động từ chối vì chưa có xác nhận công khai riêng cho payload 22 tệp v0.2; xác nhận trước chỉ áp dụng 27 tệp v0.1. Chưa tạo PR v0.2, chưa chạy GitHub CI v0.2. Cần người dùng xác nhận payload/destination trước khi thử lại; không dùng phương thức khác để vượt chặn.

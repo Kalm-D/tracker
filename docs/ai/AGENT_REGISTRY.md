@@ -1,18 +1,18 @@
-# Đăng ký vai trò Agent
+# Đăng ký vai trò Agent — v0.2
 
-Các vai trò là module trong sản phẩm; không có nghĩa đã gọi 10 model hoặc chạy 10 tác nhân phát triển.
+Vai trò là module trong sản phẩm; không đồng nghĩa mỗi vai trò đã gọi một model.
 
-| Vai trò | v0.1 | Thực thi |
-|---|---|---|
-| Manager | Đã có | Router bằng code, chọn đúng phạm vi; không gọi hết vai trò |
-| Data | Đã chạy thật | Snapshot thật, hash, audit; demo bị chặn |
-| Technical | Đã chạy thật | Engine cũ qua Node Worker; diễn giải LLM nếu đã cấu hình |
-| Fundamental | Đã viết, kết nối chưa đạt | Adapter BCTC Vnstock và tài liệu chính thức; thử ACB bị chặn bởi môi trường SDK |
-| News | Công cụ đã chạy | RSS phát hiện tin, đọc công bố HTML/PDF; chưa có phân tích model thật |
-| Strategy | Chưa triển khai | Chỉ v0.2 sau phê duyệt |
-| Risk | Chưa triển khai | Chỉ v0.2 sau phê duyệt |
-| Backtest | Chưa triển khai Agent | Engine cũ được giữ nguyên, chỉ dùng snapshot kỹ thuật trong v0.1 |
-| Critic / Audit | Kiểm tra code đã chạy | Phát hiện giá cố tình sai, nguồn/number contract; phản biện LLM chưa chạy |
-| Monitoring | Chưa triển khai | Chỉ v0.3 sau phê duyệt |
+| Vai trò | Trạng thái thực tế |
+|---|---|
+| Manager | Router code v1/v2, chỉ gọi vai trò cần thiết |
+| Data | Snapshot thật, hash, audit; từ chối demo |
+| Technical | Dùng nguyên Tracker/Backtest snapshot engine |
+| Fundamental | Adapter đã viết; BCTC/runtime/metadata thật chưa nghiệm thu |
+| News | Công cụ tài liệu/RSS v0.1; chưa phân tích model thật |
+| Strategy | Code v0.2: Swing, Value/Dividend, Hybrid, kịch bản, vô hiệu hóa |
+| Risk | Code v0.2: vị thế, chi phí, R:R, thanh khoản/ngành/gap, không thực thi lệnh |
+| Critic / Audit | Kiểm tra hợp đồng và số liệu/citation, phản biện giá; model thật chưa chạy |
+| Backtest Agent | Chưa triển khai; chỉ v0.3 khi được phép. Engine cũ giữ nguyên |
+| Monitoring | Chưa triển khai; chỉ v0.3 khi được phép |
 
-Report Engine là renderer có cấu trúc bằng code. Không tạo Agent thứ 11. Trace chỉ đánh completed sau khi công cụ trả kết quả; failed/blocked không được biến thành completed.
+Report Engine là module renderer, không phải Agent thứ 11. Trace chỉ đánh completed khi công cụ trả kết quả; một báo cáo Chờ không có nghĩa thiếu điều kiện được biến thành thành công đầu tư.

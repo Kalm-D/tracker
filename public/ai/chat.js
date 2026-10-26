@@ -9,7 +9,7 @@ try{
  let csrf='',currentId=null,timer=null,pollAbort,opened=false,lastFocus,logged=false;
  const launcher=button('✦ Nghiên cứu AI',()=>toggle(true),'tai-launch');launcher.setAttribute('aria-label','Mở trợ lý nghiên cứu Tracker AI');
  const panel=el('section','tai');panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Tracker AI – Trợ lý nghiên cứu');
- const head=el('header','tai-head'),brand=el('div');brand.append(el('strong','','Tracker AI'),el('small','','Nghiên cứu có dẫn nguồn · v0.1 thử nghiệm'));
+ const head=el('header','tai-head'),brand=el('div');brand.append(el('strong','','Tracker AI'),el('small','','Nghiên cứu có dẫn nguồn · v0.2 thử nghiệm'));
  const expand=button('Mở rộng',()=>{panel.classList.toggle('tai-full');expand.textContent=panel.classList.contains('tai-full')?'Thu nhỏ':'Mở rộng';},'tai-expand'),close=button('Đóng',()=>toggle(false));head.append(brand,expand,close);
  const body=el('div','tai-body'),status=el('div','tai-status','Đang kiểm tra kết nối…');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
  const compose=el('form','tai-compose'),row=el('div','tai-row');
@@ -18,12 +18,13 @@ try{
  const mode=el('select');for(const name of ['Quick','Standard','Deep']){const o=el('option','',name);o.value=name;mode.append(o);}row.append(field('Mã đang nghiên cứu',tickers),field('Độ sâu',mode));
  const question=el('textarea');question.placeholder='Bạn muốn kiểm tra luận điểm nào?';question.maxLength=4000;question.required=true;question.setAttribute('aria-label','Câu hỏi nghiên cứu');
  const docs=el('details'),docsInput=el('textarea');docsInput.placeholder='Mỗi dòng một URL công bố/BCTC chính thức (tối đa 4).';docsInput.setAttribute('aria-label','Đường dẫn nguồn chính thức');docs.append(el('summary','','Thêm công bố hoặc báo cáo tài chính'),docsInput);
+ const strategyUI=window.TrackerAIStrategyUI?.controls();
  const controls=el('div','tai-controls'),send=el('button','tai-primary','Bắt đầu nghiên cứu');send.type='submit';
  const cancel=button('Dừng',async()=>{if(currentId)try{await api('jobs/'+currentId,{method:'DELETE'});await poll();}catch(e){status.textContent=e.message;}});cancel.disabled=true;
  const history=button('Lịch sử',showHistory),logout=button('Đăng xuất',async()=>{await api('logout',{method:'POST'});csrf='';logged=false;clearTimeout(timer);loginView();});
- controls.append(send,cancel,history,logout);compose.append(row,field('Câu hỏi',question),docs,controls);compose.hidden=true;
+ controls.append(send,cancel,history,logout);compose.append(row,field('Câu hỏi',question),docs,...(strategyUI?[strategyUI.root]:[]),controls);compose.hidden=true;
  compose.onsubmit=async e=>{e.preventDefault();if(!logged)return;send.disabled=true;try{
-  const data=await api('jobs',{method:'POST',body:JSON.stringify({question:question.value,tickers:tickers.value.toUpperCase().split(/[\s,;]+/).filter(Boolean),mode:mode.value,sourceUrls:docsInput.value.split(/\s+/).filter(Boolean)})});
+  const data=await api('jobs',{method:'POST',body:JSON.stringify({question:question.value,tickers:tickers.value.toUpperCase().split(/[\s,;]+/).filter(Boolean),mode:mode.value,strategy:strategyUI?.read(),sourceUrls:docsInput.value.split(/\s+/).filter(Boolean)})});
   currentId=data.id;render(data);await poll();
  }catch(e){status.textContent=e.message;send.disabled=false;}};
  panel.append(head,status,body,compose);const host=el('div');host.id='tracker-ai-root';const shadow=host.attachShadow({mode:'open'});const style=el('link');style.rel='stylesheet';style.href=new URL('./ai/chat.css',document.baseURI).href;shadow.append(style,launcher,panel);document.body.append(host);
@@ -51,18 +52,19 @@ try{
    else card.append(el('p','','Chưa có chỉ báo đủ điều kiện cho các mã được yêu cầu.'));
    const d=el('details');d.append(el('summary','','Nguồn và phiên bản tính toán'),el('pre','',JSON.stringify(p,null,2)));card.append(d);body.append(card);
   }
+  window.TrackerAIStrategyUI?.render(body,r);
   for(const a of r.analyses||[]){const card=el('article','tai-card');card.append(el('h3','',a.role.toUpperCase()),el('p','',a.result.summary),el('small','','Nhận định AI · '+a.provider+' / '+a.model+(a.cached?' · dùng kết quả lưu':'')));
    for(const c of a.result.claims){card.append(el('p','',(c.kind==='interpretation'?'Diễn giải: ':'Dữ kiện được dẫn: ')+c.text),el('small','','Nguồn: '+c.evidenceIds.join(', ')));}
    for(const s of a.result.limitations)card.append(el('p','tai-warning',s));body.append(card);
   }
   for(const check of r.premiseChecks||[])body.append(el('p',check.status==='contradicted_by_snapshot'?'tai-warning':'tai-muted',check.ticker+': '+check.message+' Close snapshot: '+check.snapshotClose.toLocaleString('vi-VN')+' đồng ('+check.dataDate+').'));for(const w of r.warnings||[])body.append(el('p','tai-warning',w));if(j.error)body.append(el('p','tai-warning',j.error));
   if(r.audit){const d=el('details');d.append(el('summary','','Kết quả kiểm tra và giới hạn'),el('p','','Đã kiểm tra hợp đồng dữ liệu, mã nguồn dẫn và số liệu xuất hiện trong nguồn. Chưa xác minh độc lập toàn bộ nội dung tài chính.'),el('pre','',JSON.stringify(r.audit,null,2)));body.append(d);}
-  for(const e of r.evidence||[]){if(e.type==='deterministic_calculation')continue;const d=el('details'),title=e.ticker?'BCTC '+e.ticker:e.type==='news_discovery'?'Danh mục tin chưa xác minh':'Tài liệu chính thức';d.append(el('summary','',title),el('small','','Thu thập: '+e.retrievedAt+' · Ngày công bố: '+(e.publishedAt||'chưa xác minh')));
+  for(const e of r.evidence||[]){if(['deterministic_calculation','strategy_calculation','risk_calculation'].includes(e.type))continue;const d=el('details'),title=e.ticker?'BCTC '+e.ticker:e.type==='news_discovery'?'Danh mục tin chưa xác minh':'Tài liệu chính thức';d.append(el('summary','',title),el('small','','Thu thập: '+e.retrievedAt+' · Ngày công bố: '+(e.publishedAt||'chưa xác minh')));
    try{const u=new URL(e.url);if(u.protocol==='https:'){const a=el('a','','Mở nguồn');a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';d.append(el('p','',''),a);}}catch{}
    d.append(el('pre','',JSON.stringify(e.data||e.items||e.text||{},null,2)));body.append(d);
   }
   if(r.usage)body.append(el('p','tai-muted','Lượt gọi AI hôm nay: '+r.usage.usage.attempts+' · Token API ghi nhận: '+r.usage.usage.actualTokens+' · Quota nhà cung cấp: chưa xác định.'));
-  if(!busy){const retry=button('Thử lại tác vụ',()=>{question.value=j.request.question;mode.value=j.request.mode;tickers.value=j.request.tickers.join(', ');docsInput.value=j.request.sourceUrls.join('\n');compose.requestSubmit();});body.append(retry);}
+  if(!busy){const retry=button('Thử lại tác vụ',()=>{question.value=j.request.question;mode.value=j.request.mode;tickers.value=j.request.tickers.join(', ');docsInput.value=j.request.sourceUrls.join('\n');strategyUI?.restore(j.request.strategy);compose.requestSubmit();});body.append(retry);}
  }
  async function showHistory(){try{const jobs=await api('jobs');body.replaceChildren();const box=el('div','tai-history');box.append(el('h3','','Lịch sử nghiên cứu'));if(!jobs.length)box.append(el('p','','Chưa có tác vụ.'));for(const j of jobs)box.append(button(labels[j.status]+' · '+j.question,()=>{currentId=j.id;poll();}));body.append(box);}catch(e){status.textContent=e.message;}}
  window.TrackerAI={open:()=>toggle(true),close:()=>toggle(false)};

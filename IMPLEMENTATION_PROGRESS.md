@@ -1,9 +1,14 @@
 # Tracker AI — tiếp tục từ đây
 
-Chỉ v0.1 được phép. Trạng thái Partial, chưa hoàn thành vì chưa có model/key thật, BCTC chưa chạy được trong runtime, cloud chưa cấu hình.
+Phiên bản được người dùng trực tiếp cho phép tiếp tục: **v0.2**.
+Trạng thái Partial; có Strategy/Risk và các phép tính chạy bằng code, chưa nghiệm thu API/BCTC/cloud thật.
 
-Hồ sơ tiến độ có thẩm quyền: [docs/ai/IMPLEMENTATION_PROGRESS.md](docs/ai/IMPLEMENTATION_PROGRESS.md).
-Báo cáo kiểm thử: [docs/ai/TEST_REPORT.md](docs/ai/TEST_REPORT.md).
-Cách chạy: [docs/ai/DEPLOYMENT.md](docs/ai/DEPLOYMENT.md).
+- [Tiến độ hiện tại](docs/ai/IMPLEMENTATION_PROGRESS.md)
+- [Báo cáo v0.2](docs/ai/V0_2_REPORT.md)
+- [Phương pháp Strategy/Risk](docs/ai/STRATEGY_RISK.md)
+- [Giả định giao dịch](docs/ai/TRADING_ASSUMPTIONS.md)
+- [Cách tự chạy](docs/ai/DEPLOYMENT.md)
 
-Không bắt đầu v0.2, không merge main/deploy production. Commit nền: ff375dde18660ff9f1d3eef1138c1905f6791add.
+Nhánh: feature/tracker-ai-v0.2, nền cdfa3541bb2048a4720323c536b275ebecd00e08.
+Bản xem thử trong phiên: http://127.0.0.1:8792/ trên máy này.
+Không tự bắt đầu v0.3 hoặc merge/deploy production.

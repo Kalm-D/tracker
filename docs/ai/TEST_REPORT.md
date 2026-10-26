@@ -27,3 +27,7 @@ Provider fixture chỉ dùng trong tests/ai.test.cjs, không được trả cho 
 | Cloudflare/D1/Workflows | NOT RUN | Chưa cấu hình/deploy |
 
 Không thay đổi snapshot, engine, công thức, exporter hoặc workflow. Feature Flag trên Pages vẫn tắt. Cần nghiệm thu lại các ca blocked sau cấu hình thật; không coi PASS giao thức giả lập là nghiên cứu AI đã hoàn thành.
+
+## Bổ sung v0.2 ngày 26/10/2026
+
+63/63 test PASS sau thay đổi Strategy/Risk (40 test đã có +23 mới), script parse và diff check đạt. Xem V0_2_REPORT.md và STRATEGY_RISK.md cho phạm vi/giới hạn. Đây là test code và UI; chưa có model/BCTC/cloud thật đã nghiệm thu.
