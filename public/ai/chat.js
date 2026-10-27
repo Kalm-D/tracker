@@ -2,6 +2,13 @@
 'use strict';
 const cfg=window.TRACKER_AI_CONFIG;if(!cfg?.enabled)return;
 try{
+ if(cfg.launchUrl){
+  const target=new URL(cfg.launchUrl);if(target.protocol!=='https:')return;
+  const host=document.createElement('div');host.id='tracker-ai-root';const shadow=host.attachShadow({mode:'open'});
+  const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./ai/chat.css',document.baseURI).href;
+  const link=document.createElement('a');link.className='tai-launch';link.textContent='Nghiên cứu AI';link.setAttribute('aria-label','Mở trợ lý nghiên cứu Tracker AI');link.href=target.href;link.target='_blank';link.rel='noopener noreferrer';link.style.textDecoration='none';shadow.append(style,link);document.body.append(host);
+  window.TrackerAI={open:()=>link.click(),close:()=>{}};return;
+ }
  const base=new URL(cfg.apiBase||location.origin,location.href);if(base.protocol!=='https:'&&!['127.0.0.1','localhost'].includes(base.hostname))return;
  const apiBase=base.href.replace(/\/$/,'')+'/api/ai/';
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
@@ -70,5 +77,6 @@ try{
  }
  async function showHistory(){try{const jobs=await api('jobs');body.replaceChildren();const box=el('div','tai-history');box.append(el('h3','','Lịch sử nghiên cứu'));if(!jobs.length)box.append(el('p','','Chưa có tác vụ.'));for(const j of jobs)box.append(button(labels[j.status]+' · '+j.question,()=>{currentId=j.id;poll();}));body.append(box);}catch(e){status.textContent=e.message;}}
  window.TrackerAI={open:()=>toggle(true),close:()=>toggle(false)};
+ if(location.hash==='#research')toggle(true);
 }catch(e){console.warn('Tracker AI chưa sẵn sàng.');}
 })();

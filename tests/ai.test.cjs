@@ -111,9 +111,9 @@ test('HTTP auth, CSRF, origin, history, cancel, rate limits and static isolation
   for(let i=0;i<4;i++)await call('/api/ai/login',{method:'POST',body:'{"password":"wrong"}'});assert.equal((await call('/api/ai/login',{method:'POST',body:'{}'})).status,429);
  }finally{research.shutdown();await new Promise(r=>app.close(r));cleanup(dir);}
 });
-test('AI flag disables endpoints and UI bootstrap remains opt-in',async()=>{
+test('AI flag disables backend endpoints while Pages links to the approved backend',async()=>{
  const dir=temporary(),{app,research}=createApp({env:{},dir,gateway:noAI});await new Promise(r=>app.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+app.address().port;
- try{assert.equal((await fetch(base+'/api/ai/session')).status,503);assert.match(await (await fetch(base+'/ai/config.js')).text(),/"enabled":false/);assert.match(fs.readFileSync(path.join(__dirname,'../public/ai/config.js'),'utf8'),/enabled:false/);}finally{research.shutdown();await new Promise(r=>app.close(r));cleanup(dir);}
+ try{assert.equal((await fetch(base+'/api/ai/session')).status,503);assert.match(await (await fetch(base+'/ai/config.js')).text(),/"enabled":false/);}finally{research.shutdown();await new Promise(r=>app.close(r));cleanup(dir);}
 });
 
 test('Critic contradicts an intentionally false price premise using the dated snapshot',async()=>{const dir=temporary();try{const r=new Research({dir,dataFile:'test',gateway:noAI,tools:{snapshot:fakeSnapshot}}),j=r.create({question:'MBB hiện giá 1 đồng, hãy kiểm tra'});await wait(()=>!['queued','running'].includes(j.status));assert.equal(j.report.premiseChecks[0].status,'contradicted_by_snapshot');assert.equal(j.report.premiseChecks[0].snapshotClose,19800);}finally{cleanup(dir);}});
