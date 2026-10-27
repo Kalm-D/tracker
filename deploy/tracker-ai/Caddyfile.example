@@ -1,0 +1,8 @@
+# Replace the hostname; point its DNS to the VPS before starting Caddy.
+tracker-ai.example.com {
+    encode zstd gzip
+    header X-Content-Type-Options nosniff
+    header Referrer-Policy no-referrer
+    header Strict-Transport-Security "max-age=15552000"
+    reverse_proxy 127.0.0.1:8790
+}

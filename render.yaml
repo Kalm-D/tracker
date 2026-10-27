@@ -1,0 +1,45 @@
+# Free compute only. Supabase project/migration must exist first.
+services:
+  - type: web
+    name: tracker-ai-free
+    runtime: node
+    plan: free
+    buildCommand: node tools/check-scripts.cjs
+    startCommand: node server/ai/production.cjs
+    healthCheckPath: /healthz
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRACKER_AI_ENABLED
+        value: "true"
+      - key: TRACKER_AI_STORAGE
+        value: supabase
+      - key: TRACKER_AI_HOST
+        value: 0.0.0.0
+      - key: TRACKER_AI_JOBS_DIR
+        value: /tmp/tracker-ai
+      - key: TRACKER_AI_DATA_FILE
+        value: /opt/render/project/src/public/data/market.json.gz
+      - key: TRACKER_AI_ALLOWED_ORIGIN
+        sync: false
+      - key: TRACKER_AI_COOKIE_SECURE
+        value: "true"
+      - key: TRACKER_AI_PASSWORD_HASH
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STRICT_FREE_MODE
+        value: "true"
+      - key: ALLOW_PAID_API
+        value: "false"
+      - key: ALLOW_AUTOTRADING
+        value: "false"
+      - key: AI_MAX_RETRIES
+        value: "0"
+      - key: AI_MAX_RSS_MIB
+        value: "440"
+      - key: AI_MAX_STATE_MIB
+        value: "32"

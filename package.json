@@ -5,7 +5,10 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "audit:data": "node tools/audit-data.cjs",
-    "runner": "node server/server.cjs"
+    "runner": "node server/server.cjs",
+    "start:ai": "node server/ai/production.cjs"
   },
-  "engines": {"node": ">=22"}
+  "engines": {
+    "node": ">=22"
+  }
 }

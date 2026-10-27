@@ -1,0 +1,4 @@
+# Optional financial statements and text-based official PDFs.
+# Review Vnstock terms and supported versions before installing in CI/cloud.
+vnstock
+pypdf
