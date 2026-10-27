@@ -3,6 +3,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
 const {Gateway}=require('./gateway.cjs'),{Research}=require('./research.cjs'),{VERSION}=require('./contracts.cjs');
 const {Monitoring}=require('./monitoring.cjs');
 const {Operations,acquire}=require('./operations.cjs');
+const Analyst=require('./analyst.cjs');
 const root=path.resolve(__dirname,'../..'),publicDir=path.join(root,'public');
 const safeEqual=(a,b)=>{const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&crypto.timingSafeEqual(x,y);};
 function passwordHash(password,salt=crypto.randomBytes(16).toString('hex')){return salt+':'+crypto.scryptSync(password,salt,32).toString('hex');}
@@ -14,7 +15,7 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
  const operations=new Operations({dir,env});
  let research,monitoring;try{
  gateway=gateway||new Gateway(path.join(dir,'gateway'),env,fetch,{durability,onEvent:(event,data)=>operations.record(event,data)});
- research=new Research({dir:path.join(dir,'jobs'),dataFile:path.resolve(env.TRACKER_AI_DATA_FILE||path.join(publicDir,'data/market.json.gz')),gateway,tools,durability});
+ research=new Research({dir:path.join(dir,'jobs'),dataFile:path.resolve(env.TRACKER_AI_DATA_FILE||path.join(publicDir,'data/market.json.gz')),gateway,tools,durability,analystConfig:Analyst.configuration(env)});
  monitoring=new Monitoring({dir:path.join(dir,'monitoring'),dataFile:research.dataFile,snapshot:research.tools.snapshot,autoStart:enabled,durability});
  }catch(e){operations.shutdown();runtimeLock.release();throw e;}
  const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -68,6 +69,24 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
    const monitor=route.match(/^monitors\/([a-f0-9-]{36})$/);
    if(monitor&&req.method==='POST'){const b=await body(req);return await durableJson(200,()=>monitoring.setEnabled(monitor[1],b.enabled));}
    if(monitor&&req.method==='DELETE'){return await durableJson(200,()=>{monitoring.remove(monitor[1]);return {ok:true};});}
+   const stream=route.match(/^jobs\/([a-f0-9-]{36})\/events$/),streamJob=stream&&research.jobs.get(stream[1]);
+   if(streamJob&&req.method==='GET'){
+    if(research.events.listenerCount('job')>=8)return json(res,429,{error:'Đang mở quá nhiều luồng tiến độ.'});
+    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','Connection':'keep-alive','X-Accel-Buffering':'no'});
+    res.flushHeaders();
+    let stopped=false,heartbeat;
+    const cleanup=()=>{if(stopped)return;stopped=true;clearInterval(heartbeat);research.events.off('job',update);};
+    const update=j=>{
+     if(j.id!==streamJob.id||stopped)return;
+     if(sessions.get(id)!==session||session.until<Date.now()){cleanup();res.end();return;}
+     res.write('event: job\ndata: '+JSON.stringify(j)+'\n\n');
+     if(!['queued','running'].includes(j.status)){cleanup();res.end();}
+    };
+    res.on('close',cleanup);res.on('error',cleanup);
+    research.events.on('job',update);
+    heartbeat=setInterval(()=>{if(sessions.get(id)!==session||session.until<Date.now()){cleanup();res.end();}else res.write(': keepalive\n\n');},15000);
+    update(streamJob);return;
+   }
    const m=route.match(/^jobs\/([a-f0-9-]{36})$/),job=m&&research.jobs.get(m[1]);
    if(job&&req.method==='GET')return json(res,200,job);
    if(job&&req.method==='DELETE')return await durableJson(200,()=>research.cancel(job.id));

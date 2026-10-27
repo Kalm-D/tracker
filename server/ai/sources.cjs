@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),dns=require('node:dns').promises;
 const {spawn}=require('node:child_process'),path=require('node:path');
-const ALLOWED=new Set(['www.mbbank.com.vn','mbbank.com.vn','acb.com.vn','www.acb.com.vn','techcombank.com','www.techcombank.com','www.hsx.vn','hsx.vn','www.hnx.vn','hnx.vn','vsd.vn','www.vsd.vn','vsdc.vn','www.vsdc.vn','sbv.gov.vn','www.sbv.gov.vn','www.nso.gov.vn','nso.gov.vn','www.federalreserve.gov','federalreserve.gov','www.gso.gov.vn','gso.gov.vn']);
+const ALLOWED=new Set(['www.hoaphat.com.vn','hoaphat.com.vn','fpt.com','www.fpt.com','www.gemadept.com.vn','gemadept.com.vn','www.mbbank.com.vn','mbbank.com.vn','acb.com.vn','www.acb.com.vn','techcombank.com','www.techcombank.com','www.hsx.vn','hsx.vn','www.hnx.vn','hnx.vn','vsd.vn','www.vsd.vn','vsdc.vn','www.vsdc.vn','sbv.gov.vn','www.sbv.gov.vn','www.nso.gov.vn','nso.gov.vn','www.federalreserve.gov','federalreserve.gov','www.gso.gov.vn','gso.gov.vn']);
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
 function urlAllowed(raw){const u=new URL(raw);if(u.protocol!=='https:'||u.username||u.password||u.port||!ALLOWED.has(u.hostname.toLowerCase()))throw new Error('Chỉ đọc HTTPS từ danh sách nguồn chính thức.');return u;}
 function publicAddress(a){return !/^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|0\.|::|fc|fd|fe80)/i.test(a)&&(!a.includes(':')||/^[23]/.test(a));}
@@ -41,12 +41,27 @@ async function financialSource(ticker,{signal,adapter=python}={}){
  return {id:'finance-'+ticker+'-'+hash(JSON.stringify(data)).slice(0,12),type:'financial_statement',ticker,url:'https://trading.vietcap.com.vn/',publishedAt:null,dataDate:null,retrievedAt:new Date().toISOString(),sha256:hash(JSON.stringify(data)),data,verification:'provider_statement_publication_date_unknown'};
 }
 const decode=s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1');
-async function newsDiscovery(question,tickers,{signal,fetcher=fetch}={}){
- const url=new URL('https://news.google.com/rss/search');url.search=new URLSearchParams({q:[...tickers,question.slice(0,250)].join(' '),hl:'vi',gl:'VN',ceid:'VN:vi'}).toString();
+async function newsDiscovery(question,tickers,{signal,fetcher=fetch,query,clock=Date.now}={}){
+ const url=new URL('https://news.google.com/rss/search');
+ // Câu hỏi có thể chứa dữ liệu riêng tư; RSS chỉ nhận mã và từ khóa công khai.
+ const symbols=tickers.filter(t=>/^[A-Z0-9]{3}$/.test(t));
+ const keywords=query||(symbols.length?'('+symbols.join(' OR ')+') cổ phiếu':'thị trường chứng khoán Việt Nam');
+ url.search=new URLSearchParams({q:keywords.slice(0,500),hl:'vi',gl:'VN',ceid:'VN:vi'}).toString();
  const abort=AbortSignal.any([signal||new AbortController().signal,AbortSignal.timeout(15000)]);
  const r=await fetcher(url,{signal:abort,redirect:'error'});if(!r.ok)throw new Error('Không truy xuất được danh mục tin.');
- const bytes=await bounded(r,500000,abort),xml=bytes.toString('utf8');
- const items=[...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,8).map(m=>{const field=n=>decode(m[1].match(new RegExp('<'+n+'(?: [^>]*)?>([\\s\\S]*?)<\\/'+n+'>'))?.[1]||'');const link=field('link');return {title:field('title').slice(0,700),url:/^https:\/\/news\.google\.com\//.test(link)?link:null,publishedAt:field('pubDate'),publisher:field('source')};});
- return {id:'news-'+hash(bytes).slice(0,16),type:'news_discovery',url:url.href,retrievedAt:new Date().toISOString(),publishedAt:null,dataDate:null,sha256:hash(bytes),items,verification:'headlines_only_not_verified',limitation:'Chỉ là danh mục phát hiện tin; chưa đọc và xác minh bài gốc. Không dùng tiêu đề làm bằng chứng cho sự kiện đã xảy ra.'};
+ const bytes=await bounded(r,500000,abort),xml=bytes.toString('utf8'),seen=new Set();
+ const items=[...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m=>{
+  const field=n=>decode(m[1].match(new RegExp('<'+n+'(?: [^>]*)?>([\\s\\S]*?)<\\/'+n+'>'))?.[1]||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  const link=field('link'),date=field('pubDate'),timestamp=Date.parse(date),known=Number.isFinite(timestamp)&&timestamp<=clock();
+  return {title:field('title').slice(0,700),excerpt:field('description').slice(0,280),url:/^https:\/\/news\.google\.com\//.test(link)?link:null,
+   publishedAt:date,publishedAtISO:known?new Date(timestamp).toISOString():null,stale:known?clock()-timestamp>30*86400000:null,publisher:field('source')};
+ }).filter(x=>{if(!x.url||!x.title||seen.has(x.url))return false;seen.add(x.url);return true;}).slice(0,8);
+ return {id:'news-'+hash(url.href+bytes.toString('utf8')).slice(0,16),type:'news_discovery',tickers:symbols,scope:'company',url:url.href,retrievedAt:new Date(clock()).toISOString(),publishedAt:null,dataDate:null,sha256:hash(bytes),items,
+  verification:'headlines_only_not_verified',limitation:'Chỉ là danh mục phát hiện tin, chưa xác minh bài gốc. Tin có cờ stale đã cũ; ngày chưa biết không được coi là tin mới.'};
 }
-module.exports={ALLOWED,urlAllowed,publicAddress,bounded,documentSource,financialSource,newsDiscovery,python,hash};
+async function sectorMacroNews(sector,{factors=[],...options}={}){
+ if(typeof sector!=='string'||!sector.trim())throw Error('Chưa có ngành để tìm tin vĩ mô.');
+ const e=await newsDiscovery('',[],{...options,query:[sector,...factors].join(' OR ')+' Việt Nam'});
+ return {...e,scope:'sector',sector,factors};
+}
+module.exports={urlAllowed,publicAddress,bounded,python,documentSource,financialSource,newsDiscovery,sectorMacroNews,hash};
