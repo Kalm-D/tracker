@@ -34,7 +34,7 @@ Kiến trúc dự kiến cần Cloudflare API gateway/D1 và nơi chạy Node Qu
 - Git branch nền: ff375dde18660ff9f1d3eef1138c1905f6791add.
 - Không có main merge hoặc deployment phải quay lui trong phiên này.
 - Tắt AI: TRACKER_AI_ENABLED=false; trên Pages config.enabled=false vẫn là mặc định.
-- Backup thư mục .ai-jobs và .env.ai vào nơi riêng có kiểm soát truy cập; không commit. Dừng server trước khi copy để giữ snapshot file nhất quán.
+- v1.0: dùng công cụ backup/verify/restore offline theo OPERATIONS.md. Secrets không nằm trong backup state; bảo vệ riêng, không commit. Không copy đè ledger đang hoạt động.
 - Phục hồi job dở: trạng thái blocked, kiểm tra dữ liệu rồi chủ động Thử lại.
 - Nếu sau này merge, revert commit AI sau kiểm thử. Không revert data/workflow của tác vụ khác.
 
@@ -45,3 +45,11 @@ Kiến trúc dự kiến cần Cloudflare API gateway/D1 và nơi chạy Node Qu
     node tools/audit-data.cjs
 
 Cần đầy đủ lịch sử git cho test đối chiếu engine với commit 007e5c36. Workflow kiểm thử hiện có đã checkout fetch-depth:0; không thay workflow dữ liệu.
+
+## v0.3 local
+
+Khởi động cùng Node server hiện có. Không thêm dependency. Backtest chạy trong worker; bản thử tối đa 60 phiên/1–5 mã, máy cần đủ CPU/RAM cho toàn universe. Monitoring tự kiểm tra file dữ liệu mỗi 60 giây khi server/flag bật và có bộ theo dõi đang bật. Tắt máy/server sẽ dừng; không có background cloud. File monitors ở TRACKER_AI_JOBS_DIR/monitoring/monitors.json, nên sao lưu cùng jobs. Không mở nhiều process cùng ghi một thư mục jobs/monitoring. Khi restore phải giữ quyền thư mục và schema/version; xem BACKTEST_MONITORING.md.
+
+## v1.0 release candidate
+
+Xem OPERATIONS.md cho runbook, khóa, trần tài nguyên, backup/restore và rollback tương thích ledger. Preview phiên này: http://127.0.0.1:8794/. Version 1.0.0-rc.1, local Partial. Chưa tải v0.3/v1.0 lên GitHub hoặc deploy; flag public vẫn false. Kế hoạch production phải có nghiệm thu thực và phê duyệt riêng.

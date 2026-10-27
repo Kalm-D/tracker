@@ -18,3 +18,13 @@ Không đưa mật khẩu thật, API key, cookie, dữ liệu job hoặc .env v
 ## Bổ sung v0.2
 
 Biểu mẫu vốn/danh mục chỉ được code tính. projectEvidence loại vốn, holdings, số lượng và tổng lãi/lỗ cá nhân trước khi gọi model. Client không thể tự gán verified/reported cho số giả định. Cấu hình chiến lược có whitelist, kiểm tra tiền/vị thế/ngành và giới hạn số học. Kịch bản không có quyền đặt lệnh.
+
+## v0.3
+
+Backtest dùng whitelist cấu hình, giới hạn 1–5 mã/60 phiên/20 vị thế, worker timeout 120s, hủy/terminate; V8 old generation 512MB không phải giới hạn toàn bộ process memory. Hash snapshot phải khớp giai đoạn Data. Evidence gửi model bỏ vốn, cash, tiền lãi/lỗ và số lượng. Monitoring trong thư mục riêng bị gitignore, không có endpoint public; dùng owner auth/CSRF/Origin hiện có. Polling dùng chung nguồn, tối đa 20 bộ/200 sự kiện, không gọi model hay dịch vụ thông báo ngoài. File hỏng không bị âm thầm xóa.
+
+## v1.0 RC
+
+Thêm khóa runtime và ledger, từ chối state trong public/liên kết đường dẫn; cấu hình sai hoặc ledger hỏng chặn generation. Lỗi upstream không truyền nội dung tự do ra người dùng. Log chỉ trường whitelist, không prompt/key/cookie. UTF-8 body và HTTP timeout có giới hạn; bind remote yêu cầu HTTPS origin/Secure cookie (không tự cấp TLS). Dashboard owner cho thấy trần ngân sách/cooldown, nhưng vẫn chưa kiểm tra billing tự động. Backup riêng không có secrets, SHA256 chỉ kiểm tra toàn vẹn so với manifest, không phải chữ ký. Restore ledger giữ API 24 giờ. Xem OPERATIONS.md.
+
+113 test là kiểm chứng code/giao thức, chưa thay pentest, kiểm tra model thật hoặc bảo mật triển khai HTTPS. Không có production deployment mới.

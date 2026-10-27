@@ -1,7 +1,7 @@
 'use strict';
-const VERSION='tracker-ai-0.2.0';
-const SC=require('./strategy-config.cjs');
-const AGENTS=['manager','data','technical','fundamental','news','strategy','risk','critic'];
+const VERSION='tracker-ai-1.0.0-rc.1';
+const SC=require('./strategy-config.cjs'),BT=require('./backtest.cjs');
+const AGENTS=['manager','data','technical','fundamental','news','strategy','risk','backtest','monitoring','critic'];
 const OUTPUT_SCHEMA={type:'object',additionalProperties:false,required:['summary','claims','limitations'],properties:{summary:{type:'string'},claims:{type:'array',items:{type:'object',additionalProperties:false,required:['text','kind','evidenceIds'],properties:{text:{type:'string'},kind:{type:'string',enum:['source','interpretation']},evidenceIds:{type:'array',items:{type:'string'}}}}},limitations:{type:'array',items:{type:'string'}}}};
 function request(input){
  if(!input||typeof input.question!=='string'||input.question.trim().length<3||input.question.length>4000)throw new Error('Câu hỏi cần từ 3 đến 4.000 ký tự.');
@@ -11,16 +11,18 @@ function request(input){
  if(tickers.length>5||tickers.some(t=>!/^[A-Z0-9]{3}$/.test(t)))throw new Error('Tối đa 5 mã cổ phiếu hợp lệ.');
  const sourceUrls=input.sourceUrls||[];
  if(!Array.isArray(sourceUrls)||sourceUrls.length>4||sourceUrls.some(u=>typeof u!=='string'||u.length>2048))throw new Error('Tối đa 4 đường dẫn nguồn.');
- const strategy=SC.config(input.strategy)??SC.infer(input.question);
- return {schemaVersion:strategy?2:1,question:input.question.trim(),mode,tickers,sourceUrls,...(strategy?{strategy}:{})};
+ const backtest=BT.config(input.backtest);
+ const strategy=SC.config(input.strategy)??(backtest?null:SC.infer(input.question));
+ if(backtest&&strategy)throw new Error('Chạy Backtest kỹ thuật riêng với Strategy v0.2 để tránh nhầm phương pháp.');
+ return {schemaVersion:backtest?3:strategy?2:1,question:input.question.trim(),mode,tickers,sourceUrls,...(strategy?{strategy}:{}),...(backtest?{backtest}:{})};
 }
 function plan(r,known){
  const found=r.question.match(/\b[A-Z][A-Z0-9]{2}\b/g)||[];
  const explicit=found.filter(t=>known.has(t));const requested=explicit.length&&!/so sánh|compare/i.test(r.question)?explicit:[...r.tickers,...explicit];const tickers=[...new Set(requested)].slice(0,5);
- const strategy=r.strategy||null;
- const fundamental=(strategy&&strategy.kind!=='swing')||/cơ bản|định giá|bctc|tài chính|cổ tức|tích sản|doanh nghiệp|ngân hàng|so sánh|p\/e|p\/b|roe|eps/i.test(r.question);
- const news=/tin tức|sự kiện|chính sách|vĩ mô|công bố|lãi suất|tỷ giá/i.test(r.question);
- return {schemaVersion:strategy?2:1,tickers,fundamental,news,strategy,roles:['manager','data','technical',...(fundamental?['fundamental']:[]),...(news?['news']:[]),...(strategy?['strategy','risk']:[]),'critic'],unsupported:/backtest|đặt lệnh|theo dõi hàng ngày|cảnh báo tự động/i.test(r.question)};
+ const strategy=r.strategy||null,backtest=r.backtest||null;
+ const fundamental=!backtest&&((strategy&&strategy.kind!=='swing')||/cơ bản|định giá|bctc|tài chính|cổ tức|tích sản|doanh nghiệp|ngân hàng|so sánh|p\/e|p\/b|roe|eps/i.test(r.question));
+ const news=!backtest&&/tin tức|sự kiện|chính sách|vĩ mô|công bố|lãi suất|tỷ giá/i.test(r.question);
+ return {schemaVersion:backtest?3:strategy?2:1,tickers,fundamental,news,strategy,backtest,roles:['manager','data','technical',...(fundamental?['fundamental']:[]),...(news?['news']:[]),...(strategy?['strategy','risk']:[]),...(backtest?['backtest']:[]),'critic'],unsupported:(!backtest&&/backtest/i.test(r.question))||/đặt lệnh|theo dõi hàng ngày|cảnh báo tự động/i.test(r.question)};
 }
 const numbers=s=>(String(s).match(/-?\d+(?:[.,]\d+)*/g)||[]).map(x=>x.replace(/[.,]/g,''));
 function validateAnalysis(value,evidence){

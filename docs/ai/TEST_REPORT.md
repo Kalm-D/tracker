@@ -31,3 +31,15 @@ Không thay đổi snapshot, engine, công thức, exporter hoặc workflow. Fea
 ## Bổ sung v0.2 ngày 26/10/2026
 
 63/63 test PASS sau thay đổi Strategy/Risk (40 test đã có +23 mới), script parse và diff check đạt. Xem V0_2_REPORT.md và STRATEGY_RISK.md cho phạm vi/giới hạn. Đây là test code và UI; chưa có model/BCTC/cloud thật đã nghiệm thu.
+
+## v0.3 — 26/10/2026
+
+81/81 test cục bộ PASS (63 hiện hữu + 18 mới), 0 thất bại. tools/check-scripts: 24 script parse, không trùng khai báo global. git diff --check sạch. tools/audit-data: nguồn gzip thật, 1.519 mã, 353.123 bar nguồn, 352.808 hợp lệ, 315 bar bị loại như trước; VNINDEX 320 phiên. Không sửa nguồn để làm đẹp kết quả.
+
+Đối chiếu worker và engine trực tiếp trên cùng snapshot/universe; kiểm tra hash race, demo, warmup, cancellation/timeout, request schema v3, lọc thông tin vốn; Monitoring persistence, source error, missing/stale, same-date revision, older snapshot, dedup, paused/deleted in-flight, retention/shutdown và owner/CSRF API. UI desktop + 390×844, lịch sử sau restart, tạo/kiểm tra/tạm dừng monitor; chưa có phiên mới thật hoặc Safari/iPhone vật lý để nghiệm thu. Xem V0_3_REPORT.md.
+
+## v1.0 RC — 26/10/2026
+
+113/113 PASS cục bộ (81 hiện hữu +32 mới), 0 fail/skip. 25 script parse. Test hardening kiểm tra durable quota/counters/rolling windows/migration/locks, actual usage và unknown usage, cooldown/retry/cache/routing/cancel, upstream error secrecy, malformed ledger/restore marker, resource limits/log whitelist, backup/restore/checksum/traversal/offline/stale PID, shutdown/corrupt history và API owner/CSRF/UTF-8. Fixture provider có nhãn, không có API model thật.
+
+Audit data không đổi: 1.519 mã, 353.123 bar nguồn, 352.808 hợp lệ, 315 loại. UI Quick MBB dùng snapshot 23/10/2026; Standard báo thiếu model và giữ số liệu. Vận hành kiểm tra desktop và viewport 390×844, sửa tràn hash/focus trap. Lịch sử giữ qua restart. Chưa nghiệm thu physical iPhone/Safari/HTTPS, model/BCTC/cloud. Xem V1_0_REPORT.md.

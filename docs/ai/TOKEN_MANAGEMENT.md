@@ -1,18 +1,38 @@
-# Token, quota và Free Mode
+# Token, quota và Free Mode — v1.0 RC
 
-Mặc định STRICT_FREE_MODE=true, ALLOW_PAID_API=false, ALLOW_AUTOTRADING=false. Nếu cấu hình bật paid hoặc tắt strict, Gateway từ chối provider. Không mua credit, không tự bật billing.
+STRICT_FREE_MODE=true, ALLOW_PAID_API=false, ALLOW_AUTOTRADING=false. Giá trị cấu hình không hợp lệ hoặc cho phép paid/tắt strict sẽ chặn provider. Cờ ứng dụng không thể vô hiệu hóa billing trong tài khoản đã bị cấu hình sai; quản trị phải kiểm tra trực tiếp tài khoản.
 
-Model không được hardcode theo tên trong master prompt. Quản trị phải chọn model có trong tài khoản, xác nhận dự án chưa bật billing và cấu hình GEMINI_MODEL/GROQ_MODEL cùng cờ FREE_TIER_CONFIRMED. Gateway truy vấn danh mục API trước lời gọi sinh nội dung. Danh mục model không chứng minh model miễn phí; cờ xác nhận vẫn đòi hỏi kiểm tra tài khoản và bảng giá.
+Không hardcode tên model. Cần chọn model thực có trong tài khoản, xác nhận điều kiện free-tier và đặt cờ *_FREE_TIER_CONFIRMED. Gateway kiểm tra danh mục model trước generation, cache danh mục 15 phút. Có tên trong danh mục không chứng minh miễn phí.
 
-Tham chiếu đã xem ngày 26/10/2026:
-- https://ai.google.dev/gemini-api/docs/pricing
+## Trần nội bộ và sổ bền
+
+Mặc định tổng 30 generation attempt/ngày UTC, 60.000 token giữ chỗ/charged. Mỗi provider có trần nội bộ RPM 5, TPM 60.000, RPD 30, TPD 60.000. Các con số này không phải hạn mức nhà cung cấp và có thể cao hơn quota tài khoản; phải giảm theo tài khoản thực. Biến cấu hình ở .env.example.
+
+RPM/TPM dùng cửa sổ 60 giây; RPD/TPD của provider dùng 24 giờ trượt, gộp mọi model của provider để đổi model không tạo ngân sách mới. Tổng ngày dùng UTC. Không giả lập thời điểm reset của nhà cung cấp: Gemini và Groq có phạm vi/reset riêng. Sổ này chỉ biết các call qua backend này; call từ app hoặc máy khác không được tính.
+
+gateway/usage.json schema 1 được giữ khóa, nạp lại và ghi nguyên tử trước generation POST. Một thư mục chỉ có một runtime. Sổ cũ được migrate với số đã dùng giữ nguyên và quy nguồn chưa rõ theo hướng thận trọng. File hỏng, array/null, schema/cấu hình sai, lock hoặc lỗi ghi đều chặn call; không reset ngân sách ngầm.
+
+Giữ chỗ bằng số byte UTF-8 của system prompt và evidence tinh gọn cộng trần đầu ra 700/1.400/2.200 theo mode. Đây là heuristic, không phải tokenizer hoặc bảo đảm trần token của provider. Input bị giới hạn 100.000 byte UTF-8. Lỗi/timeout không hoàn lại giữ chỗ. Nếu actual total lớn hơn giữ chỗ, phần vượt được cộng vào charged budget.
+
+Chỉ ghi input/output/reasoning/total khi usage hợp lệ được provider báo; thiếu usage được đánh unknown. Không tự suy ra phần reasoning thiếu. Bộ đếm usage chỉ là usage đã quan sát, không phải hóa đơn. Lời gọi danh mục model không nằm trong bộ đếm generation attempt.
+
+## Retry, cooldown và cache
+
+AI_MAX_RETRIES mặc định 0, cho phép 0–2. Mỗi retry giữ chỗ riêng, chỉ retry lỗi tạm thời phù hợp; hủy từ người dùng dừng retry/fallback. Backoff ngắn có giới hạn; Retry-After dài chuyển sang fallback đủ điều kiện. 429 tạo cooldown, tối thiểu mặc định 60 giây nếu không có header hợp lệ. Không retry vòng kín.
+
+AI_ROUTE_<ROLE> chọn thứ tự Gemini/Groq; Critic mặc định ưu tiên Groq, vai trò khác Gemini. Fallback chỉ dùng provider đã cấu hình và xác nhận free. Không tự chọn model trả phí.
+
+Cache generation 6 giờ theo câu hỏi/nguồn/vai trò/mode/version/model, tối đa 100 tệp; dữ liệu nguồn có cache riêng. Cache hit không gọi provider. Không gửi toàn bộ OHLCV hoặc lịch sử chat cho mọi vai trò; thông tin vốn/vị thế cá nhân bị loại khỏi evidence model theo hợp đồng.
+
+Headers chỉ được giữ dưới dạng số an toàn hoặc thời điểm cooldown. Groq remaining-requests là RPD, remaining-tokens là TPM; đây là quan sát tại một thời điểm, không là quota tổng quát hiện tại. UI luôn tách trần nội bộ, usage đã ghi và quota tài khoản chưa xác minh.
+
+Restore sổ từ backup tạo marker chặn generation 24 giờ vì có thể thiếu call sau lúc backup. Không xóa marker, sổ hoặc khóa để vượt quota. Xem OPERATIONS.md.
+
+## Nguồn và nghiệm thu
+
+Đã đối chiếu ngày 26/10/2026:
 - https://ai.google.dev/gemini-api/docs/rate-limits
-- https://ai.google.dev/gemini-api/docs/generate-content/structured-output
+- https://ai.google.dev/gemini-api/docs/tokens
+- https://console.groq.com/docs/rate-limits
 
-Giới hạn nội bộ mặc định: 30 lời gọi/ngày UTC, 60.000 token ước tính được giữ chỗ. Giữ chỗ trước API; lỗi/timeout không hoàn lại ước tính để tránh lặp vô hạn. Số thực tế chỉ tăng khi provider trả usage. Ước tính dùng ký tự/2 cộng trần đầu ra; đây không phải tokenizer của provider.
-
-Quick ưu tiên code; Standard/Deep tăng mức diễn giải và trần đầu ra 700/1.400/2.200 token mỗi call. Mỗi vai trò tối đa một call mỗi provider, không retry vòng kín. Khi 429/lỗi, chỉ fallback sang provider khác đã cấu hình free. Chưa có bộ điều khiển RPM/TPM theo quota từng tài khoản; quota thực còn lại được hiển thị unknown. Đây là phần cần hoàn thiện trước nghiệm thu.
-
-Cache theo câu hỏi, vai trò, mode, nội dung nguồn, version và danh sách model, TTL 6 giờ. Cache nguồn tài chính/tài liệu 1 giờ trong tiến trình. Không gửi OHLCV từng bar hoặc lịch sử chat đầy đủ cho mọi agent.
-
-Kết quả phiên triển khai: 0 lời gọi model thật, 0 token provider ghi nhận, 0 chi phí API model phát sinh. Token/hạn mức của ChatGPT Work không có API đo trong phiên; không suy diễn thành 0.
+Test hiện dùng provider giả lập có nhãn. 0 call model thật/0 usage provider ghi nhận trong phiên triển khai. Token ChatGPT Work chưa có số đo. Chưa kiểm tra billing hoặc quota tài khoản thật.

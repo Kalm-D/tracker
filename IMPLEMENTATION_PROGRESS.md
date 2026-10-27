@@ -1,16 +1,17 @@
 # Tracker AI — tiếp tục từ đây
 
-Phiên bản được người dùng trực tiếp cho phép tiếp tục: **v0.2**.
-Trạng thái Partial; có Strategy/Risk và các phép tính chạy bằng code, chưa nghiệm thu API/BCTC/cloud thật.
+Phiên bản được người dùng cho phép: **v1.0 Production Hardening**, release candidate **1.0.0-rc.1**. Trạng thái toàn hệ thống: **Partial**. Lộ trình gốc đi từ v0.3 tới v1.0.
 
-- [Tiến độ hiện tại](docs/ai/IMPLEMENTATION_PROGRESS.md)
-- [Báo cáo v0.2](docs/ai/V0_2_REPORT.md)
-- [Phương pháp Strategy/Risk](docs/ai/STRATEGY_RISK.md)
-- [Giả định giao dịch](docs/ai/TRADING_ASSUMPTIONS.md)
-- [Cách tự chạy](docs/ai/DEPLOYMENT.md)
+- [Báo cáo v1.0](docs/ai/V1_0_REPORT.md)
+- [Vận hành, sao lưu và khôi phục](docs/ai/OPERATIONS.md)
+- [Tiến độ và việc còn thiếu](docs/ai/IMPLEMENTATION_PROGRESS.md)
+- [Báo cáo v0.3](docs/ai/V0_3_REPORT.md)
+- [Báo cáo v0.2 đã công khai](docs/ai/V0_2_REPORT.md)
 
-Nhánh: feature/tracker-ai-v0.2, nền cdfa3541bb2048a4720323c536b275ebecd00e08.
-Bản xem thử trong phiên: http://127.0.0.1:8792/ trên máy này.
-Không tự bắt đầu v0.3 hoặc merge/deploy production.
+Nhánh cục bộ: feature/tracker-ai-v1.0-hardening, kế thừa v0.3. Preview http://127.0.0.1:8794/ chỉ hoạt động trên máy hiện tại khi server chạy. 113/113 test cục bộ PASS. Chưa tải v0.3/v1.0 lên GitHub, chưa merge main/deploy production. v0.2 vẫn ở PR nháp #12.
 
-Cập nhật 26/10/2026: v0.2 đã công khai tại PR nháp #12, CI PASS. Người dùng đã cho phép bắt đầu v0.3 trên nhánh riêng. Xem báo cáo v0.2.
+Còn thiếu nghiệm thu model API thật, BCTC chuẩn hóa thật, cloud và iPhone/Safari HTTPS. Không coi fixture hoặc cấu hình là bằng chứng nghiệm thu.
+
+Kiểm tra tổng hợp mới: xem [COMPATIBILITY_REPORT.md](docs/ai/COMPATIBILITY_REPORT.md). Người dùng đã cho phép triển khai khi đạt kiểm tra; còn chặn backend/API production, không cần xin lại quyền đã có.
+
+Backend: đã chuẩn bị production.cjs, /healthz, systemd/Caddy và cấu hình server. Xem docs/ai/CLOUD_BACKEND.md. Chưa có quyền truy cập tài khoản/VPS để triển khai thực.

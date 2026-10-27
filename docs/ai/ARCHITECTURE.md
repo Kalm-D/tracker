@@ -27,3 +27,11 @@ public/index.html chỉ thêm hai script AI và một comment. Các công thức
 ## Phần bổ sung v0.2
 
 Người dùng đã cho phép bắt đầu v0.2 ngày 26/10/2026. Xem STRATEGY_RISK.md và V0_2_REPORT.md. Thêm strategy-config.cjs/risk.cjs/strategy.cjs, request schemaVersion=2 khi có chiến lược, evidence tính toán và Strategy UI riêng. Các đoạn v0.1 ở trên là lịch sử; không còn là phạm vi được phép duy nhất. Engine/dữ liệu cũ vẫn không thay đổi.
+
+## Phần bổ sung v0.3
+
+Người dùng cho phép tiếp tục v0.3 ngày 26/10/2026. Backtest worker tái sử dụng engine; Monitoring lưu trạng thái và polling file snapshot trong tiến trình Node, API owner/CSRF cũ. Chi tiết ở BACKTEST_MONITORING.md, kết quả ở V0_3_REPORT.md. Các đoạn phạm vi v0.1/v0.2 ở trên là lịch sử; các giới hạn cloud/model/BCTC vẫn còn.
+
+## v1.0 RC — phạm vi hiện tại
+
+Người dùng cho phép mốc v1.0 sau v0.3. Gateway dùng TokenManager với ledger bền, quota theo provider, retry/cooldown/routing có giới hạn. Operations quản lý khóa một runtime, log whitelist, tài nguyên và dashboard owner. Research/Monitoring giữ file hỏng và chặn ghi khi lỗi; backup/restore offline qua tools/ai-state.cjs. Đây vẫn là filesystem local một process, chưa D1/cloud. Các phần mô tả phạm vi v0.1 ở trên là lịch sử. Xem V1_0_REPORT.md và OPERATIONS.md cho trạng thái hiện tại; engine/data/workflow giữ nguyên.

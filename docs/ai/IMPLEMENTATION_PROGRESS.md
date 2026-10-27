@@ -1,41 +1,16 @@
-# Tiến độ Tracker Multi-AI — v0.2
+# Tiến độ Tracker AI — v1.0 RC
 
-Ngày 26/10/2026, người dùng trực tiếp yêu cầu “tiếp tục với ver kế tiếp”. Phiên bản hiện được phép: **v0.2**.
-Trạng thái: **Partial / chưa nghiệm thu toàn bộ**. v0.1 còn các phần API/BCTC/cloud chưa hoàn tất, được giữ rõ trong báo cáo.
+Ngày 26/10/2026. Người dùng yêu cầu tiếp tục phiên bản kế tiếp; lộ trình gốc v0.1 → v0.2 → v0.3 → v1.0. Đã thực hiện hardening trên nhánh local feature/tracker-ai-v1.0-hardening từ v0.3 2e04eae. Trạng thái **Partial**, xem V1_0_REPORT.md.
 
-Nhánh làm việc: feature/tracker-ai-v0.2.
-Commit nền v0.1: cdfa3541bb2048a4720323c536b275ebecd00e08 trên feature/tracker-multi-ai.
-PR v0.1: https://github.com/Kalm-D/tracker/pull/11 — chưa merge.
+v0.2 đã công khai tại PR nháp #12 https://github.com/Kalm-D/tracker/pull/12; CI cuối https://github.com/Kalm-D/tracker/actions/runs/40278418597. v0.1 #11/v0.2 #12 chưa merge. v0.3 và v1.0 vẫn local; chưa có GitHub CI cho chúng.
 
-## Đã có
+Đã hoàn thiện Token Manager bền, trần nội bộ theo provider, retry/cooldown/routing, dashboard vận hành, khóa runtime, phục hồi lỗi lưu trữ, công cụ backup/verify/restore và test bảo mật/hồi quy. 113/113 test PASS, 25 script parse. Giữ nguyên engine, data/CSV/exporter và workflows. Public flag false.
 
-Đủ 8 vai trò module của v0.1/v0.2. Strategy/Risk bằng code, ba chiến lược độc lập, phép tính vốn/lô/bước giá/phí/thuế/slippage/thanh khoản/ngành/R:R, stress gap, P/E/P/B ba kịch bản, nguồn và cấu hình có version/hash, giao diện nhập giả định và báo cáo, giữ lịch sử trước đó.
+## Tiếp tục từ đây
 
-Code/data/engine cũ, CSV, exporter, workflow và tab Tracker được giữ nguyên. Chỉ thêm hook script UI chiến lược trong index. Public Feature Flag vẫn tắt.
-
-## Tiếp tục đúng phạm vi
-
-1. Xem git status/log, báo cáo V0_2_REPORT.md và kết quả test cuối.
-2. Cấu hình secret API model trên đúng máy chủ; không gửi key trong chat. Chưa có model thật đã chạy.
-3. Khắc phục Vnstock/runtime theo thiết lập/điều khoản chính thức. Chuẩn hóa kỳ TTM, BVPS, ngày công bố và unit, rồi kiểm chứng chất lượng doanh nghiệp/cổ tức. Không biến facts test hoặc EPS tự nhập thành BCTC đã xác minh.
-4. Chạy nghiệm thu thật cho Strategy, Risk và Critic, giữ kết luận Chờ khi chưa đủ điều kiện.
-5. Hoàn thiện backend cloud miễn phí hợp lệ, Cloudflare/D1 và kiểm thử Safari/iPhone thật. Chưa có staging cloud/production.
-6. Chỉ sau báo cáo v0.2 mới xin phê duyệt v0.3; không tự triển khai Backtest/Monitoring Agent.
-
-## Kiểm thử cần dùng
-
-    node tools/check-scripts.cjs
-    node --test tests/*.test.cjs
-    node tools/audit-data.cjs
-
-Cần đủ lịch sử git cho test engine tại commit 007e5c36. Các test mới dùng dữ liệu giả lập có nhãn chỉ để kiểm tra code, cùng kiểm tra Engine trên snapshot thật. Không có phí model API phát sinh.
-
-## Cách xem
-
-Bản preview trong phiên phát triển v0.2: http://127.0.0.1:8792/ trên máy hiện tại. Mật khẩu thử chỉ tồn tại trong tiến trình, không commit. Để tự chạy lâu dài, dùng tools/setup-ai.cjs và .env.ai như DEPLOYMENT.md; đổi cổng nếu 8790 đang được một preview khác dùng.
-
-Không merge main, không deploy website chính thức, không bật billing hoặc tự bắt đầu v0.3.
-
-## Trạng thái công bố v0.2
-
-Đã được người dùng duyệt công khai ngày 26/10/2026. Commit code 423f6c08227220653c4249213ae4e8df67d7b062. PR nháp #12: https://github.com/Kalm-D/tracker/pull/12. CI PASS: https://github.com/Kalm-D/tracker/actions/runs/40274041004. Chưa merge/deploy. Người dùng đồng thời cho phép tiếp tục v0.3; công việc đó nằm trên nhánh feature/tracker-ai-v0.3, không thay đổi kết luận Partial của v0.2.
+1. Đọc git status/log, V1_0_REPORT.md và OPERATIONS.md; không ghi đè thay đổi chưa commit của người dùng.
+2. Preview http://127.0.0.1:8794/ chỉ trên máy hiện tại khi process chạy. Tự chạy với tài khoản riêng bằng tools/setup-ai.cjs, không dùng mật khẩu test.
+3. Chỉ cấu hình secret qua server/secret manager. Còn thiếu model thật, nguồn BCTC chuẩn hóa thật, tài khoản/runtime cloud và nghiệm thu iPhone HTTPS. Không xin key trong chat.
+4. Không tự tăng trần/bật paid, mua credit, đặt lệnh hoặc reset quota. Backup/restore offline theo OPERATIONS.md.
+5. Không coi fixture hoặc 113 test là nghiệm thu production. Chỉ khi các điều kiện thực được kiểm chứng mới trình kế hoạch công khai/merge/deploy để được phê duyệt.
+6. Chưa bắt đầu phiên bản sau v1.0 hoặc tự công khai v0.3/v1.0. Các báo cáo cũ là lịch sử; dòng “v0.4” trong báo cáo v0.3 không thay đổi lộ trình gốc.
