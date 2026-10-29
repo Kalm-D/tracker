@@ -23,6 +23,9 @@ Read [Backtest operation, assumptions, data audit and limitations](docs/BACKTEST
 
 ## AI Analyst
 
+Trên [web Tracker chính thức](https://kalm-d.github.io/tracker/), chọn **Nghiên cứu AI** hoặc nút **AI** cạnh mã cổ phiếu. Trợ lý mở tại [backend HTTPS](https://tracker-ai-free.onrender.com/#research); mã được chọn sẽ điền sẵn, chưa tự gửi yêu cầu. Xem [hướng dẫn bản tích hợp](docs/ai/OFFICIAL_RELEASE.md).
+
+
 Bản nâng cấp theo master prompt: [luồng phân tích, cấu hình, kiểm tra và phần cần nghiệm thu](docs/ai/MASTER_PROMPT_UPGRADE.md).
 
 Vnstock miễn phí dành cho cá nhân, học tập và nghiên cứu. Kiểm tra giấy phép và quyền dùng nguồn trước khi tái phân phối hoặc sử dụng thương mại; giữ VNSTOCK_API_KEY trong .env local hoặc Secrets phía server.
