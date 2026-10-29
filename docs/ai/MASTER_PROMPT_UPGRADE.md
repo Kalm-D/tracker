@@ -95,3 +95,14 @@ Tắt AI bằng TRACKER_AI_ENABLED=false. Nhánh sửa riêng giúp xem diff và
 
 
 Kết quả kiểm tra local ngày 27/10/2026: toàn bộ 139 kiểm thử đạt; 27 script parse thành công. Thử luồng HPG với snapshot ngày 26/10/2026 lấy được tám tiêu đề tin mã và tám tiêu đề tin ngành; không có lượt gọi model thật. Audit nguồn loại 315 bar OHLCV không hợp lệ theo quy tắc engine hiện hữu. Trình duyệt tích hợp không truy cập được server local và chặn giao thức file, nên chưa xác nhận bố cục bằng trình duyệt/điện thoại thật; bản HTML xem trước dành cho người dùng mở trực tiếp.
+
+
+## Điều chỉnh sau khi thử Gemini thật ngày 29/10/2026
+
+Bản 6f5eb2f đã chạy trên Render với dữ liệu ngày 28/10. Lần gọi đầu gặp HTTP 503; lần tiếp theo chạm hạn chờ 45 giây, không có usage API đầy đủ. Những lượt này vẫn giữ nguyên trong ledger và không hoàn ngân sách ước tính.
+
+Gateway được điều chỉnh: gửi bốn tiêu đề mới nhất mỗi nguồn theo mặc định, bỏ đoạn trích lặp và URL dài khỏi ngữ cảnh model; giao diện vẫn giữ toàn bộ link và tin đã thu thập. Số lượng mặc định có thể đổi qua AI_MAX_NEWS_ITEMS. Với Gemini 3/4, dùng thinkingConfig.thinkingLevel từ GEMINI_THINKING_LEVEL (mặc định LOW), bỏ temperature theo tài liệu hiện hành. AI_PROVIDER_TIMEOUT_MS mặc định 90000, có kiểm tra miền giá trị. Không thay trần token/ngày hoặc tự bật trả phí. Mở thêm dung lượng đầu ra cho báo cáo tổng hợp và yêu cầu Quick viết ngắn để giảm phản hồi bị cắt.
+
+Nhật ký chỉ thêm mã nguyên nhân thuộc danh sách cố định: hết thời gian, bị cắt, sai JSON, hoặc không qua kiểm tra bằng chứng. Không ghi phản hồi model, câu hỏi hay khóa vào log.
+
+Nguồn API đã kiểm tra: https://ai.google.dev/api/generate-content#ThinkingConfig và https://ai.google.dev/gemini-api/docs/thinking

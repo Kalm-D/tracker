@@ -103,3 +103,42 @@ test('Giao diện Analyst giữ nội dung nguồn thành văn bản và không 
  assert.equal(body.children.length,8);assert.ok(nodes.some(n=>n.text==='<img src=x onerror=alert(1)>'));assert.ok(!nodes.some(n=>n.href?.startsWith('javascript:')));
 });
 
+
+test('Ngữ cảnh RSS bỏ URL dài/đoạn trích lặp, giữ ngày và không sửa nguồn gốc',()=>{
+ const {projectEvidence}=require('../server/ai/gateway.cjs');
+ const items=Array.from({length:8},(_,i)=>({title:'Tin '+i,publishedAtISO:'2026-10-'+String(i+1).padStart(2,'0')+'T00:00:00Z',url:'https://example.test/'+('x'.repeat(3000)),excerpt:'Không gửi đoạn trích lặp',publisher:'Nguồn',stale:false}));
+ const source={id:'news',type:'news_discovery',items,limitation:'Chưa kiểm chứng'};
+ const v=projectEvidence(source,{role:'analyst',newsLimit:4});
+ assert.equal(v.items.length,4);assert.equal(v.items[0].title,'Tin 7');assert.equal(v.items[0].publishedAt,'2026-10-08T00:00:00Z');
+ assert.ok(!JSON.stringify(v).includes('https://'));assert.equal(source.items.length,8);assert.ok(source.items[0].url);
+ assert.equal(v.itemsAvailable,8);assert.equal(v.itemsShown,4);
+});
+test('Gemini 3 dùng mức suy luận LOW và không gửi temperature đã lỗi thời',async()=>{
+ const dir=temporary();
+ try{
+  const g=new Gateway(dir,{GEMINI_API_KEY:'fixture',GEMINI_MODEL:'gemini-3.8-flash',GEMINI_FREE_TIER_CONFIRMED:'true'},async(url,o)=>{
+   if(!o.method)return Response.json({models:[{name:'models/gemini-3.8-flash'}]});
+   const body=JSON.parse(o.body);assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'LOW');assert.equal(body.generationConfig.temperature,undefined);assert.ok(body.generationConfig.maxOutputTokens>=3200);
+   return Response.json({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(result('t'))}]}}],usageMetadata:{totalTokenCount:100}});
+  });
+  assert.equal(g.providerTimeoutMs,90000);assert.equal(g.newsLimit,4);await g.analyze('analyst','Phân tích HPG',[{id:'t'}]);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+test('Phản hồi bị cắt không thành báo cáo hợp lệ và chỉ ghi mã chẩn đoán an toàn',async()=>{
+ const dir=temporary(),events=[];
+ try{
+  const g=new Gateway(dir,{GEMINI_API_KEY:'fixture',GEMINI_MODEL:'test-model',GEMINI_FREE_TIER_CONFIRMED:'true'},async(url,o)=>!o.method?Response.json({models:[{name:'models/test-model'}]}):Response.json({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[{text:'SENSITIVE_PARTIAL_OUTPUT'}]}}],usageMetadata:{totalTokenCount:123}}),{onEvent:(event,data)=>events.push({event,...data})});
+  await assert.rejects(g.analyze('analyst','Phân tích HPG',[{id:'t'}]),/bị cắt/);
+  assert.ok(events.some(e=>e.reasonCode==='output_limit'));assert.ok(!JSON.stringify(events).includes('SENSITIVE_PARTIAL_OUTPUT'));assert.equal(g.status().usage.actualTokens,123);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+test('Timeout và cấu hình sai không lộ thông báo nguồn hoặc vượt trần cấu hình',async()=>{
+ const dir=temporary(),events=[];
+ try{
+  const g=new Gateway(dir,{GEMINI_API_KEY:'fixture',GEMINI_MODEL:'test-model',GEMINI_FREE_TIER_CONFIRMED:'true'},async(url,o)=>{if(!o.method)return Response.json({models:[{name:'models/test-model'}]});throw new DOMException('SECRET_UPSTREAM_DETAIL','TimeoutError');},{onEvent:(event,data)=>events.push({event,...data})});
+  await assert.rejects(g.analyze('analyst','Phân tích HPG',[{id:'t'}]),/thời gian chờ/);
+  assert.ok(events.some(e=>e.reasonCode==='provider_timeout'));assert.ok(!JSON.stringify(events).includes('SECRET_UPSTREAM_DETAIL'));
+  for(const env of [{AI_PROVIDER_TIMEOUT_MS:'0'},{GEMINI_THINKING_LEVEL:'INVALID'},{AI_MAX_NEWS_ITEMS:'99'}])assert.ok(new Gateway(dir,env).status().policyProblems.length);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
