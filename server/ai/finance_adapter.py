@@ -57,7 +57,7 @@ def read_finance(ticker, factory=None):
         errors[name] = 'Bảng này chỉ có kỳ ' + periods[name][0] + ', cũ hơn BCTC ' + newest + '; chỉ hiển thị lịch sử, không dùng cho định giá hiện tại.'
     return {'ticker': ticker, 'source': 'Vnstock / VCI', 'period': 'quarter', 'tables': tables,
             'tableErrors': errors, 'tablePeriods': periods, 'staleTables': stale, 'truncated': truncated, 'publicationDate': None,
-            'pointInTimeVerified': False, 'unit': 'Giữ nguyên tên cột/đơn vị nguồn; chưa suy đoán hoặc quy đổi đơn vị.'}
+            'pointInTimeVerified': False, 'periodBasis': 'Nhãn quý theo nguồn; chưa xác minh số riêng quý hay lũy kế.', 'unit': 'Giữ nguyên tên cột/đơn vị nguồn; chưa suy đoán hoặc quy đổi đơn vị.'}
 
 
 def main(req):

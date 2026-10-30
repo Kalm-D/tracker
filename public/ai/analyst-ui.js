@@ -24,13 +24,14 @@ function financialTables(card,evidence){
  const records=evidence.filter(e=>e.type==='financial_statement');
  for(const e of records){
   card.append(el('p',e.ticker+' · '+e.data?.source+' · '+(e.data?.unit||'Đơn vị theo nguồn.')));
+  if(e.data?.periodBasis)card.append(el('p',e.data.periodBasis,'tai-muted'));
   for(const [name,rows]of Object.entries(e.data?.tables||{})){
    if(!rows?.length)continue;
    const d=el('details'),title={income_statement:'Kết quả kinh doanh',balance_sheet:'Bảng cân đối',cash_flow:'Lưu chuyển tiền',ratio:'Chỉ số tài chính'}[name]||name;
    d.append(el('summary',title+' · '+rows.length+' dòng dữ liệu nguồn'));
    const wrap=el('div',undefined,'tai-scroll'),t=el('table');
    const first=rows[0],long=Object.hasOwn(first,'value');
-   if(Object.hasOwn(first,'item')){const periods=Object.keys(first).filter(k=>/^\d{4}-Q[1-4]$/.test(k));const head=el('tr');for(const title of ['Chỉ tiêu',...periods])head.append(el('th',title));t.append(head);for(const r of rows.slice(0,30)){const tr=el('tr');tr.append(el('th',r.item));for(const period of periods)tr.append(el('td',typeof r[period]==='number'?fmt(r[period]):String(r[period]??'—')));t.append(tr);}}
+   if(Object.hasOwn(first,'item')){const periods=Object.keys(first).filter(k=>/^\d{4}-Q[1-4]$/.test(k)).sort().reverse();const head=el('tr');for(const title of ['Chỉ tiêu',...periods])head.append(el('th',title));t.append(head);for(const r of rows.slice(0,30)){const tr=el('tr');tr.append(el('th',r.item));for(const period of periods)tr.append(el('td',typeof r[period]==='number'?fmt(r[period]):String(r[period]??'—')));t.append(tr);}}
    else if(long){for(const r of rows.slice(0,30)){const tr=el('tr');tr.append(el('th',String(r.period)+' · '+(r.name||r.id)),el('td',fmt(r.value)+' '+(r.unit||'')));t.append(tr);}}
    else {for(const [k,v]of Object.entries(first).filter(([,v])=>v!==null&&v!==undefined).slice(0,30)){const tr=el('tr');tr.append(el('th',k),el('td',typeof v==='number'?fmt(v):String(v)));t.append(tr);}}
    wrap.append(t);d.append(wrap);card.append(d);
@@ -83,6 +84,7 @@ function render(body,report,{busy=false}={}){
   body.append(card);
  }
  const missing=section('7. Dữ liệu thiếu và độ tin cậy');
+ if(a?.audit?.status==='filtered'){missing.append(el('p','Đã loại '+a.audit.discardedClaims+' luận điểm chưa khớp nguồn khỏi phần trả lời.','tai-warning'));for(const reason of a.audit.reasons||[])missing.append(el('p',reason,'tai-muted'));}
  for(const text of [...new Set([...(a?.result.limitations||[]),...(report.warnings||[]),...(report.coverage?.missing||[])])])missing.append(el('p',text,'tai-warning'));
  missing.append(el('p',report.coverage?.limitation||'Độ tin cậy phụ thuộc độ đầy đủ, ngày và chất lượng nguồn; chưa phải xác suất thắng.'));body.append(missing);
  const sources=section('8. Nguồn');
