@@ -21,3 +21,10 @@ test('Không có luận điểm hợp lệ hoặc thiếu rủi ro vẫn chặn,
 test('Báo cáo hợp lệ giữ nguyên nội dung và không thêm cảnh báo lọc',()=>{
  const value=result([valid,risk]),checked=checkedAnalysis(value,evidence,{analyst:true});assert.equal(checked.result,value);assert.equal(checked.audit.status,'passed');
 });
+
+test('Quick thiếu rủi ro giữ phần AI hợp lệ và sao nguyên văn rủi ro từ engine với nhãn riêng',()=>{
+ const context={id:'ctx',type:'analyst_context',verification:'deterministic_existing_engine_context',data:{scores:[],market:{desc:'Thị trường đi ngang; breakout dễ nhiễu.',limitation:'Chưa có thống kê xác suất thành công.'}}};const checked=checkedAnalysis(result([valid]),[...evidence,context],{analyst:true});assert.equal(checked.audit.riskFromCode,true);assert.equal(checked.audit.discardedClaims,0);assert.equal(checked.result.claims.at(-1).text,context.data.market.desc+' '+context.data.market.limitation);assert.equal(checked.result.claims.at(-1).kind,'source');C.validateAnalyst(checked.result,[...evidence,context]);assert.throws(()=>checkedAnalysis(result([{...valid,text:'Giá 987654321.'}]),[...evidence,context],{analyst:true}));
+});
+test('Rủi ro sai bị loại; ngữ cảnh không xác nhận nguồn engine không được dùng thay thế',()=>{
+ const context={id:'ctx',type:'analyst_context',verification:'deterministic_existing_engine_context',data:{scores:[],market:{desc:'Đi ngang.',limitation:'Cần đối chiếu thêm.'}}};const checked=checkedAnalysis(result([valid,{...risk,text:'Chắc chắn giảm 987654321.'}]),[...evidence,context],{analyst:true});assert.equal(checked.audit.discardedClaims,1);assert.equal(checked.audit.riskFromCode,true);assert.ok(!JSON.stringify(checked.result).includes('987654321'));assert.throws(()=>checkedAnalysis(result([valid]),[...evidence,{...context,verification:'untrusted'}],{analyst:true}));
+});

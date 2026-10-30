@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='tracker-ai-1.2.1-audit';
+const VERSION='tracker-ai-1.2.2-recovery';
 const SC=require('./strategy-config.cjs'),BT=require('./backtest.cjs');
 const AGENTS=['manager','data','technical','fundamental','news','strategy','risk','backtest','monitoring','critic'];
 const OUTPUT_SCHEMA={type:'object',additionalProperties:false,required:['summary','claims','limitations'],properties:{summary:{type:'string'},claims:{type:'array',items:{type:'object',additionalProperties:false,required:['text','kind','evidenceIds'],properties:{text:{type:'string'},kind:{type:'string',enum:['source','interpretation']},evidenceIds:{type:'array',items:{type:'string'}}}}},limitations:{type:'array',items:{type:'string'}}}};
