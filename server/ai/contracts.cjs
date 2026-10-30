@@ -43,7 +43,7 @@ function plan(r,known){
  const found=[...(r.question.match(/\b[A-Z][A-Z0-9]{2}\b/g)||[]),...named];
  const explicit=found.filter(t=>known.has(t));const requested=explicit.length&&!/so sánh|compare/i.test(r.question)?explicit:[...r.tickers,...explicit];const tickers=[...new Set(requested)].slice(0,5);
  const strategy=r.strategy||null,backtest=r.backtest||null;
- const fullAnalysis=!backtest&&!strategy&&(/(?:phân tích|đánh giá|nhận định|analyse|analyze|analysis)/i.test(r.question))&&!/kỹ thuật|technical|cơ bản|fundamental|tin tức/i.test(r.question);
+ const fullAnalysis=!backtest&&!strategy&&(tickers.length>0||/(?:phân tích|đánh giá|nhận định|analyse|analyze|analysis|thị trường|vnindex)/i.test(r.question))&&!/kỹ thuật|technical|cơ bản|fundamental|tin tức/i.test(r.question);
  const fundamental=!backtest&&(fullAnalysis||((strategy&&strategy.kind!=='swing')||/cơ bản|định giá|bctc|tài chính|cổ tức|tích sản|doanh nghiệp|ngân hàng|so sánh|p\/e|p\/b|roe|eps/i.test(r.question)));
  const news=!backtest&&(fullAnalysis||/tin tức|sự kiện|chính sách|vĩ mô|công bố|lãi suất|tỷ giá/i.test(r.question));
  return {schemaVersion:backtest?3:strategy?2:1,tickers,fundamental,news,fullAnalysis,strategy,backtest,roles:['manager','data','technical',...(fundamental?['fundamental']:[]),...(news?['news']:[]),...(strategy?['strategy','risk']:[]),...(backtest?['backtest']:[]),'critic'],unsupported:(!backtest&&/backtest/i.test(r.question))||/đặt lệnh|theo dõi hàng ngày|cảnh báo tự động/i.test(r.question)};
