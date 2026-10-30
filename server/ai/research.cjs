@@ -109,19 +109,20 @@ class Research {
    if(result){j.report.backtest=result;j.report.evidence.push({id:'backtest-'+j.id,type:'backtest_calculation',dataDate:snap.date,sha256:S.hash(JSON.stringify(result)),data:result,verification:'historical_simulation_not_forecast'});}
   }
   const evidence=j.report.evidence;
-  // Kỹ thuật nhanh dùng code; phân tích tổng quát dùng một lần tổng hợp.
-  const roles=j.plan.fullAnalysis?['analyst']:[...(j.request.mode!=='Quick'?['technical']:[]),...(j.plan.fundamental?['fundamental']:[]),...(j.plan.news?['news']:[]),...(j.plan.strategy&&j.request.mode!=='Quick'?['strategy','risk']:[])];
+  // Quick vẫn diễn giải kỹ thuật khi đã có model; câu tổng quát chỉ gọi một lần tổng hợp.
+  const quickTechnical=j.request.mode==='Quick'&&!j.plan.fundamental&&!j.plan.news&&!j.plan.strategy&&!j.plan.backtest&&(this.gateway.providers?.('technical')?.length||0)>0;
+  const roles=j.plan.fullAnalysis?['analyst']:[...((j.request.mode!=='Quick'||quickTechnical)?['technical']:[]),...(j.plan.fundamental?['fundamental']:[]),...(j.plan.news?['news']:[]),...(j.plan.strategy&&j.request.mode!=='Quick'?['strategy','risk']:[])];
   for(const role of roles){
    const e=role==='fundamental'?evidence.filter(e=>e.type!=='news_discovery'):evidence;
    if(role==='fundamental'&&!e.some(x=>['financial_statement','official_document'].includes(x.type))){j.report.warnings.push('Thiếu báo cáo tài chính thực; chưa thể phân tích cơ bản.');continue;}
    const a=await attempt(role,'AI Gateway / cited structured analysis',()=>this.gateway.analyze(role,j.request.question,e,{signal,mode:j.request.mode}));
-   if(a)j.report.analyses.push({role,...a});
+   if(a){j.report.analyses.push({role,...a});if(a.audit?.status==='filtered')j.report.warnings.push(require('./analysis-audit.cjs').FILTER_NOTICE);}
   }
   await step('critic','deterministic evidence/citation/number contract audit',async()=>{
    for(const a of j.report.analyses)(a.role==='analyst'?C.validateAnalyst:C.validateAnalysis)(a.result,evidence);
    const premiseChecks=[]; for(const m of metrics){const re=new RegExp(m.ticker+'\\s+(?:hiện\\s+)?(?:đang\\s+)?(?:có\\s+)?giá\\s+(\\d+(?:[.,]\\d+)*)\\s*(đồng|vnd|nghìn|ngàn)','i');const match=j.request.question.match(re);if(match){const value=Number(match[1].replace(/[.,]/g,''))*(/nghìn|ngàn/i.test(match[2])?1000:1);premiseChecks.push({ticker:m.ticker,claimed:value,snapshotClose:m.close,dataDate:snap.date,status:value===m.close?'matches_snapshot':'contradicted_by_snapshot',message:value===m.close?'Nhận định khớp giá snapshot, chưa xác nhận giá hiện tại.':'Giá được nêu không khớp snapshot; không được coi đây là dữ kiện đã xác minh.'});}}j.report.premiseChecks=premiseChecks;j.report.audit={contractChecks:'passed',independentFactVerification:'not_established',checks:['demo rejected','snapshot hash','existing engine version','citation IDs','numeric tokens present in cited evidence'],limitations:['Kiểm tra số liệu xuất hiện trong nguồn chưa chứng minh đúng ngữ nghĩa, đơn vị hoặc kỳ.','Ngày công bố BCTC chưa xác minh; không được dùng cho nghiên cứu hồi tố.','Chưa xác nhận lịch điều chỉnh giá/cổ tức của nguồn.']};
   });
-  if(j.report.analyses.length&&!j.plan.fullAnalysis){
+  if(j.report.analyses.length&&!j.plan.fullAnalysis&&j.request.mode!=='Quick'){
    const a=await attempt('critic','AI counterevidence review (not independent source verification)',()=>this.gateway.analyze('critic','Hãy phản biện luận điểm người dùng và các phân tích: '+j.request.question,evidence,{signal,mode:j.request.mode,previous:j.report.analyses.map(a=>({role:a.role,result:a.result}))}));
    if(a)j.report.analyses.push({role:'critic',...a});
   }

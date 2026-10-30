@@ -25,3 +25,13 @@ Render đang chỉ chạy kiểm tra JavaScript trong build; chưa cài thư vi�
 CI bổ sung cài môi trường Python trên Linux và chạy fixture adapter. Phải đổi Build Command của dịch vụ Render hiện có sang bash tools/build-ai.sh; sửa render.yaml không tự cập nhật dịch vụ tạo thủ công. Nghiệm thu Gemini trên Render được ghi nhận sau triển khai, không suy ra từ fixture hoặc nguồn chạy cục bộ.
 
 Giữ strict free, không bật thanh toán, không tự giao dịch, không đổi trần 80.000 và không đặt lại ledger.
+
+## Nghiệm thu Render và sửa bộ kiểm tra toàn báo cáo
+
+Bản 1.2.0 đã chạy trên Render (d758986, dep-dbi47t6h2hjs73bmrcl0). Build cần PYTHON_VERSION=3.12.16; mặc định 3.14.8 không khớp NumPy của vnstock. Giá trị này cũng được cố định bằng .python-version. Tám tệp trạng thái có checksum 40269a5ed235acb77265942f8f2da146 trước/sau chuyển máy chủ, lịch sử và ledger không đổi.
+
+Ca MSR Standard 318f5a95-c0f2-41cf-8db4-b51800791d8e lúc 14:19 ngày 30/10 đã lấy đủ năm nhóm nguồn và gọi Gemini thành công: input 6.377 + output 699 = 7.076 token, giữ chỗ 11.272 rồi settle đúng usage. Bộ kiểm tra số liệu/nguồn đã từ chối cả phản hồi; bản gốc không lưu nên không thể kết luận chính xác câu nào bị từ chối.
+
+Bản 1.2.1 lọc từng luận điểm bằng chính hợp đồng hiện có, giữ phần hợp lệ, loại riêng số/nguồn/hạng không khớp, kiểm tra lại toàn bộ kết quả cuối cùng. Tóm tắt sai chỉ được thay bằng nguyên văn luận điểm đã hợp lệ; không sửa số hoặc tự tạo nhận định. Thiếu luận điểm rủi ro hợp lệ hoặc không còn luận điểm nào thì vẫn chặn. Cảnh báo và số phần bị loại được lưu rõ, trạng thái hoàn thành một phần. Nội dung bị loại không được trình bày như nhận định hợp lệ. Khi đang chạy, giao diện dùng thông báo đang thu thập thay cho kết luận nguồn lỗi.
+
+Câu hỏi tự nhiên có mã hoặc thị trường được đưa vào tổng hợp đầy đủ, không cần gõ đúng mẫu “Phân tích”. Quick kỹ thuật khi đã cấu hình model gọi một lượt diễn giải; khi chưa có model vẫn giữ phép tính code. Không đổi cách Backtest/Strategy Quick chạy bằng code.

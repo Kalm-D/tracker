@@ -15,7 +15,8 @@ function sharedSnapshot(file,{fetcher=fetch,parse=D.snapshot,clock=Date.now,inte
    const bytes=await bounded(r,16*1048576,abort);fs.writeFileSync(temp,bytes,{flag:'wx'});
    const candidate=await parse(temp);
    if(!candidate?.date||candidate.date<current.date)throw Error('older_snapshot');
-   if(candidate.sha256!==current.sha256){fs.renameSync(temp,file);current=candidate;D.remember(file,current);}
+   if(candidate.sha256!==current.sha256){fs.renameSync(temp,file);current=candidate;}
+   D.remember(file,current);
    const tag=r.headers.get('etag');if(tag&&tag.length<200)etag=tag;
    warning=null;return current;
   }catch{warning='Chưa đồng bộ được snapshot mới từ web chính thức; đang dùng dữ liệu ngày '+current.date+'.';return current;}

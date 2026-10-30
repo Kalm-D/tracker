@@ -14,6 +14,8 @@ function references(card,ids,evidence){
  }
 }
 function generationIssue(report){
+ if(report.pending)return 'Đang thu thập nguồn và tạo diễn giải AI. Kết quả sẽ cập nhật khi các bước hoàn tất.';
+ if(report.analyses?.some(a=>a.audit?.status==='filtered'))return 'Luận điểm cho mục này chưa qua kiểm tra số liệu/nguồn; các dữ liệu nguồn đã lấy vẫn hiển thị bên dưới.';
  const issue=report.issues?.find(x=>x.stage==='analyst'||/^AI_/.test(x.code||''));
  const message=issue?.message||(report.warnings||[]).find(x=>/chưa được gọi|chưa gọi AI|ngân sách|Provider .*chưa|Nhà cung cấp AI|phản hồi AI/i.test(x));
  return message||'Chưa có phần diễn giải AI cho mục này. Dữ liệu nguồn bên dưới vẫn xem được.';
@@ -22,13 +24,14 @@ function financialTables(card,evidence){
  const records=evidence.filter(e=>e.type==='financial_statement');
  for(const e of records){
   card.append(el('p',e.ticker+' · '+e.data?.source+' · '+(e.data?.unit||'Đơn vị theo nguồn.')));
+  if(e.data?.periodBasis)card.append(el('p',e.data.periodBasis,'tai-muted'));
   for(const [name,rows]of Object.entries(e.data?.tables||{})){
    if(!rows?.length)continue;
    const d=el('details'),title={income_statement:'Kết quả kinh doanh',balance_sheet:'Bảng cân đối',cash_flow:'Lưu chuyển tiền',ratio:'Chỉ số tài chính'}[name]||name;
    d.append(el('summary',title+' · '+rows.length+' dòng dữ liệu nguồn'));
    const wrap=el('div',undefined,'tai-scroll'),t=el('table');
    const first=rows[0],long=Object.hasOwn(first,'value');
-   if(Object.hasOwn(first,'item')){const periods=Object.keys(first).filter(k=>/^\d{4}-Q[1-4]$/.test(k));const head=el('tr');for(const title of ['Chỉ tiêu',...periods])head.append(el('th',title));t.append(head);for(const r of rows.slice(0,30)){const tr=el('tr');tr.append(el('th',r.item));for(const period of periods)tr.append(el('td',typeof r[period]==='number'?fmt(r[period]):String(r[period]??'—')));t.append(tr);}}
+   if(Object.hasOwn(first,'item')){const periods=Object.keys(first).filter(k=>/^\d{4}-Q[1-4]$/.test(k)).sort().reverse();const head=el('tr');for(const title of ['Chỉ tiêu',...periods])head.append(el('th',title));t.append(head);for(const r of rows.slice(0,30)){const tr=el('tr');tr.append(el('th',r.item));for(const period of periods)tr.append(el('td',typeof r[period]==='number'?fmt(r[period]):String(r[period]??'—')));t.append(tr);}}
    else if(long){for(const r of rows.slice(0,30)){const tr=el('tr');tr.append(el('th',String(r.period)+' · '+(r.name||r.id)),el('td',fmt(r.value)+' '+(r.unit||'')));t.append(tr);}}
    else {for(const [k,v]of Object.entries(first).filter(([,v])=>v!==null&&v!==undefined).slice(0,30)){const tr=el('tr');tr.append(el('th',k),el('td',typeof v==='number'?fmt(v):String(v)));t.append(tr);}}
    wrap.append(t);d.append(wrap);card.append(d);
@@ -38,11 +41,12 @@ function financialTables(card,evidence){
  }
  return records.length;
 }
-function render(body,report){
+function render(body,report,{busy=false}={}){
+ report={...report,pending:busy};
  const a=report.analyses?.find(a=>a.role==='analyst'),evidence=report.evidence||[];
  if(!report.composite&&!a)return;
  const conclusion=section('1. Kết luận ngắn');
- conclusion.append(el('p',a?.result.summary||generationIssue(report)),el('small',a?a.provider+' / '+a.model+(a.cached?' · kết quả lưu tạm':''):'AI chưa tạo được báo cáo · dữ liệu đã lấy vẫn được giữ'));
+ conclusion.append(el('p',a?.result.summary||generationIssue(report)),el('small',a?a.provider+' / '+a.model+(a.cached?' · kết quả lưu tạm':''):(busy?'Đang tạo báo cáo':'AI chưa tạo được báo cáo · dữ liệu đã lấy vẫn được giữ')));
  body.append(conclusion);
  const scores=section('2. Điểm kỹ thuật'),wrap=el('div',undefined,'tai-scroll'),table=el('table'),head=el('thead'),tr=el('tr');
  for(const name of ['Mã','Điểm kỹ thuật','Nhóm kỹ thuật'])tr.append(el('th',name));head.append(tr);table.append(head);const rows=el('tbody');
@@ -53,11 +57,12 @@ function render(body,report){
   const card=section(title),claims=(a?.result.claims||[]).filter(c=>sections.includes(c.section));
   if(!claims.length){
    if(sections.includes('fundamental')){
-    if(!evidence.some(e=>e.type==='financial_statement'))card.append(el('p',report.issues?.find(x=>x.stage==='fundamental')?.message||'Chưa đọc được BCTC từ nguồn tài chính. Phần kỹ thuật và các tin đã lấy không bị mất.'));
+    if(busy)card.append(el('p','Đang thu thập báo cáo tài chính và phân tích nguồn.'));
+    else if(!evidence.some(e=>e.type==='financial_statement'))card.append(el('p',report.issues?.find(x=>x.stage==='fundamental')?.message||'Chưa đọc được BCTC từ nguồn tài chính. Phần kỹ thuật và các tin đã lấy không bị mất.'));
     else card.append(el('p','Đã lấy được số liệu tài chính. '+generationIssue(report)));
    }else if(sections.includes('news')){
     const count=evidence.filter(e=>e.type==='news_discovery').reduce((n,e)=>n+(e.items?.length||0),0);
-    card.append(el('p',count?'Đã lấy '+count+' tiêu đề tin. '+generationIssue(report):'Nguồn tin chưa trả tiêu đề phù hợp; không tự bịa sự kiện.'));
+    card.append(el('p',count?'Đã lấy '+count+' tiêu đề tin. '+generationIssue(report):busy?'Đang thu thập tin doanh nghiệp và ngành.':'Nguồn tin chưa trả tiêu đề phù hợp; không tự bịa sự kiện.'));
    }else card.append(el('p',generationIssue(report)));
   }
   if(sections.includes('fundamental'))financialTables(card,evidence);
@@ -79,6 +84,7 @@ function render(body,report){
   body.append(card);
  }
  const missing=section('7. Dữ liệu thiếu và độ tin cậy');
+ if(a?.audit?.status==='filtered'){missing.append(el('p','Đã loại '+a.audit.discardedClaims+' luận điểm chưa khớp nguồn khỏi phần trả lời.','tai-warning'));for(const reason of a.audit.reasons||[])missing.append(el('p',reason,'tai-muted'));}
  for(const text of [...new Set([...(a?.result.limitations||[]),...(report.warnings||[]),...(report.coverage?.missing||[])])])missing.append(el('p',text,'tai-warning'));
  missing.append(el('p',report.coverage?.limitation||'Độ tin cậy phụ thuộc độ đầy đủ, ngày và chất lượng nguồn; chưa phải xác suất thắng.'));body.append(missing);
  const sources=section('8. Nguồn');
