@@ -115,7 +115,7 @@ class Research {
    const e=role==='fundamental'?evidence.filter(e=>e.type!=='news_discovery'):evidence;
    if(role==='fundamental'&&!e.some(x=>['financial_statement','official_document'].includes(x.type))){j.report.warnings.push('Thiếu báo cáo tài chính thực; chưa thể phân tích cơ bản.');continue;}
    const a=await attempt(role,'AI Gateway / cited structured analysis',()=>this.gateway.analyze(role,j.request.question,e,{signal,mode:j.request.mode}));
-   if(a)j.report.analyses.push({role,...a});
+   if(a){j.report.analyses.push({role,...a});if(a.audit?.status==='filtered')j.report.warnings.push(require('./analysis-audit.cjs').FILTER_NOTICE);}
   }
   await step('critic','deterministic evidence/citation/number contract audit',async()=>{
    for(const a of j.report.analyses)(a.role==='analyst'?C.validateAnalyst:C.validateAnalysis)(a.result,evidence);

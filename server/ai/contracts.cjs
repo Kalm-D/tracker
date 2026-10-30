@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='tracker-ai-1.2.0-recovery';
+const VERSION='tracker-ai-1.2.1-audit';
 const SC=require('./strategy-config.cjs'),BT=require('./backtest.cjs');
 const AGENTS=['manager','data','technical','fundamental','news','strategy','risk','backtest','monitoring','critic'];
 const OUTPUT_SCHEMA={type:'object',additionalProperties:false,required:['summary','claims','limitations'],properties:{summary:{type:'string'},claims:{type:'array',items:{type:'object',additionalProperties:false,required:['text','kind','evidenceIds'],properties:{text:{type:'string'},kind:{type:'string',enum:['source','interpretation']},evidenceIds:{type:'array',items:{type:'string'}}}}},limitations:{type:'array',items:{type:'string'}}}};
@@ -7,14 +7,20 @@ const ANALYST_SECTIONS=['technical','market','fundamental','news','risk'];
 const ANALYST_SCHEMA=structuredClone(OUTPUT_SCHEMA);
 ANALYST_SCHEMA.properties.claims.items.required.push('section');
 ANALYST_SCHEMA.properties.claims.items.properties.section={type:'string',enum:ANALYST_SECTIONS};
+function validateGradeText(text,evidence){
+ const grades=new Set(evidence.filter(e=>e.type==='analyst_context').flatMap(e=>e.data.scores.map(s=>s.grade)).filter(Boolean));
+ for(const m of text.matchAll(/hạng\s*[:=]?\s*([ABC])(?:\b|\+)/gi))if(!grades.has(m[1].toUpperCase()))throw Error('AI tự gán hạng chưa có trong kết quả công cụ.');
+}
+function validateAnalystClaim(claim,evidence){
+ if(!ANALYST_SECTIONS.includes(claim.section))throw Error('Luận điểm Analyst sai phần nội dung.');
+ if(claim.section==='fundamental'&&numbers(claim.text).length&&!claim.evidenceIds.some(id=>evidence.some(e=>e.id===id&&e.type==='financial_statement')))throw Error('Số liệu tài chính phải dẫn nguồn có cấu trúc, không lấy từ trang web.');
+ validateGradeText(claim.text,evidence);
+}
 function validateAnalyst(value,evidence){
  validateAnalysis(value,evidence);
- if(!value.claims.length||value.claims.some(c=>!ANALYST_SECTIONS.includes(c.section))||!value.claims.some(c=>c.section==='risk'))throw Error('Báo cáo Analyst thiếu mục rủi ro/kịch bản xấu hoặc sai phần nội dung.');
- for(const claim of value.claims){
-  if(claim.section==='fundamental'&&numbers(claim.text).length&&!claim.evidenceIds.some(id=>evidence.some(e=>e.id===id&&e.type==='financial_statement')))throw Error('Số liệu tài chính phải dẫn nguồn có cấu trúc, không lấy từ trang web.');
- }
- const grades=new Set(evidence.filter(e=>e.type==='analyst_context').flatMap(e=>e.data.scores.map(s=>s.grade)).filter(Boolean));
- for(const text of [value.summary,...value.claims.map(c=>c.text)])for(const m of text.matchAll(/hạng\s*[:=]?\s*([ABC])(?:\b|\+)/gi))if(!grades.has(m[1].toUpperCase()))throw Error('AI tự gán hạng chưa có trong kết quả công cụ.');
+ if(!value.claims.length||!value.claims.some(c=>c.section==='risk'))throw Error('Báo cáo Analyst thiếu mục rủi ro/kịch bản xấu hoặc sai phần nội dung.');
+ for(const claim of value.claims)validateAnalystClaim(claim,evidence);
+ validateGradeText(value.summary,evidence);
  const allowed=new Set(evidence.flatMap(e=>numbers(JSON.stringify(e))));
  if(value.limitations.some(s=>numbers(s).some(n=>!allowed.has(n))))throw Error('Giới hạn dữ liệu chứa số liệu không có nguồn.');
  return value;
@@ -55,4 +61,4 @@ function validateAnalysis(value,evidence){
  if(numbers(value.summary).some(n=>!allowed.has(n)))throw new Error('Tóm tắt AI có số liệu chưa có trong nguồn.');
  return value;
 }
-module.exports={VERSION,AGENTS,OUTPUT_SCHEMA,ANALYST_SCHEMA,ANALYST_SECTIONS,request,plan,validateAnalysis,validateAnalyst};
+module.exports={VERSION,AGENTS,OUTPUT_SCHEMA,ANALYST_SCHEMA,ANALYST_SECTIONS,request,plan,validateAnalysis,validateAnalyst,validateAnalystClaim};

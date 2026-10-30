@@ -75,7 +75,7 @@ try{
   }
   window.TrackerAIStrategyUI?.render(body,r);
   window.TrackerAIExperimentsUI?.render(body,r);
-  window.TrackerAIAnalystUI?.render(body,r);
+  window.TrackerAIAnalystUI?.render(body,r,{busy});
   for(const a of (r.analyses||[]).filter(a=>a.role!=='analyst')){const card=el('article','tai-card');card.append(el('h3','',a.role.toUpperCase()),el('p','',a.result.summary),el('small','','Nhận định AI · '+a.provider+' / '+a.model+(a.cached?' · dùng kết quả lưu':'')));
    for(const c of a.result.claims){card.append(el('p','',(c.kind==='interpretation'?'Diễn giải: ':'Dữ kiện được dẫn: ')+c.text),el('small','','Nguồn: '+c.evidenceIds.join(', ')));}
    for(const s of a.result.limitations)card.append(el('p','tai-warning',s));body.append(card);
