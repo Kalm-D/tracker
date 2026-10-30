@@ -13,7 +13,7 @@ function configuration(env={}){
  let input={};
  try{input=JSON.parse(env.TRACKER_AI_ANALYST_CONFIG||'{}');}catch{throw Error('Cấu hình AI Analyst phải là JSON hợp lệ.');}
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['weights','grades','sectorFactors','toolTimeoutMs','cacheMs'].includes(k)))throw Error('Cấu hình AI Analyst có trường không hợp lệ.');
- const c={weights:{technical:.4,fundamental:.4,news:.1,sector:.1,...input.weights},grades:{A:80,B:60,...input.grades},sectorFactors:{...SECTORS,...input.sectorFactors},toolTimeoutMs:input.toolTimeoutMs??20000,cacheMs:input.cacheMs??3600000};
+ const c={weights:{technical:.4,fundamental:.4,news:.1,sector:.1,...input.weights},grades:{A:80,B:60,...input.grades},sectorFactors:{...SECTORS,...input.sectorFactors},toolTimeoutMs:input.toolTimeoutMs??60000,cacheMs:input.cacheMs??3600000};
  if(Object.keys(c.weights).some(k=>!KEYS.includes(k))||KEYS.some(k=>!Number.isFinite(c.weights[k])||c.weights[k]<0)||Math.abs(Object.values(c.weights).reduce((a,b)=>a+b,0)-1)>1e-8)throw Error('Trọng số tổng hợp phải không âm và có tổng bằng một.');
  if(Object.keys(c.grades).some(k=>!['A','B'].includes(k))||![c.grades.A,c.grades.B].every(n=>Number.isFinite(n)&&n>=0&&n<=100)||c.grades.A<=c.grades.B)throw Error('Ngưỡng hạng tổng hợp không hợp lệ.');
  if(!Number.isInteger(c.toolTimeoutMs)||c.toolTimeoutMs<100||c.toolTimeoutMs>60000||!Number.isInteger(c.cacheMs)||c.cacheMs<0||c.cacheMs>21600000)throw Error('Thời gian chờ/cache AI Analyst không hợp lệ.');

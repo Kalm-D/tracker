@@ -1,5 +1,5 @@
 'use strict';
-const crypto=require('node:crypto'),dns=require('node:dns').promises;
+const fs=require('node:fs'),crypto=require('node:crypto'),dns=require('node:dns').promises;
 const {spawn}=require('node:child_process'),path=require('node:path');
 const ALLOWED=new Set(['www.hoaphat.com.vn','hoaphat.com.vn','fpt.com','www.fpt.com','www.gemadept.com.vn','gemadept.com.vn','www.mbbank.com.vn','mbbank.com.vn','acb.com.vn','www.acb.com.vn','techcombank.com','www.techcombank.com','www.hsx.vn','hsx.vn','www.hnx.vn','hnx.vn','vsd.vn','www.vsd.vn','vsdc.vn','www.vsdc.vn','sbv.gov.vn','www.sbv.gov.vn','www.nso.gov.vn','nso.gov.vn','www.federalreserve.gov','federalreserve.gov','www.gso.gov.vn','gso.gov.vn']);
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -11,13 +11,13 @@ async function bounded(response,max,signal){
  try{while(true){signal?.throwIfAborted();const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>max)throw new Error('Nguồn quá lớn.');chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});}
  return Buffer.concat(chunks);
 }
-function python(req,{signal,python=process.env.TRACKER_AI_PYTHON||'python',timeout=45000}={}){
+function python(req,{signal,python=process.env.TRACKER_AI_PYTHON||[path.resolve(__dirname,'../../.venv-ai',process.platform==='win32'?'Scripts/python.exe':'bin/python')].find(p=>fs.existsSync(p))||(process.platform==='win32'?'python':'python3'),timeout=60000}={}){
  return new Promise((resolve,reject)=>{
   const child=spawn(python,[path.join(__dirname,'finance_adapter.py')],{stdio:['pipe','pipe','ignore'],windowsHide:true,signal}),out=[];let size=0;
   const timer=setTimeout(()=>child.kill(),timeout);
   child.stdout.on('data',b=>{size+=b.length;if(size>800000)child.kill();else out.push(b);});
-  child.once('error',e=>{clearTimeout(timer);reject(e);});
-  child.once('close',code=>{clearTimeout(timer);try{if(code!==0||size>800000)throw new Error('Nguồn hết thời gian hoặc không khả dụng.');const j=JSON.parse(Buffer.concat(out).toString('utf8'));if(!j.ok)throw new Error(j.message);resolve(j.data);}catch(e){reject(e);}});
+  child.once('error',()=>{clearTimeout(timer);reject(Object.assign(Error('Máy chủ chưa có môi trường Python đọc BCTC/PDF. Cần sửa bước build backend.'),{code:'FINANCE_RUNTIME_MISSING'}));});
+  child.once('close',code=>{clearTimeout(timer);try{if(code!==0||size>800000)throw new Error('Nguồn hết thời gian hoặc không khả dụng.');const j=JSON.parse(Buffer.concat(out).toString('utf8'));if(!j.ok)throw Object.assign(new Error(j.message),{code:['FINANCE_DEPENDENCY_MISSING','FINANCE_SOURCE_UNAVAILABLE'].includes(j.code)?j.code:'FINANCE_SOURCE_UNAVAILABLE'});resolve(j.data);}catch(e){reject(e);}});
   child.stdin.on('error',()=>{});child.stdin.end(JSON.stringify(req));
  });
 }
@@ -40,7 +40,7 @@ async function financialSource(ticker,{signal,adapter=python}={}){
  const data=await adapter({type:'finance',ticker},{signal});
  return {id:'finance-'+ticker+'-'+hash(JSON.stringify(data)).slice(0,12),type:'financial_statement',ticker,url:'https://trading.vietcap.com.vn/',publishedAt:null,dataDate:null,retrievedAt:new Date().toISOString(),sha256:hash(JSON.stringify(data)),data,verification:'provider_statement_publication_date_unknown'};
 }
-const decode=s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1');
+const decode=s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&nbsp;|&#160;/g,' ').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1');
 async function newsDiscovery(question,tickers,{signal,fetcher=fetch,query,clock=Date.now}={}){
  const url=new URL('https://news.google.com/rss/search');
  // Câu hỏi có thể chứa dữ liệu riêng tư; RSS chỉ nhận mã và từ khóa công khai.

@@ -8,3 +8,6 @@ work/
 
 .ai-jobs/
 __pycache__/
+
+.venv-ai/
+.python-deps/

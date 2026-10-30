@@ -4,7 +4,7 @@ services:
     name: tracker-ai-free
     runtime: node
     plan: free
-    buildCommand: node tools/check-scripts.cjs
+    buildCommand: bash tools/build-ai.sh
     startCommand: node server/ai/production.cjs
     healthCheckPath: /healthz
     autoDeployTrigger: off

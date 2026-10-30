@@ -25,7 +25,7 @@ class Monitoring{
  save(){if(this.loadError)throw new Error(this.loadError);const tmp=this.file+'.tmp';fs.writeFileSync(tmp,JSON.stringify({version:VERSION,records:[...this.records.values()]}),{mode:0o600});fs.renameSync(tmp,this.file);this.durability?.put('monitoring/monitors.json',{version:VERSION,records:[...this.records.values()]});}
  list(){return [...this.records.values()].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));}
  create(job){if(this.loadError)throw new Error(this.loadError);
-  if(!job||!['completed','blocked'].includes(job.status))throw new Error('Chỉ theo dõi báo cáo đã kết thúc có bằng chứng kỹ thuật.');
+  if(!job||!['completed','partial','blocked'].includes(job.status))throw new Error('Chỉ theo dõi báo cáo đã kết thúc có bằng chứng kỹ thuật.');
   const e=job.report?.evidence?.find(e=>e.type==='deterministic_calculation'),tickers=job.plan?.tickers||[];
   if(!e||!tickers.length||tickers.length>5||!/^[a-f0-9]{64}$/.test(e.sha256)||!/^\d{4}-\d{2}-\d{2}$/.test(e.dataDate))throw new Error('Thiếu snapshot hoặc mã để tạo theo dõi.');
   const duplicate=this.list().find(r=>r.jobId===job.id);if(duplicate)return duplicate;

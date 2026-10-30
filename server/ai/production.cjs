@@ -22,8 +22,9 @@ async function prepare(env=process.env,snapshot=D.snapshot){
  }else if(env.TRACKER_AI_STORAGE&&env.TRACKER_AI_STORAGE!=='local')throw Error('Loại bộ lưu không hợp lệ.');
  try{
  // Uses the existing Quant worker; demo or malformed sources are refused before binding.
- await snapshot(env.TRACKER_AI_DATA_FILE);
- instance=createApp({...config,durability});if(instance.gateway.status().usage.healthy===false||instance.monitoring.status().storageProblem){instance.dispose();throw Error('Bộ lưu chưa sẵn sàng; kiểm tra ledger/monitor và khôi phục trước khi chạy.');}
+ const shared=snapshot===D.snapshot&&env.TRACKER_AI_REFRESH_DATA!=='false'?require('./shared-snapshot.cjs').sharedSnapshot(env.TRACKER_AI_DATA_FILE):null;
+ await (shared?shared.read():snapshot(env.TRACKER_AI_DATA_FILE));
+ instance=createApp({...config,durability,...(shared?{tools:{snapshot:()=>shared.read()}}:{})});if(instance.gateway.status().usage.healthy===false||instance.monitoring.status().storageProblem){instance.dispose();throw Error('Bộ lưu chưa sẵn sàng; kiểm tra ledger/monitor và khôi phục trước khi chạy.');}
  await durability?.flush();return {...config,...instance,durability};
  }catch(e){instance?.dispose();await durability?.release();throw e;}
 }
