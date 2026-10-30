@@ -18,7 +18,7 @@ class Research {
   const request=C.request(input);request.sourceUrls.forEach(S.urlAllowed);
   if([...this.jobs.values()].filter(j=>['queued','running'].includes(j.status)).length>=3)throw new Error('Hàng đợi tối đa 3 tác vụ.');
   if(this.jobs.size>=100)throw new Error('Đã lưu 100 tác vụ. Cần sao lưu/dọn lịch sử trước khi tạo thêm.');
-  const j={schemaVersion:request.schemaVersion,id:crypto.randomUUID(),version:C.VERSION,createdAt:new Date().toISOString(),status:'queued',request,trace:[],report:{evidence:[],analyses:[],warnings:[],financialVerified:false}};
+  const j={schemaVersion:request.schemaVersion,id:crypto.randomUUID(),version:C.VERSION,createdAt:new Date().toISOString(),status:'queued',request,trace:[],report:{evidence:[],analyses:[],warnings:[],issues:[],financialVerified:false}};
   this.jobs.set(j.id,j);this.persist(j);setImmediate(()=>this.next());return j;
  }
  cancel(id){const j=this.jobs.get(id);if(!j)return null;if(['running','queued'].includes(j.status)){j.status='cancelled';j.finishedAt=new Date().toISOString();this.persist(j);if(this.active?.id===id)this.active.controller.abort();}return j;}
@@ -27,7 +27,7 @@ class Research {
   if(this.active||this.stopped)return;const j=[...this.jobs.values()].find(j=>j.status==='queued');if(!j)return;
   const controller=new AbortController();this.active={id:j.id,controller};j.status='running';try{this.persist(j);await this.checkpoint();}catch{j.status='blocked';j.error=this.storageError;this.active=null;this.stopped=true;return;}
   const timer=setTimeout(()=>controller.abort(new Error('Tác vụ vượt 5 phút.')),300000);
-  try{await this.run(j,controller.signal);if(j.status==='running')j.status=j.report.warnings.length?'blocked':'completed';}
+  try{await this.run(j,controller.signal);if(j.status==='running')j.status=j.report.warnings.length?(j.report.analyses.length?'partial':'blocked'):'completed';}
   catch(e){if(j.status!=='cancelled'){j.status='failed';j.error=controller.signal.aborted?(controller.signal.reason?.message||'Tác vụ đã dừng.'):e.message;}}
   finally{clearTimeout(timer);j.finishedAt=new Date().toISOString();try{this.persist(j);await this.checkpoint();}catch{this.stopped=true;}this.active=null;setImmediate(()=>this.next());}
  }
@@ -37,7 +37,8 @@ class Research {
   j.plan=await step('manager','deterministic Task Router v3',async()=>C.plan(j.request,new Set(snap.tickers)));
   if(j.plan.unsupported)j.report.warnings.push('Cần cấu hình hoặc thao tác bổ sung. Để Backtest hãy mở cấu hình Backtest. Để theo dõi hãy lưu báo cáo bằng nút Theo dõi báo cáo; chỉ có cảnh báo trong ứng dụng khi máy chủ đang chạy. Không hỗ trợ đặt lệnh.');
   const fresh=D.freshness(snap.date);
-  j.report.provenance={...fresh,snapshotHash:snap.sha256,engineVersion:snap.engineVersion,strategyVersion:null,source:snap.meta.source,audit:snap.audit};
+  j.report.provenance={...fresh,snapshotHash:snap.sha256,engineVersion:snap.engineVersion,strategyVersion:null,source:snap.meta.source,audit:snap.audit,snapshotSync:snap.refresh||null};
+  if(snap.refresh?.warning)j.report.warnings.push(snap.refresh.warning);
   const metrics=snap.metrics.filter(m=>j.plan.tickers.includes(m.ticker));
   const technical=await step('technical','exact existing engine snapshot; no rewritten formulas',async()=>({id:'technical-'+snap.sha256.slice(0,12),type:'deterministic_calculation',dataDate:snap.date,publishedAt:snap.meta.generatedAt||null,retrievedAt:fresh.checkedAt,url:'https://github.com/Kalm-D/tracker/blob/main/public/data/market.json.gz',sha256:snap.sha256,engineVersion:snap.engineVersion,metrics,priceSummaries:Object.fromEntries(j.plan.tickers.map(t=>[t,snap.priceSummaries?.[t]||null])),regime:snap.regime,lastBars:Object.fromEntries(j.plan.tickers.map(t=>[t,snap.lastBars[t]||null])),verification:'computed_by_existing_engine'}));
   j.report.evidence.push(technical);
@@ -52,7 +53,7 @@ class Research {
    let abort;
    try{return await Promise.race([fn(timeout),new Promise((_,reject)=>{abort=()=>reject(Error('Công cụ '+tool+' hết thời gian chờ.'));if(timeout.aborted)abort();else timeout.addEventListener('abort',abort,{once:true});})]);}
    finally{timeout.removeEventListener('abort',abort);}
-  });}catch(e){signal.throwIfAborted();j.report.warnings.push(e.message);return null;}};
+  });}catch(e){signal.throwIfAborted();j.report.warnings.push(e.message);(j.report.issues??=[]).push({stage:agent,code:e.code||'SOURCE_UNAVAILABLE',message:e.message,...(e.details?{details:e.details}:{})});return null;}};
   if(j.plan.fundamental){
    for(const t of j.plan.tickers){
     const e=await attempt('fundamental','Vnstock Finance: income / balance / cashflow / ratios',toolSignal=>this.cached('finance:'+t,()=>this.tools.financial(t,{signal:toolSignal})));

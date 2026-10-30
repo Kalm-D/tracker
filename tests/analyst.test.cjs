@@ -32,7 +32,7 @@ test('Mỗi câu tổng quát chỉ yêu cầu một lần tổng hợp sau khi 
  try{
   const r=new Research({dir,dataFile:'fixture',tools:{snapshot,financial:async ticker=>{calls.push('fundamental');return {id:'f',type:'financial_statement',ticker,data:{tables:{profit:[{value:100}]}}};},news:async()=>{calls.push('news');return {id:'n',type:'news_discovery',tickers:['HPG'],items:[{title:'Tin'}]};},sectorNews:async sector=>{calls.push('sector');return {id:'s',type:'news_discovery',scope:'sector',sector,items:[{title:'Tin ngành'}]};}},gateway:{status:()=>({usage:{attempts:count}}),analyze:async(role,q,e)=>{count++;assert.equal(role,'analyst');assert.deepEqual(calls,['fundamental','news','sector']);return {result:result(e[0].id),provider:'fixture',model:'fixture'};}}});
   const j=r.create({question:'Phân tích HPG'});await finished(j);
-  assert.equal(j.status,'blocked'); // RSS chưa xác minh bài gốc vẫn có cảnh báo.
+  assert.equal(j.status,'partial'); // RSS chưa xác minh bài gốc vẫn có cảnh báo.
   assert.equal(count,1);assert.equal(j.report.analyses.length,1);assert.equal(j.report.coverage.missing.length,0);
   assert.equal(j.report.composite[0].total,null);assert.equal(j.report.marketContext.setupPerformance,null);
   assert.equal(j.report.evidence[0].priceSummaries.HPG.close,20900);r.shutdown();
@@ -43,7 +43,7 @@ test('Công cụ treo/lỗi vẫn giữ phần có nguồn và ghi phần thiế
  try{
   const r=new Research({dir,dataFile:'fixture',analystConfig:A.configuration({TRACKER_AI_ANALYST_CONFIG:'{"toolTimeoutMs":100}'}),tools:{snapshot,financial:async()=>new Promise(()=>{}),news:async()=>{throw Error('RSS tạm lỗi');},sectorNews:async()=>({id:'sector',type:'news_discovery',items:[]})},gateway:{status:()=>({usage:{}}),analyze:async(role,q,e)=>({result:result(e[0].id)})}});
   const j=r.create({question:'Phân tích HPG'});await finished(j);
-  assert.equal(j.status,'blocked');assert.equal(j.report.evidence[0].metrics[0].close,20900);assert.ok(j.report.warnings.some(x=>x.includes('hết thời gian')));assert.ok(j.report.coverage.missing.includes('HPG: fundamental'));assert.equal(j.report.analyses.length,1);r.shutdown();
+  assert.equal(j.status,'partial');assert.equal(j.report.evidence[0].metrics[0].close,20900);assert.ok(j.report.warnings.some(x=>x.includes('hết thời gian')));assert.ok(j.report.coverage.missing.includes('HPG: fundamental'));assert.equal(j.report.analyses.length,1);r.shutdown();
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
 test('Câu hỏi riêng tư bị chặn trước mọi yêu cầu tới model',async()=>{

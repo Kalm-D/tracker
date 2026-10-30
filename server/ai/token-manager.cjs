@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const POLICY_VERSION='token-policy-1.0.0';
+const POLICY_VERSION='token-policy-1.1.0';
 const integer=(n,min=0,max=Number.MAX_SAFE_INTEGER)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
 function option(env,key,fallback,min,max){if(env[key]===undefined||env[key]==='')return fallback;const n=Number(env[key]);if(!integer(n,min,max))throw new Error('Cấu hình giới hạn không hợp lệ: '+key);return n;}
 function limits(env={}){
@@ -29,10 +29,17 @@ function readState(file,now){
  if(value.schemaVersion!==1||!value.days||Array.isArray(value.days)||!Array.isArray(value.events)||value.events.length>5000||!value.cooldowns||!value.observations)throw new Error('Sổ token sai schema; API đang bị chặn.');
  for(const [day,d] of Object.entries(value.days))if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!d||(!Object.keys(stats()).every(k=>integer(d[k]))||Object.keys(d).some(k=>!Object.hasOwn(stats(),k))))throw new Error('Bộ đếm token sai định dạng.');
  const scopeValid=s=>typeof s==='string'&&/^(gemini|groq):[\w./-]{3,100}$/.test(s);
- for(const e of value.events)if(typeof e.id!=='string'||!/^[a-f0-9-]{36}$/.test(e.id)||!(scopeValid(e.scope)||e.scope==='legacy_unknown')||!integer(e.at)||!integer(e.estimate)||!integer(e.charged)||!integer(e.count,1,1000)||typeof e.settled!=='boolean')throw new Error('Lịch sử quota sai định dạng.');
+ for(const e of value.events)if(typeof e.id!=='string'||!/^[a-f0-9-]{36}$/.test(e.id)||!(scopeValid(e.scope)||e.scope==='legacy_unknown')||!integer(e.at)||!integer(e.estimate)||!integer(e.charged)||!integer(e.count,1,1000)||typeof e.settled!=='boolean'||(e.actualTokens!==undefined&&!integer(e.actualTokens)))throw new Error('Lịch sử quota sai định dạng.');
  for(const [scope,v] of Object.entries(value.cooldowns))if(!scopeValid(scope)||!integer(v))throw new Error('Cooldown quota sai định dạng.');
  for(const [scope,o]of Object.entries(value.observations))if(!scopeValid(scope)||!o||Object.keys(o).some(k=>!['at','status','retryAt','remainingRequests','remainingTokens'].includes(k))||!integer(o.at)||!integer(o.status,100,599)||(o.retryAt!==null&&!integer(o.retryAt))||['remainingRequests','remainingTokens'].some(k=>o[k]!==undefined&&!integer(o[k],0,100000000)))throw new Error('Quan sát quota sai schema.');
  return value;
+}
+function quotaError(code,message,details){return Object.assign(new Error(message),{code,details});}
+// Tính thời điểm cửa sổ trượt đủ chỗ, không đặt lại lịch sử sử dụng.
+function retryAt(events,key,required,limit,window,now){
+ let used=events.reduce((n,e)=>n+e[key],0);if(required>limit)return null;
+ for(const e of [...events].sort((a,b)=>a.at-b.at)){used-=e[key];if(used+required<=limit)return e.at+window+1;}
+ return now;
 }
 class TokenManager{
  constructor(dir,env={},clock=Date.now){this.file=path.join(dir,'usage.json');this.lock=this.file+'.lock';this.clock=clock;fs.mkdirSync(dir,{recursive:true,mode:0o700});try{this.limits=limits(env);}catch(e){this.configError=e.message;}this.state=empty();this.refresh();}
@@ -44,20 +51,22 @@ class TokenManager{
  reserve(provider,model,estimate){
   if(!['gemini','groq'].includes(provider)||typeof model!=='string'||!integer(estimate,1,10000000))throw new Error('Giữ chỗ token không hợp lệ.');
   return this.transaction((s,now)=>{const scope=provider+':'+model,day=dayAt(now),d=s.days[day]||stats(),l=this.limits.providers[provider],daily=s.events.filter(e=>(e.scope.startsWith(provider+':')||e.scope==='legacy_unknown')&&e.at>now-86400000),minute=daily.filter(e=>e.at>now-60000),sum=(a,key)=>a.reduce((n,e)=>n+e[key],0);
-   if((s.cooldowns[scope]||0)>now)throw new Error('Provider '+provider+' đang chờ quota đến '+new Date(s.cooldowns[scope]).toISOString()+'.');
-   if(d.attempts>=this.limits.maxCalls||d.chargedTokens+estimate>this.limits.maxTokens)throw new Error('Đã đạt ngân sách AI nội bộ; giữ kết quả và thử lại sau.');
-   if(sum(minute,'count')>=l.rpm||sum(minute,'charged')+estimate>l.tpm||sum(daily,'count')>=l.rpd||sum(daily,'charged')+estimate>l.tpd)throw new Error('Đã đạt giới hạn nội bộ RPM/TPM/RPD/TPD của '+provider+'. Quota thực tế có thể thấp hơn.');
+   if((s.cooldowns[scope]||0)>now)throw quotaError('AI_COOLDOWN','Provider '+provider+' đang chờ quota đến '+new Date(s.cooldowns[scope]).toISOString()+'.',{retryAt:s.cooldowns[scope]});
+   if(d.attempts>=this.limits.maxCalls||d.chargedTokens+estimate>this.limits.maxTokens)throw quotaError('AI_BUDGET_DAY','Chưa gọi AI: ngân sách ngày nội bộ còn '+Math.max(0,this.limits.maxTokens-d.chargedTokens)+' token, yêu cầu cần giữ tối đa '+estimate+' token.',{available:Math.max(0,this.limits.maxTokens-d.chargedTokens),required:estimate,limit:this.limits.maxTokens,retryAt:Date.parse(day)+86400000});
+   const blocked=[[minute,'count',1,l.rpm,60000],[minute,'charged',estimate,l.tpm,60000],[daily,'count',1,l.rpd,86400000],[daily,'charged',estimate,l.tpd,86400000]].filter(([events,key,needed,limit])=>sum(events,key)+needed>limit);
+   if(blocked.length){const times=blocked.map(([events,key,needed,limit,window])=>retryAt(events,key,needed,limit,window,now));const next=times.includes(null)?null:Math.max(...times);
+    throw quotaError('AI_QUOTA_WINDOW','Chưa gọi AI: giới hạn nội bộ RPM/TPM/RPD/TPD của '+provider+' chưa đủ cho lượt này.'+(next?' Có thể thử lại từ '+new Date(next).toISOString()+'.':' Cần giảm độ dài yêu cầu; không tự tăng giới hạn.'),{required:estimate,retryAt:next,available:Math.max(0,l.tpd-sum(daily,'charged')),limit:l.tpd});}
    const e={id:crypto.randomUUID(),scope,at:now,estimate,charged:estimate,count:1,settled:false};s.events.push(e);d.attempts++;d.reservedTokens+=estimate;d.chargedTokens+=estimate;s.days[day]=d;return {id:e.id,day,scope,estimate};
   });
  }
  settle(ticket,provider,raw){return this.transaction(s=>{const e=s.events.find(e=>e.id===ticket.id);if(!e||e.settled)return;const d=s.days[ticket.day];if(!d)throw new Error('Thiếu bản giữ chỗ token.');const u=usage(provider,raw);e.settled=true;
-  if(!u){d.unknownUsageResponses++;return null;}d.actualTokens+=u.total;d.inputTokens+=u.input||0;d.outputTokens+=u.output||0;d.reasoningTokens+=u.reasoning||0;for(const field of ['input','output','reasoning'])if(u[field]!==null)d[field+'Reports']++;const extra=Math.max(0,u.total-e.charged);e.charged+=extra;d.chargedTokens+=extra;return u;
+  if(!u){d.unknownUsageResponses++;return null;}d.actualTokens+=u.total;d.inputTokens+=u.input||0;d.outputTokens+=u.output||0;d.reasoningTokens+=u.reasoning||0;for(const field of ['input','output','reasoning'])if(u[field]!==null)d[field+'Reports']++;const delta=u.total-e.charged;if(d.chargedTokens+delta<0)throw Error('Bộ đếm không khớp bản giữ chỗ.');e.charged=u.total;e.actualTokens=u.total;d.chargedTokens+=delta;return u;
  });}
  observe(provider,model,response){
   const now=this.clock(),raw=response.headers.get('retry-after');let retryAt=null;if(raw!==null){const seconds=Number(raw);const time=Number.isFinite(seconds)&&seconds>=0?now+seconds*1000:Date.parse(raw);if(Number.isFinite(time))retryAt=Math.min(now+86400000,Math.max(now,time));}
   if(response.status===429&&retryAt===null)retryAt=now+60000;
   return this.transaction(s=>{const scope=provider+':'+model,o={at:now,status:response.status,retryAt};for(const [header,key] of [['x-ratelimit-remaining-requests','remainingRequests'],['x-ratelimit-remaining-tokens','remainingTokens']]){const text=response.headers.get(header);if(text!==null&&integer(Number(text),0,100000000))o[key]=Number(text);}s.observations[scope]=o;if(retryAt!==null)s.cooldowns[scope]=Math.max(s.cooldowns[scope]||0,retryAt);return o;});
  }
- status(){this.refresh();const day=dayAt(this.clock()),d=this.state.days[day]||stats();return {...d,dayUTC:day,maxCalls:this.limits?.maxCalls??null,maxEstimatedTokens:this.limits?.maxTokens??null,policyVersion:POLICY_VERSION,healthy:!this.configError&&!this.storageError,problem:this.configError||this.storageError||null,providerQuota:'unknown_until_provider_response',providerCeilings:this.limits?.providers||{},cooldowns:{...this.state.cooldowns},observations:structuredClone(this.state.observations),accounting:'estimates_reserved_before_generation; rolling_24h_provider_caps; no_refund_on_error',cost:'not_inferred_from_token_count'};}
+ status(){this.refresh();const day=dayAt(this.clock()),d=this.state.days[day]||stats();return {...d,dayUTC:day,maxCalls:this.limits?.maxCalls??null,maxEstimatedTokens:this.limits?.maxTokens??null,policyVersion:POLICY_VERSION,healthy:!this.configError&&!this.storageError,problem:this.configError||this.storageError||null,providerQuota:'unknown_until_provider_response',providerCeilings:this.limits?.providers||{},cooldowns:{...this.state.cooldowns},observations:structuredClone(this.state.observations),accounting:'estimates_reserved_before_generation; rolling_24h_provider_caps; settle_confirmed_usage; no_refund_on_unknown_error',cost:'not_inferred_from_token_count'};}
 }
 module.exports={TokenManager,limits,usage,POLICY_VERSION};
