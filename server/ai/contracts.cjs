@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='tracker-ai-1.2.2-recovery';
+const VERSION='tracker-ai-1.2.3-recovery';
 const SC=require('./strategy-config.cjs'),BT=require('./backtest.cjs');
 const AGENTS=['manager','data','technical','fundamental','news','strategy','risk','backtest','monitoring','critic'];
 const OUTPUT_SCHEMA={type:'object',additionalProperties:false,required:['summary','claims','limitations'],properties:{summary:{type:'string'},claims:{type:'array',items:{type:'object',additionalProperties:false,required:['text','kind','evidenceIds'],properties:{text:{type:'string'},kind:{type:'string',enum:['source','interpretation']},evidenceIds:{type:'array',items:{type:'string'}}}}},limitations:{type:'array',items:{type:'string'}}}};
@@ -49,7 +49,7 @@ function plan(r,known){
  const news=!backtest&&(fullAnalysis||/tin tức|sự kiện|chính sách|vĩ mô|công bố|lãi suất|tỷ giá/i.test(r.question));
  return {schemaVersion:backtest?3:strategy?2:1,tickers,fundamental,news,fullAnalysis,strategy,backtest,roles:['manager','data','technical',...(fundamental?['fundamental']:[]),...(news?['news']:[]),...(strategy?['strategy','risk']:[]),...(backtest?['backtest']:[]),'critic'],unsupported:(!backtest&&/backtest/i.test(r.question))||/đặt lệnh|theo dõi hàng ngày|cảnh báo tự động/i.test(r.question)};
 }
-const numbers=s=>(String(s).match(/-?\d+(?:[.,]\d+)*/g)||[]).map(x=>x.replace(/[.,]/g,''));
+const numbers=s=>(String(s).replace(/\b(\d{4})-(\d{2})-(\d{2})(?=T|\b)/g,'$1 $2 $3').match(/-?\d+(?:[.,]\d+)*/g)||[]).map(x=>x.replace(/[.,]/g,'').replace(/^(-?)0+(?=\d)/,'$1'));
 function validateAnalysis(value,evidence){
  if(!value||typeof value.summary!=='string'||value.summary.length>5000||!Array.isArray(value.claims)||value.claims.length>24||!Array.isArray(value.limitations)||value.limitations.some(s=>typeof s!=='string'||s.length>2000))throw new Error('Đầu ra AI sai hợp đồng.');
  const byId=new Map(evidence.map(e=>[e.id,e]));

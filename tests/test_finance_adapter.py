@@ -36,6 +36,23 @@ class FinanceAdapterTests(unittest.TestCase):
         self.assertEqual(list(rows[0]), ['item', 'item_en', 'item_id', '2026-Q3', '2026-Q2', '2026-Q1', '2025-Q4'])
         self.assertEqual(rows[-1]['2026-Q3'], 6)
 
+    def test_progress_keeps_earlier_tables_and_final_is_complete(self):
+        seen = []
+        class Finance:
+            def __init__(self, **kwargs): pass
+            def income_statement(self): return pd.DataFrame([{'item': 'Doanh thu', '2026-Q3': 100}])
+            balance_sheet = income_statement
+            cash_flow = income_statement
+            ratio = income_statement
+        result = module.read_finance('MSR', Finance, on_progress=seen.append)
+        self.assertEqual(len(seen), 4)
+        self.assertEqual(seen[0]['tables']['income_statement'][0]['2026-Q3'], 100)
+        self.assertEqual(seen[0]['tables']['cash_flow'], [])
+        self.assertTrue(seen[0]['collectionIncomplete'])
+        self.assertIn('cash_flow', seen[0]['tableErrors'])
+        self.assertFalse(result['collectionIncomplete'])
+        self.assertEqual(result['tables']['cash_flow'][0]['2026-Q3'], 100)
+
     def test_wide_report_sorts_latest_quarters_without_unit_conversion(self):
         frame = pd.DataFrame([{'yearReport': 2025, 'lengthReport': 4, 'Revenue (Bn. VND)': 5}, {'yearReport': 2026, 'lengthReport': 2, 'Revenue (Bn. VND)': 7}])
         rows, _ = module.table_records(frame)

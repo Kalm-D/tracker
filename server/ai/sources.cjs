@@ -11,13 +11,22 @@ async function bounded(response,max,signal){
  try{while(true){signal?.throwIfAborted();const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>max)throw new Error('Nguồn quá lớn.');chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});}
  return Buffer.concat(chunks);
 }
-function python(req,{signal,python=process.env.TRACKER_AI_PYTHON||[path.resolve(__dirname,'../../.venv-ai',process.platform==='win32'?'Scripts/python.exe':'bin/python')].find(p=>fs.existsSync(p))||(process.platform==='win32'?'python':'python3'),timeout=60000}={}){
+function python(req,{signal,python=process.env.TRACKER_AI_PYTHON||[path.resolve(__dirname,'../../.venv-ai',process.platform==='win32'?'Scripts/python.exe':'bin/python')].find(p=>fs.existsSync(p))||(process.platform==='win32'?'python':'python3'),timeout=85000,spawnProcess=spawn}={}){
  return new Promise((resolve,reject)=>{
-  const child=spawn(python,[path.join(__dirname,'finance_adapter.py')],{stdio:['pipe','pipe','ignore'],windowsHide:true,signal}),out=[];let size=0;
+  const child=spawnProcess(python,[path.join(__dirname,'finance_adapter.py')],{stdio:['pipe','pipe','ignore'],windowsHide:true,signal}),out=[];let size=0;
   const timer=setTimeout(()=>child.kill(),timeout);
   child.stdout.on('data',b=>{size+=b.length;if(size>800000)child.kill();else out.push(b);});
   child.once('error',()=>{clearTimeout(timer);reject(Object.assign(Error('Máy chủ chưa có môi trường Python đọc BCTC/PDF. Cần sửa bước build backend.'),{code:'FINANCE_RUNTIME_MISSING'}));});
-  child.once('close',code=>{clearTimeout(timer);try{if(code!==0||size>800000)throw new Error('Nguồn hết thời gian hoặc không khả dụng.');const j=JSON.parse(Buffer.concat(out).toString('utf8'));if(!j.ok)throw Object.assign(new Error(j.message),{code:['FINANCE_DEPENDENCY_MISSING','FINANCE_SOURCE_UNAVAILABLE'].includes(j.code)?j.code:'FINANCE_SOURCE_UNAVAILABLE'});resolve(j.data);}catch(e){reject(e);}});
+  child.once('close',code=>{clearTimeout(timer);try{
+   if(signal?.aborted)throw signal.reason||Error('Đã dừng nguồn.');
+   const records=Buffer.concat(out).toString('utf8').trim().split('\n').map(line=>{try{return JSON.parse(line);}catch{return null;}}).filter(Boolean);
+   const final=records.findLast(j=>j.ok===true&&j.interim!==true),partial=records.findLast(j=>j.ok===true&&j.interim===true&&j.data?.tables&&Object.values(j.data.tables).some(rows=>Array.isArray(rows)&&rows.length));
+   if(code===0&&size<=800000&&final)return resolve(final.data);
+   if(partial)return resolve({...partial.data,collectionIncomplete:true,collectionWarning:'Nguồn BCTC chưa thu thập xong trong thời gian chờ; giữ các bảng đã đọc thành công.'});
+   const error=records.findLast(j=>j.ok===false);
+   if(error)throw Object.assign(new Error(error.message),{code:['FINANCE_DEPENDENCY_MISSING','FINANCE_SOURCE_UNAVAILABLE'].includes(error.code)?error.code:'FINANCE_SOURCE_UNAVAILABLE'});
+   throw Object.assign(Error('Nguồn BCTC hết thời gian hoặc chưa trả bảng khả dụng.'),{code:'FINANCE_SOURCE_UNAVAILABLE'});
+  }catch(e){reject(e);}});
   child.stdin.on('error',()=>{});child.stdin.end(JSON.stringify(req));
  });
 }
@@ -36,8 +45,8 @@ async function documentSource(raw,{signal,fetcher=fetch,resolve=dns.lookup,parse
  if(text.length<40)throw new Error('Nguồn không có nội dung có thể đọc; có thể cần OCR.');
  return {id:'doc-'+hash(bytes).slice(0,16),type:'official_document',url:u.href,publishedAt:null,dataDate:null,retrievedAt:new Date().toISOString(),sha256:hash(bytes),text,truncated,verification:'retrieved_not_fact_checked'};
 }
-async function financialSource(ticker,{signal,adapter=python}={}){
- const data=await adapter({type:'finance',ticker},{signal});
+async function financialSource(ticker,{signal,adapter=python,mode='Standard'}={}){
+ const data=await adapter({type:'finance',ticker},{signal,timeout:mode==='Quick'?55000:85000});
  return {id:'finance-'+ticker+'-'+hash(JSON.stringify(data)).slice(0,12),type:'financial_statement',ticker,url:'https://trading.vietcap.com.vn/',publishedAt:null,dataDate:null,retrievedAt:new Date().toISOString(),sha256:hash(JSON.stringify(data)),data,verification:'provider_statement_publication_date_unknown'};
 }
 const decode=s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&nbsp;|&#160;/g,' ').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1');
