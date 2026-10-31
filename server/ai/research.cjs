@@ -56,8 +56,8 @@ class Research {
   });}catch(e){signal.throwIfAborted();j.report.warnings.push(e.message);(j.report.issues??=[]).push({stage:agent,code:e.code||'SOURCE_UNAVAILABLE',message:e.message,...(e.details?{details:e.details}:{})});return null;}};
   if(j.plan.fundamental){
    for(const t of j.plan.tickers){
-    const e=await attempt('fundamental','Vnstock Finance: income / balance / cashflow / ratios',toolSignal=>this.cached('finance:'+t,()=>this.tools.financial(t,{signal:toolSignal})));
-    if(e)j.report.evidence.push(e);
+    const e=await attempt('fundamental','Vnstock Finance: income / balance / cashflow / ratios',toolSignal=>this.cached('finance:'+t+':'+(j.request.mode==='Quick'?'quick':'full'),()=>this.tools.financial(t,{signal:toolSignal,mode:j.request.mode})));
+    if(e){j.report.evidence.push(e);if(e.data?.collectionWarning)j.report.warnings.push(e.data.collectionWarning);}
    }
   }
   for(const url of j.request.sourceUrls){

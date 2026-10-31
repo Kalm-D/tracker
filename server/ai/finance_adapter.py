@@ -29,14 +29,35 @@ def table_records(frame):
     return json.loads(frame.to_json(orient='records', date_format='iso')), truncated
 
 
-def read_finance(ticker, factory=None):
-    """Một bảng lỗi không xóa các bảng còn lại đã đọc thành công."""
+TABLE_METHODS = ('income_statement', 'balance_sheet', 'cash_flow', 'ratio')
+
+
+def finance_payload(ticker, tables, errors, truncated, partial=False):
+    """Đóng gói cả bản tạm và bản cuối, giữ nguyên kỳ/đơn vị nguồn."""
+    tables = {name: tables.get(name, []) for name in TABLE_METHODS}
+    errors = dict(errors)
+    if partial:
+        errors.update({name: 'Bảng này chưa thu thập xong; các bảng đã đọc vẫn được giữ.' for name, rows in tables.items() if not rows and name not in errors})
+    periods = {name: sorted([key for key in rows[0] if re.fullmatch(r'\d{4}-Q[1-4]', key)], reverse=True) if rows else [] for name, rows in tables.items()}
+    newest = max((value[0] for name, value in periods.items() if value and name != 'ratio'), default=None)
+    ordinal = lambda value: int(value[:4]) * 4 + int(value[-1])
+    stale = [name for name, value in periods.items() if value and newest and ordinal(newest) - ordinal(value[0]) > 4]
+    for name in stale:
+        errors[name] = 'Bảng này chỉ có kỳ ' + periods[name][0] + ', cũ hơn BCTC ' + newest + '; chỉ hiển thị lịch sử, không dùng cho định giá hiện tại.'
+    return {'ticker': ticker, 'source': 'Vnstock / VCI', 'period': 'quarter', 'tables': tables,
+            'collectionIncomplete': partial, 'tableErrors': errors, 'tablePeriods': periods, 'staleTables': stale, 'truncated': truncated, 'publicationDate': None,
+            'pointInTimeVerified': False, 'periodBasis': 'Nhãn quý theo nguồn; chưa xác minh số riêng quý hay lũy kế.', 'unit': 'Giữ nguyên tên cột/đơn vị nguồn; chưa suy đoán hoặc quy đổi đơn vị.'}
+
+
+
+def read_finance(ticker, factory=None, on_progress=None):
+    """Gửi bản tạm sau từng bảng để bảng chậm không làm mất số liệu đã đọc."""
     if factory is None:
         from vnstock import Finance
         factory = Finance
     finance = factory(source='VCI', symbol=ticker, period='quarter')
     tables, errors, truncated = {}, {}, {}
-    for method in ['income_statement', 'balance_sheet', 'cash_flow', 'ratio']:
+    for method in TABLE_METHODS:
         try:
             frame = getattr(finance, method)()
             if frame is None or frame.empty:
@@ -47,20 +68,14 @@ def read_finance(ticker, factory=None):
         except Exception:
             tables[method] = []
             errors[method] = 'Bảng này chưa khả dụng theo nguồn hoặc quyền tài khoản; các bảng khác vẫn được giữ.'
+        if on_progress and any(tables.values()):
+            on_progress(finance_payload(ticker, tables, errors, truncated, partial=True))
     if not any(tables.values()):
         raise ValueError('Không có bảng tài chính khả dụng')
-    periods = {name: sorted([key for key in rows[0] if re.fullmatch(r'\d{4}-Q[1-4]', key)], reverse=True) if rows else [] for name, rows in tables.items()}
-    newest = max((value[0] for name, value in periods.items() if value and name != 'ratio'), default=None)
-    ordinal = lambda value: int(value[:4]) * 4 + int(value[-1])
-    stale = [name for name, value in periods.items() if value and newest and ordinal(newest) - ordinal(value[0]) > 4]
-    for name in stale:
-        errors[name] = 'Bảng này chỉ có kỳ ' + periods[name][0] + ', cũ hơn BCTC ' + newest + '; chỉ hiển thị lịch sử, không dùng cho định giá hiện tại.'
-    return {'ticker': ticker, 'source': 'Vnstock / VCI', 'period': 'quarter', 'tables': tables,
-            'tableErrors': errors, 'tablePeriods': periods, 'staleTables': stale, 'truncated': truncated, 'publicationDate': None,
-            'pointInTimeVerified': False, 'periodBasis': 'Nhãn quý theo nguồn; chưa xác minh số riêng quý hay lũy kế.', 'unit': 'Giữ nguyên tên cột/đơn vị nguồn; chưa suy đoán hoặc quy đổi đơn vị.'}
+    return finance_payload(ticker, tables, errors, truncated)
 
 
-def main(req):
+def main(req, on_progress=None):
     if req.get('type') == 'pdf':
         import base64
         from pypdf import PdfReader
@@ -73,7 +88,7 @@ def main(req):
     ticker = req.get('ticker', '')
     if len(ticker) != 3 or not ticker.isalnum() or not ticker.isupper():
         raise ValueError('Mã không hợp lệ')
-    return read_finance(ticker)
+    return read_finance(ticker, on_progress=on_progress)
 
 
 if __name__ == '__main__':
@@ -81,7 +96,9 @@ if __name__ == '__main__':
     try:
         req = json.loads(sys.stdin.read(12_000_000))
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            data = main(req)
+            def progress(data):
+                print(json.dumps({'ok': True, 'interim': True, 'data': data}, ensure_ascii=False, allow_nan=False), file=sys.__stdout__, flush=True)
+            data = main(req, on_progress=progress)
         result = {'ok': True, 'data': data}
     except ModuleNotFoundError:
         result = {'ok': False, 'code': 'FINANCE_DEPENDENCY_MISSING', 'message': 'Máy chủ chưa cài đủ thư viện đọc BCTC/PDF. Cần sửa bước build backend.'}
