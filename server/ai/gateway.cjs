@@ -85,7 +85,8 @@ class Gateway {
  async analyze(role,question,evidence,{signal,mode='Quick',previous}={}){
   if(!['manager','technical','fundamental','news','strategy','risk','backtest','critic','analyst'].includes(role)||!['Quick','Standard','Deep'].includes(mode))throw new Error('Vai trò hoặc chế độ AI không hợp lệ.');
   publicQuestion(question);
-  const schema=role==='analyst'?ANALYST_SCHEMA:OUTPUT_SCHEMA,validate=role==='analyst'?validateAnalyst:validateAnalysis,system=role==='analyst'?ANALYST_SYSTEM:SYSTEM;
+  const schema=structuredClone(role==='analyst'?ANALYST_SCHEMA:OUTPUT_SCHEMA),validate=role==='analyst'?validateAnalyst:validateAnalysis,system=role==='analyst'?ANALYST_SYSTEM:SYSTEM;
+  const sourceIds=[...new Set(evidence.map(e=>e.id).filter(id=>typeof id==='string'))];if(sourceIds.length)schema.properties.claims.items.properties.evidenceIds.items.enum=sourceIds;
   const providers=this.providers(role);if(!providers.length)throw new Error(this.policyProblems[0]||this.tokens.status().problem||'Thiếu cấu hình model và xác nhận tài khoản Free Tier; chưa gọi AI.');
   const slim=evidence.map(e=>{const v=projectEvidence(e,{role,newsLimit:this.newsLimit});delete v.retrievedAt;if(v.text)v.text=v.text.slice(0,mode==='Deep'?18000:9000);return v;});
   const payload=JSON.stringify({role,question,evidence:slim,previous,schema,responseStyle:mode==='Quick'?'Ngắn gọn, tối đa sáu claim, mỗi claim tối đa hai câu; phần thiếu ghi trong limitations.':'Trình bày đủ luận điểm, tránh lặp lại dữ kiện.'});if(Buffer.byteLength(payload)>100000)throw new Error('Nguồn vượt ngân sách đầu vào. Cần chọn tài liệu ngắn hơn.');
@@ -108,7 +109,7 @@ class Gateway {
       if(finish&&!(gemini?finish==='STOP':finish==='stop')){const e=Error('Phản hồi AI chưa hoàn tất.');e.diagnostic=finish==='MAX_TOKENS'||finish==='length'?'output_limit':'incomplete_response';throw e;}
       const text=gemini?j.candidates?.[0]?.content?.parts?.filter(x=>!x.thought).map(x=>x.text||'').join(''):j.choices?.[0]?.message?.content;
       let result;try{result=JSON.parse(text);}catch{const e=Error('Phản hồi AI sai định dạng.');e.diagnostic='invalid_json';throw e;}
-      let audit;try{const checked=checkedAnalysis(result,evidence,{analyst:role==='analyst'});result=checked.result;audit=checked.audit;}catch{const e=Error('Nhận định AI chưa qua kiểm tra nguồn.');e.diagnostic='evidence_contract';throw e;}
+      let audit;try{const checked=checkedAnalysis(result,evidence,{analyst:role==='analyst'});result=checked.result;audit=checked.audit;}catch(cause){const e=Error('Nhận định AI chưa qua kiểm tra nguồn.');e.diagnostic='evidence_contract';e.details={validation:cause.message};throw e;}
       const out={at:this.clock(),result,audit,provider:p.name,model:p.model,usage:normal?(gemini?{totalTokenCount:normal.total,promptTokenCount:normal.input,candidatesTokenCount:normal.output,thoughtsTokenCount:normal.reasoning}:{total_tokens:normal.total,prompt_tokens:normal.input,completion_tokens:normal.output,reasoning_tokens:normal.reasoning}):null,estimatedTokens:ticket.estimate,cached:false};
       try{const temp=cacheFile+'.tmp';fs.writeFileSync(temp,JSON.stringify(out),{mode:0o600});fs.renameSync(temp,cacheFile);this.sweepCache();}catch{this.emit('cache_write_failed',{role});}
       this.emit('generation_success',{role,provider:p.name,actualTokens:normal?.total??null});return out;
@@ -123,7 +124,7 @@ class Gateway {
     this.emit('generation_retry',{role,provider:p.name,attempt:attempt+1,waitMs:retryWait});await this.sleep(retryWait,signal);
    }
   }
-  const failure=new Error(errors.join(' ')||'Không có nguồn AI miễn phí khả dụng.');if(/^AI_(?:BUDGET_DAY|QUOTA_WINDOW|COOLDOWN)$/.test(lastProblem?.code||'')){failure.code=lastProblem.code;failure.details=lastProblem.details;}else failure.code='AI_GENERATION_FAILED';throw failure;
+  const failure=new Error(errors.join(' ')||'Không có nguồn AI miễn phí khả dụng.');if(/^AI_(?:BUDGET_DAY|QUOTA_WINDOW|COOLDOWN)$/.test(lastProblem?.code||'')){failure.code=lastProblem.code;failure.details=lastProblem.details;}else{failure.code='AI_GENERATION_FAILED';if(lastProblem?.diagnostic==='evidence_contract')failure.details=lastProblem.details;}throw failure;
  }
 }
 module.exports={Gateway,SYSTEM,ANALYST_SYSTEM,projectEvidence,pause};

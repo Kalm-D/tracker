@@ -65,6 +65,7 @@ function render(body,report,{busy=false}={}){
     card.append(el('p',count?'Đã lấy '+count+' tiêu đề tin. '+generationIssue(report):busy?'Đang thu thập tin doanh nghiệp và ngành.':'Nguồn tin chưa trả tiêu đề phù hợp; không tự bịa sự kiện.'));
    }else card.append(el('p',generationIssue(report)));
   }
+  if(sections.includes('risk')&&a?.audit?.riskFromCode)card.append(el('p','Phần rủi ro dưới đây lấy nguyên văn ngữ cảnh thị trường của Tracker; phần rủi ro AI chưa đạt kiểm tra.','tai-warning'));
   if(sections.includes('fundamental'))financialTables(card,evidence);
   for(const c of claims){card.append(el('p',c.text));references(card,c.evidenceIds,evidence);}
   if(sections.includes('market')&&report.marketContext){const m=report.marketContext;card.append(el('p','Môi trường: '+(m.label||m.key||'chưa biết')+'. '+(m.desc||'')),el('p',m.limitation,'tai-warning'));}
@@ -84,7 +85,7 @@ function render(body,report,{busy=false}={}){
   body.append(card);
  }
  const missing=section('7. Dữ liệu thiếu và độ tin cậy');
- if(a?.audit?.status==='filtered'){missing.append(el('p','Đã loại '+a.audit.discardedClaims+' luận điểm chưa khớp nguồn khỏi phần trả lời.','tai-warning'));for(const reason of a.audit.reasons||[])missing.append(el('p',reason,'tai-muted'));}
+ if(a?.audit?.status==='filtered'){if(a.audit.discardedClaims>0)missing.append(el('p','Đã loại '+a.audit.discardedClaims+' luận điểm chưa khớp nguồn khỏi phần trả lời.','tai-warning'));for(const reason of a.audit.reasons||[])missing.append(el('p',reason,'tai-muted'));}
  for(const text of [...new Set([...(a?.result.limitations||[]),...(report.warnings||[]),...(report.coverage?.missing||[])])])missing.append(el('p',text,'tai-warning'));
  missing.append(el('p',report.coverage?.limitation||'Độ tin cậy phụ thuộc độ đầy đủ, ngày và chất lượng nguồn; chưa phải xác suất thắng.'));body.append(missing);
  const sources=section('8. Nguồn');
