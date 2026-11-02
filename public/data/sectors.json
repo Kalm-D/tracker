@@ -1,7 +1,7 @@
 {
   "source": "Vnstock / VCI",
   "classification": "ICB cấp 3",
-  "updatedAt": "2026-10-26T11:28:35.241682+00:00",
+  "updatedAt": "2026-11-02T11:38:55.865936+00:00",
   "sectors": {
     "A+ FUND": "Quỹ đầu tư",
     "A32": "Hàng cá nhân",
@@ -827,7 +827,7 @@
     "HUG": "Hàng cá nhân",
     "HUT": "Ô tô và phụ tùng",
     "HUX": "Khai khoáng",
-    "HVA": "Dịch vụ tài chính",
+    "HVA": "Phần mềm & Dịch vụ Máy tính",
     "HVG": "Sản xuất thực phẩm",
     "HVH": "Xây dựng và Vật liệu",
     "HVN": "Du lịch & Giải trí",
@@ -1132,7 +1132,7 @@
     "NDT": "Hàng cá nhân",
     "NDW": "Nước & Khí đốt",
     "NDX": "Xây dựng và Vật liệu",
-    "NED": "Xây dựng và Vật liệu",
+    "NED": "Sản xuất & Phân phối Điện",
     "NEM": "Điện tử & Thiết bị điện",
     "NET": "Hàng cá nhân",
     "NFC": "Hóa chất",
@@ -2059,6 +2059,7 @@
     "STPF": "Quỹ đầu tư",
     "VCBF-CB": "Quỹ đầu tư",
     "": "Quỹ đầu tư",
-    "HGI": "Sản xuất thực phẩm"
+    "HGI": "Sản xuất thực phẩm",
+    "OFG": "Bất động sản"
   }
 }
