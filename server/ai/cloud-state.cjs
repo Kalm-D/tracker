@@ -1,9 +1,9 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const MAX_BYTES=32*1048576;
-const validKey=k=>/^(jobs\/[a-f0-9-]{36}\.json|gateway\/(usage|restore-hold)\.json|monitoring\/monitors\.json)$/.test(k);
+const validKey=k=>/^(jobs\/[a-f0-9-]{36}\.json|gateway\/(usage|restore-hold)\.json|monitoring\/monitors\.json|accounts\/users\.json)$/.test(k);
 function validateFiles(files){
- if(!files||typeof files!=='object'||Array.isArray(files)||Object.keys(files).length>103||Buffer.byteLength(JSON.stringify(files))>MAX_BYTES)throw Error('Bản lưu cloud sai định dạng hoặc vượt 32 MiB.');
+ if(!files||typeof files!=='object'||Array.isArray(files)||Object.keys(files).length>104||Buffer.byteLength(JSON.stringify(files))>MAX_BYTES)throw Error('Bản lưu cloud sai định dạng hoặc vượt 32 MiB.');
  for(const [key,value]of Object.entries(files))if(!validKey(key)||!value||typeof value!=='object'||Array.isArray(value)||Buffer.byteLength(JSON.stringify(value))>8*1048576)throw Error('Tệp cloud không hợp lệ.');
  return files;
 }

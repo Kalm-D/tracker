@@ -84,15 +84,18 @@ def enrich(payload, sectors):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--force', action='store_true')
+    parser.add_argument('--snapshot', action='append', help='Chỉ enrich file staging được chỉ định')
     args = parser.parse_args()
     sectors = load_sectors(force=args.force)
-    for path in [Path('public/data/market.json.gz'), Path('public/data/market.json')]:
+    for path in ([Path(p) for p in args.snapshot] if args.snapshot else [Path('public/data/market.json.gz'), Path('public/data/market.json')]):
         if not path.exists():
             continue
         raw = gzip.decompress(path.read_bytes()).decode('utf-8') if path.suffix == '.gz' else path.read_text(encoding='utf-8')
         payload = enrich(json.loads(raw), sectors)
         data = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
-        path.write_bytes(gzip.compress(data, mtime=0) if path.suffix == '.gz' else data)
+        temp = path.with_name(path.name + '.tmp')
+        temp.write_bytes(gzip.compress(data, mtime=0) if path.suffix == '.gz' else data)
+        temp.replace(path)
         print(path, json.dumps(payload['meta'], ensure_ascii=False))
 
 

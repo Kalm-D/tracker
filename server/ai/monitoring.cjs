@@ -31,26 +31,28 @@ class Monitoring{
   const duplicate=this.list().find(r=>r.jobId===job.id);if(duplicate)return duplicate;
   if(this.records.size>=20)throw new Error('Tối đa 20 bộ theo dõi; xóa bộ không còn dùng.');
   const points={},levels={};for(const t of tickers){const m=e.metrics.find(m=>m.ticker===t);if(!m||!Number.isFinite(m.close))throw new Error('Thiếu giá cơ sở cho '+t);points[t]=point(m,e.regime);const s=job.report.strategies?.find(s=>s.ticker===t);levels[t]=structuredClone({entry:s?.entryReference||null,stop:s?.stopReference||null,target:s?.targetReference||null});}
-  const now=new Date().toISOString(),r={id:crypto.randomUUID(),version:VERSION,jobId:job.id,createdAt:now,enabled:true,tickers,levels,baseline:{date:e.dataDate,hash:e.sha256,points:structuredClone(points)},checkpoint:{date:e.dataDate,hash:e.sha256,points},lastCheckedAt:null,status:'waiting_for_check',events:[],droppedEvents:0};
+  const now=new Date().toISOString(),r={ownerId:job.ownerId||'owner',id:crypto.randomUUID(),version:VERSION,jobId:job.id,createdAt:now,enabled:true,tickers,levels,baseline:{date:e.dataDate,hash:e.sha256,points:structuredClone(points)},checkpoint:{date:e.dataDate,hash:e.sha256,points},lastCheckedAt:null,status:'waiting_for_check',events:[],droppedEvents:0};
   this.records.set(r.id,r);this.save();return r;
  }
  setEnabled(id,enabled){if(this.loadError)throw new Error(this.loadError);const r=this.records.get(id);if(!r)throw new Error('Không tìm thấy bộ theo dõi.');if(typeof enabled!=='boolean')throw new Error('enabled phải là boolean.');r.enabled=enabled;this.save();return r;}
  remove(id){if(this.loadError)throw new Error(this.loadError);if(!this.records.delete(id))throw new Error('Không tìm thấy bộ theo dõi.');this.save();}
- async checkAll(){if(this.stopped||this.loadError)return;if(this.pending)return this.pending;const ids=this.list().filter(r=>r.enabled).map(r=>r.id);if(!ids.length)return;
+ async checkAll(ownerId){if(this.stopped||this.loadError)return;if(this.pending){if(this.pendingOwnerId===undefined||this.pendingOwnerId===ownerId)return this.pending;await this.pending;return this.checkAll(ownerId);}this.pendingOwnerId=ownerId;const ids=this.list().filter(r=>r.enabled&&(!ownerId||(r.ownerId||'owner')===ownerId)).map(r=>r.id);if(!ids.length)return;
   this.pending=(async()=>{try{const snap=await this.snapshot(this.dataFile);if(this.stopped)return;for(const id of ids){const r=this.records.get(id);if(r?.enabled)this.apply(r,snap);}}catch(e){if(!this.stopped)for(const id of ids){const r=this.records.get(id);if(r?.enabled){r.status='source_error';r.error=e.message;r.lastCheckedAt=new Date().toISOString();}}}finally{if(!this.stopped){this.save();await this.durability?.flush();}}})();try{await this.pending;}finally{this.pending=null;}
  }
  apply(r,snap){
   r.lastCheckedAt=new Date().toISOString();delete r.error;r.freshness=D.freshness(snap.date);
   if(!/^[a-f0-9]{64}$/.test(snap.sha256)||!/^\d{4}-\d{2}-\d{2}$/.test(snap.date))throw new Error('Snapshot Monitoring thiếu hash/ngày.');
   if(snap.date<r.checkpoint.date){r.status='older_snapshot';return;}
+  if(snap.analysisContext&&snap.quality&&snap.quality.status!=='FRESH'){r.status='data_delayed';r.error='Nguồn chưa cập nhật; giữ checkpoint và chưa xác nhận tín hiệu mới.';return;}
+  if(snap.analysisContext){const missing=r.tickers.filter(t=>!snap.metrics.some(m=>m.ticker===t));if(missing.length){r.status='insufficient_same_period';r.error='Chưa đủ dữ liệu cùng kỳ: '+missing.join(', ');return;}if(r.checkpoint.cohortPolicyVersion!==snap.analysisContext.cohortPolicyVersion){r.checkpoint={date:snap.date,hash:snap.sha256,cohortPolicyVersion:snap.analysisContext.cohortPolicyVersion,points:Object.fromEntries(r.tickers.map(t=>[t,point(snap.metrics.find(m=>m.ticker===t),snap.regime)]))};r.status='policy_baseline_reset';return;}}
   if(snap.sha256===r.checkpoint.hash){r.status='unchanged';return;}
   const sameDate=snap.date===r.checkpoint.date,points={};
   for(const t of r.tickers){const next=point(snap.metrics.find(m=>m.ticker===t),snap.regime),before=r.checkpoint.points[t];points[t]=next;
    const changes=sameDate?[{type:'snapshot_revision',message:'Nguồn chỉnh sửa cùng ngày; đặt lại mốc, không coi là giao cắt theo thời gian.'}]:transitions(before,next,r.levels[t]);
-   for(const event of changes){const id=digest([r.id,snap.sha256,t,event.type,VERSION]);if(r.events.some(e=>e.id===id))continue;r.events.push({...event,id,ticker:t,dataDate:snap.date,snapshotHash:snap.sha256,previousDate:r.checkpoint.date,previousClose:before.close,close:next.close,recordedAt:r.lastCheckedAt});}
+   for(const event of changes){if(event.type==='regime_change'&&snap.analysisContext)event.message='Bối cảnh tập đủ dữ liệu cùng kỳ: '+before.regime+' → '+next.regime;const id=digest([r.id,snap.sha256,t,event.type,VERSION]);if(r.events.some(e=>e.id===id))continue;r.events.push({...event,id,ticker:t,dataDate:snap.date,snapshotHash:snap.sha256,...(snap.analysisContext?{analysisContext:{cohortId:snap.analysisContext.cohortId,cohortPolicyVersion:snap.analysisContext.cohortPolicyVersion,marketScope:'eligible-subset'}}:{}),previousDate:r.checkpoint.date,previousClose:before.close,close:next.close,recordedAt:r.lastCheckedAt});}
   }
   if(r.events.length>200){r.droppedEvents+=r.events.length-200;r.events=r.events.slice(-200);}
-  r.checkpoint={date:snap.date,hash:snap.sha256,points};r.status=sameDate?'revised_snapshot':'updated';
+  r.checkpoint={date:snap.date,hash:snap.sha256,...(snap.analysisContext?{cohortPolicyVersion:snap.analysisContext.cohortPolicyVersion}:{}),points};r.status=sameDate?'revised_snapshot':'updated';
  }
  status(){return {version:VERSION,storageProblem:this.loadError||null,mode:'local_snapshot_poll',intervalSeconds:60,delivery:'in_app_only',running:!this.stopped,limitation:'Chỉ kiểm tra khi máy chủ đang chạy; cần nguồn cập nhật file snapshot. Sau khởi động lại sẽ tiếp tục bộ đã bật. Không tải giá mới, không gửi email/push, không theo dõi intraday, không tạo lệnh. Nếu bỏ lỡ nhiều phiên chỉ so hai snapshot quan sát được.'};}
  shutdown(){this.stopped=true;clearInterval(this.timer);}

@@ -25,6 +25,10 @@ function validateAnalyst(value,evidence){
  if(value.limitations.some(s=>numbers(s).some(n=>!allowed.has(n))))throw Error('Giới hạn dữ liệu chứa số liệu không có nguồn.');
  return value;
 }
+function analysisContext(snap,tickers=[]){
+ const c=snap.analysisContext;if(!c)return null;
+ return {schema:c.schema,cohortPolicyVersion:c.cohortPolicyVersion,cohortId:c.cohortId,snapshotId:c.snapshotId,asOf:c.asOf,benchmarkDate:c.benchmarkDate,benchmarkTicker:c.benchmarkTicker,engineVersion:c.engineVersion,coverage:c.coverage,marketScope:c.marketScope,wholeMarketConclusionAvailable:false,marketLimitation:c.marketLimitation,excluded:c.excluded.filter(x=>tickers.includes(x.ticker))};
+}
 function request(input){
  if(!input||typeof input.question!=='string'||input.question.trim().length<3||input.question.length>4000)throw new Error('Câu hỏi cần từ 3 đến 4.000 ký tự.');
  const mode=input.mode||'Quick';if(!['Quick','Standard','Deep'].includes(mode))throw new Error('Chế độ không hợp lệ.');
@@ -62,4 +66,4 @@ function validateAnalysis(value,evidence){
  if(numbers(value.summary).some(n=>!allowed.has(n)))throw new Error('Tóm tắt AI có số liệu chưa có trong nguồn.');
  return value;
 }
-module.exports={VERSION,AGENTS,OUTPUT_SCHEMA,ANALYST_SCHEMA,ANALYST_SECTIONS,request,plan,validateAnalysis,validateAnalyst,validateAnalystClaim};
+module.exports={VERSION,AGENTS,OUTPUT_SCHEMA,ANALYST_SCHEMA,ANALYST_SECTIONS,request,plan,analysisContext,validateAnalysis,validateAnalyst,validateAnalystClaim};

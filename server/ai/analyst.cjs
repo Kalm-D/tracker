@@ -40,8 +40,8 @@ function composite(metric,components={},c=configuration()){
   limitation:'Điểm kỹ thuật giữ nguyên Tracker Engine. Thiếu thành phần có trọng số thì chưa tính tổng/hạng; không đổi dữ liệu thiếu thành điểm không.'};
 }
 function context(snap,metrics,c=configuration()){
- const market={...snap.regime,dataDate:snap.date,setupPerformance:null,setupPerformanceStatus:'not_available',
-  limitation:'Playbook là quy tắc của Tracker, chưa phải bằng chứng tỷ lệ thắng. Chưa có thống kê từng setup trong cùng môi trường; không suy ra xác suất thành công.'};
+ const market={...snap.regime,...(snap.analysisContext?{marketScope:'eligible-subset',wholeMarketConclusionAvailable:false,analysisContext:require('./contracts.cjs').analysisContext(snap,metrics.map(m=>m.ticker))}:{}),dataDate:snap.date,setupPerformance:null,setupPerformanceStatus:'not_available',
+  limitation:(snap.analysisContext?snap.analysisContext.marketLimitation+' ':'')+'Playbook là quy tắc của Tracker, chưa phải bằng chứng tỷ lệ thắng. Chưa có thống kê từng setup trong cùng môi trường; không suy ra xác suất thành công.'};
  const scores=metrics.map(m=>composite(m,{},c));
  const data={market,sectors:sectorContext(metrics,c),scores};
  return {id:'analyst-context-'+hash(JSON.stringify(data)).slice(0,16),type:'analyst_context',dataDate:snap.date,data,verification:'deterministic_existing_engine_context',url:'https://github.com/Kalm-D/tracker/blob/main/public/shared/tracker-engine.js'};
@@ -51,7 +51,7 @@ function coverage(evidence,tickers){
  const out=tickers.map(ticker=>({ticker,price:!!technical?.lastBars?.[ticker],technical:!!technical?.metrics?.some(m=>m.ticker===ticker),
   fundamental:evidence.some(e=>e.type==='financial_statement'&&e.ticker===ticker),
   companyNews:evidence.some(e=>e.type==='news_discovery'&&e.scope!=='sector'&&e.items?.length&&(!e.tickers||e.tickers.includes(ticker))),
-  sectorNews:evidence.some(e=>e.type==='news_discovery'&&e.scope==='sector'&&e.items?.length&&e.tickers?.includes(ticker)),market:!!technical?.regime?.key&&technical.regime.key!=='UNKNOWN'}));
+  sectorNews:evidence.some(e=>e.type==='news_discovery'&&e.scope==='sector'&&e.items?.length&&e.tickers?.includes(ticker)),market:technical?.analysisContext?.wholeMarketConclusionAvailable===false?false:!!technical?.regime?.key&&technical.regime.key!=='UNKNOWN'}));
  return {tickers:out,missing:out.flatMap(x=>Object.entries(x).filter(([k,v])=>k!=='ticker'&&!v).map(([k])=>x.ticker+': '+k)),
   confidence:'coverage_only_not_probability',limitation:'Có nguồn không có nghĩa đã xác minh nội dung, đơn vị hay kỳ báo cáo. RSS chỉ là tiêu đề phát hiện tin.'};
 }

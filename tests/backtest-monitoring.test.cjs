@@ -26,7 +26,7 @@ test('Backtest worker equals direct existing engine on real full-universe snapsh
 });
 test('Backtest fails on snapshot race, demo, unknown symbols, too many sessions and bad warmup interval',{timeout:120000},async()=>{
  await assert.rejects(A.run(dataFile,config,{tickers:['MBB'],expectedHash:hash('changed')}),/đã đổi/);
- await assert.rejects(A.run(path.join(__dirname,'../public/data/market.json'),config,{tickers:['MBB']}),/demo/);
+ await assert.rejects(A.run(path.join(__dirname,'fixtures/demo-market.json'),config,{tickers:['MBB']}),/demo/);
  await assert.rejects(A.run(dataFile,config,{tickers:['ZZZ']}),/không có/);
  await assert.rejects(A.run(dataFile,{...config,start:'2025-07-14'},{tickers:['MBB']}),/60 phiên/);
  await assert.rejects(A.run(dataFile,{...config,start:'2025-07-14',end:'2025-07-15'},{tickers:['MBB']}),/Khoảng hỗ trợ/);

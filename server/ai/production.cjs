@@ -24,7 +24,7 @@ async function prepare(env=process.env,snapshot=D.snapshot){
  // Uses the existing Quant worker; demo or malformed sources are refused before binding.
  const shared=snapshot===D.snapshot&&env.TRACKER_AI_REFRESH_DATA!=='false'?require('./shared-snapshot.cjs').sharedSnapshot(env.TRACKER_AI_DATA_FILE):null;
  await (shared?shared.read():snapshot(env.TRACKER_AI_DATA_FILE));
- instance=createApp({...config,durability,...(shared?{tools:{snapshot:()=>shared.read()}}:{})});if(instance.gateway.status().usage.healthy===false||instance.monitoring.status().storageProblem){instance.dispose();throw Error('Bộ lưu chưa sẵn sàng; kiểm tra ledger/monitor và khôi phục trước khi chạy.');}
+ instance=createApp({...config,durability,...(shared?{tools:{snapshot:()=>shared.read()}}:{})});if(instance.gateway.status().usage.healthy===false||instance.monitoring.status().storageProblem||instance.accounts.problem){instance.dispose();throw Error('Bộ lưu chưa sẵn sàng; kiểm tra ledger/monitor và khôi phục trước khi chạy.');}
  await durability?.flush();return {...config,...instance,durability};
  }catch(e){instance?.dispose();await durability?.release();throw e;}
 }
