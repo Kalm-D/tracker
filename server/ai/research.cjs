@@ -13,12 +13,12 @@ class Research {
  }
  persist(j){try{const f=path.join(this.dir,j.id+'.json'),temp=f+'.tmp';fs.writeFileSync(temp,JSON.stringify(j),{mode:0o600});fs.renameSync(temp,f);this.durability?.put('jobs/'+j.id+'.json',j);this.events.emit('job',j);}catch{this.storageError='Không lưu được trạng thái AI; dừng nhận tác vụ mới và kiểm tra bộ lưu.';throw new Error(this.storageError);}}
  async checkpoint(){await this.durability?.flush();}
- create(input){
+ create(input,ownerId='owner'){
   if(this.stopped||this.storageError)throw new Error('Máy chủ đang dừng hoặc bộ lưu cần kiểm tra; chưa nhận tác vụ mới.');
   const request=C.request(input);request.sourceUrls.forEach(S.urlAllowed);
   if([...this.jobs.values()].filter(j=>['queued','running'].includes(j.status)).length>=3)throw new Error('Hàng đợi tối đa 3 tác vụ.');
   if(this.jobs.size>=100)throw new Error('Đã lưu 100 tác vụ. Cần sao lưu/dọn lịch sử trước khi tạo thêm.');
-  const j={schemaVersion:request.schemaVersion,id:crypto.randomUUID(),version:C.VERSION,createdAt:new Date().toISOString(),status:'queued',request,trace:[],report:{evidence:[],analyses:[],warnings:[],issues:[],financialVerified:false}};
+  const j={ownerId,schemaVersion:request.schemaVersion,id:crypto.randomUUID(),version:C.VERSION,createdAt:new Date().toISOString(),status:'queued',request,trace:[],report:{evidence:[],analyses:[],warnings:[],issues:[],financialVerified:false}};
   this.jobs.set(j.id,j);this.persist(j);setImmediate(()=>this.next());return j;
  }
  cancel(id){const j=this.jobs.get(id);if(!j)return null;if(['running','queued'].includes(j.status)){j.status='cancelled';j.finishedAt=new Date().toISOString();this.persist(j);if(this.active?.id===id)this.active.controller.abort();}return j;}
@@ -36,11 +36,14 @@ class Research {
   const snap=await step('data','snapshot / shared Tracker Engine',()=>this.tools.snapshot(this.dataFile));
   j.plan=await step('manager','deterministic Task Router v3',async()=>C.plan(j.request,new Set(snap.tickers)));
   if(j.plan.unsupported)j.report.warnings.push('Cần cấu hình hoặc thao tác bổ sung. Để Backtest hãy mở cấu hình Backtest. Để theo dõi hãy lưu báo cáo bằng nút Theo dõi báo cáo; chỉ có cảnh báo trong ứng dụng khi máy chủ đang chạy. Không hỗ trợ đặt lệnh.');
-  const fresh=D.freshness(snap.date);
-  j.report.provenance={...fresh,snapshotHash:snap.sha256,engineVersion:snap.engineVersion,strategyVersion:null,source:snap.meta.source,audit:snap.audit,snapshotSync:snap.refresh||null};
+  const fresh=D.freshness(snap.date),analysisContext=C.analysisContext(snap,j.plan.tickers);
+  if(analysisContext)j.report.warnings.push(analysisContext.marketLimitation);
+  j.report.provenance={...fresh,analysisContext,quality:snap.quality||fresh,canonicalSnapshotId:snap.canonicalSnapshotId||null,snapshotHash:snap.sha256,engineVersion:snap.engineVersion,strategyVersion:null,source:snap.meta.source,audit:snap.audit,snapshotSync:snap.refresh||null};
   if(snap.refresh?.warning)j.report.warnings.push(snap.refresh.warning);
+  if(snap.quality&&snap.quality.status!=='FRESH')j.report.warnings.push(snap.quality.message);
+  const cohortMismatch=(snap.cohorts?.mismatchedSymbols||[]).filter(x=>j.plan.tickers.includes(x.ticker));if(cohortMismatch.length)j.report.warnings.push('Cổ phiếu và benchmark khác phiên: '+cohortMismatch.map(x=>x.ticker+' '+x.symbolDate+' / '+x.benchmarkDate).join(', ')+'. Chỉ tra cứu dữ liệu gốc; mã chưa đủ kỳ không được xếp hạng hiện hành.');
   const metrics=snap.metrics.filter(m=>j.plan.tickers.includes(m.ticker));
-  const technical=await step('technical','exact existing engine snapshot; no rewritten formulas',async()=>({id:'technical-'+snap.sha256.slice(0,12),type:'deterministic_calculation',dataDate:snap.date,publishedAt:snap.meta.generatedAt||null,retrievedAt:fresh.checkedAt,url:'https://github.com/Kalm-D/tracker/blob/main/public/data/market.json.gz',sha256:snap.sha256,engineVersion:snap.engineVersion,metrics,priceSummaries:Object.fromEntries(j.plan.tickers.map(t=>[t,snap.priceSummaries?.[t]||null])),regime:snap.regime,lastBars:Object.fromEntries(j.plan.tickers.map(t=>[t,snap.lastBars[t]||null])),verification:'computed_by_existing_engine'}));
+  const technical=await step('technical','exact existing engine snapshot; no rewritten formulas',async()=>({id:'technical-'+snap.sha256.slice(0,12),type:'deterministic_calculation',analysisContext,quality:snap.quality||fresh,cohortWarnings:cohortMismatch,dataDate:snap.date,publishedAt:snap.meta.generatedAt||null,retrievedAt:fresh.checkedAt,url:'https://github.com/Kalm-D/tracker/blob/main/public/data/market.json.gz',sha256:snap.sha256,engineVersion:snap.engineVersion,metrics,priceSummaries:Object.fromEntries(j.plan.tickers.map(t=>[t,snap.priceSummaries?.[t]||null])),regime:snap.regime,lastBars:Object.fromEntries(j.plan.tickers.map(t=>[t,snap.lastBars[t]||null])),verification:'computed_by_existing_engine'}));
   j.report.evidence.push(technical);
   if(!j.plan.tickers.length)j.report.warnings.push('Chưa xác định mã cổ phiếu. Báo cáo chỉ có bối cảnh thị trường; nhập mã viết hoa hoặc chọn mã trong ô ngữ cảnh.');
   for(const t of j.plan.tickers)if(!metrics.some(m=>m.ticker===t))j.report.warnings.push(t+': chưa có chỉ báo đủ điều kiện; không tự điền số liệu.');

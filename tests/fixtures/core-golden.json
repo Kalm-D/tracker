@@ -1,0 +1,27 @@
+{
+  "baseline": "e3a7e079a5c27a9762db0414d66a6bcee0ada4a1",
+  "inputHash": "d82319d0e141f92efe22839bf4f0068bcc04ad7e55eb2f35bb1fd174b25008b7",
+  "cases": [
+    {
+      "date": "2026-08-28",
+      "sharedHash": "34dbbcc201e4cfc708db70eda107d3644a50911058bce55fd7020a9aaafe7bd8",
+      "healthHash": "346f799f33ba859b7e0e25aeb40ad3fe76405a7c2b7617183f82d997776fb37b",
+      "advancedHash": "6703e6f3dcd883212a4db7cad859728c3c3109307fb314212647a09092e9ab27",
+      "healthScore": 60.81777777777778
+    },
+    {
+      "date": "2026-09-30",
+      "sharedHash": "2eb9e93da1136c24ee9731f600ff6cbfe7b27fb0a237a48c5ec0657beeafa60f",
+      "healthHash": "4824a5a20b2b3e709a9e46cefb9b9da1ca5b1963573a63cd6fb495d67ff6739b",
+      "advancedHash": "5797837418e75a0bc4f0cb41536cccbc3fbb513d9d89d35314c1bf7e9a811340",
+      "healthScore": 36.879999999999995
+    },
+    {
+      "date": "2026-10-30",
+      "sharedHash": "4ddd14d7a792a5b095a64373387bfe78ad534da17d95bbaaf4b0eaa07a42f832",
+      "healthHash": "617d87e820918b7248261b06bcbc2820d937e96e0bba903d00f1a42e030c653b",
+      "advancedHash": "2ef548b8f5c5fb21c0250f1bcc9c4262551a9c436ed67586796bc38a5646ac1e",
+      "healthScore": 35.519999999999996
+    }
+  ]
+}

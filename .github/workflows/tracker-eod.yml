@@ -1,14 +1,16 @@
 name: Tracker EOD data and GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       metadata_only:
         description: 'Chỉ bổ sung ngành và kiểm tra volume trên dữ liệu hiện có'
         type: boolean
         default: false
+      allow_missing:
+        description: 'Ngoại lệ mã thiếu đã được Owner duyệt, phân cách bằng dấu phẩy; trống = chặn mọi mã thiếu'
+        type: string
+        default: ''
   schedule:
     # Morning snapshot: 10:40 Vietnam time (UTC+7), Monday-Friday.
     - cron: "40 10 * * 1-5"
@@ -23,7 +25,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: tracker-eod-pages
+  group: tracker-pages-publish
   cancel-in-progress: false
 
 jobs:
@@ -38,6 +40,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Set up Python for the scheduled refresh
         if: github.event_name != 'push'
         uses: actions/setup-python@v6
@@ -46,7 +53,7 @@ jobs:
 
       - name: Install data dependencies
         if: github.event_name != 'push'
-        run: python -m pip install --upgrade --extra-index-url https://vnstocks.com/api/simple pip pandas vnstock vnai
+        run: python -m pip install -r tracker-tools/requirements.txt
 
       - name: Download 320 sessions from the shared source
         if: github.event_name != 'push' && inputs.metadata_only != true
@@ -67,19 +74,47 @@ jobs:
         run: >-
           python tracker-tools/pack_market_data.py
           --input work/market.csv
-          --output public/data/market.json.gz
+          --output work/candidate.json.gz
+          --quarantine-invalid
+          --quality-output work/pack-quality.json
+          --export-quality work/export_quality.csv
+          --snapshot-kind "${{ github.event.schedule == '40 10 * * 1-5' && 'INTRADAY' || 'EOD' }}"
           --source "Vnstock / KBS"
+
+      - name: Chuẩn bị staging metadata-only
+        if: inputs.metadata_only == true
+        run: |
+          mkdir -p work
+          cp public/data/market.json.gz work/candidate.json.gz
 
       - name: Ghép phân ngành và kiểm tra khối lượng cho cả hai web
         if: github.event_name != 'push'
-        run: python tracker-tools/sector_data.py
+        run: python tracker-tools/sector_data.py --snapshot work/candidate.json.gz
+
+      - name: Kiểm tra và công bố staging vào artifact
+        if: github.event_name != 'push'
+        env:
+          ALLOW_MISSING: ${{ inputs.allow_missing || '' }}
+        run: node tools/publish-snapshot.cjs --candidate work/candidate.json.gz --dir public/data --allow-missing "$ALLOW_MISSING"
+
+      - name: Lưu bằng chứng dữ liệu, kể cả khi gate từ chối
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-quality-${{ github.run_id }}
+          path: |
+            work/export_errors.csv
+            work/export_quality.csv
+            work/pack-quality.json
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Commit refreshed shared data
         if: github.event_name != 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data/market.json.gz public/data/market.json public/data/sectors.json
+          git add public/data
           if git diff --cached --quiet; then
             echo "No market data change to commit."
           else
@@ -101,13 +136,21 @@ jobs:
             fi
           fi
 
+      - name: Chỉ công bố HEAD mới nhất
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+
+      - name: Đóng gói Pages theo policy quyền
+        run: node tools/prepare-pages.cjs
 
       - name: Upload the public site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: public
+          path: work/pages
 
       - name: Deploy to GitHub Pages
         id: deployment

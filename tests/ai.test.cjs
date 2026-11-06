@@ -66,14 +66,16 @@ test('429 falls back only to another explicitly free configured provider, never 
   await assert.rejects(g.analyze('critic','x',[]),/429/);assert.equal(calls,2);assert.equal(g.status().usage.attempts,2);
  }finally{cleanup(dir);}
 });
-test('worker rejects the actual demo fallback without relabeling it real',async()=>{await assert.rejects(D.snapshot(path.join(__dirname,'../public/data/market.json')),/demo/);});
-test('AI quant metrics match existing engine exactly on the real MBB/ACB/TCB snapshot',async()=>{
- const file=path.join(__dirname,'../public/data/market.json.gz'),s=await D.snapshot(file),B=require('../public/backtest/engine.js'),raw=zlib.gunzipSync(fs.readFileSync(file)),p=JSON.parse(raw),direct=B.snapshot(B.prepare(p),s.date);
- for(const ticker of ['MBB','ACB','TCB']){const a=s.metrics.find(m=>m.ticker===ticker),b=direct.metrics.find(m=>m.ticker===ticker);assert.ok(a);for(const k of ['close','m50','m200','rsi2','rsPercentile','trackerScore','pivot'])assert.equal(a[k],b[k]);}
+test('Nguồn demo bị chặn, không đổi nhãn thành dữ liệu thật',async()=>{await assert.rejects(D.snapshot(path.join(__dirname,'fixtures/demo-market.json')),/demo/);});
+test('AI quant dùng cohort D2 đã duyệt; giữ giá tra cứu, không đổi engine gốc',async()=>{
+ const file=path.join(__dirname,'fixtures/d2-cohort.json.gz'),s=await D.snapshot(file),B=require('../public/backtest/engine.js'),AC=require('../public/shared/analysis-context.js'),raw=zlib.gunzipSync(fs.readFileSync(file)),p=JSON.parse(raw),direct=AC.calculate(B.prepare(p).series,{asOf:s.date,snapshotId:s.canonicalSnapshotId});
+ for(const ticker of ['FPT','HHP','NTP']){const a=s.metrics.find(m=>m.ticker===ticker),b=direct.metrics.find(m=>m.ticker===ticker);assert.ok(a);for(const k of ['close','m50','m200','rsi2','rsPercentile','trackerScore','pivot'])assert.equal(a[k],b[k]);}
+ assert.equal(s.metrics.some(m=>m.ticker==='MBB'),false);assert.equal(s.lastBars.MBB.date,'2026-10-30');assert.equal(s.analysisContext.cohortPolicyVersion,AC.VERSION);
  assert.equal(s.sha256,crypto.createHash('sha256').update(raw).digest('hex'));assert.equal(s.audit.invalid,B.prepare(p).audit.invalid);
 });
+
 test('freshness always says snapshot, including weekends and calendar-day matches',()=>{
- const f=D.freshness('2026-10-23',new Date('2026-10-26T02:00:00Z'));assert.equal(f.status,'dated_snapshot');assert.match(f.message,/không phải giá trực tiếp/);
+ const f=D.freshness('2026-10-23',new Date('2026-10-26T02:00:00Z'));assert.equal(f.status,'FRESH');assert.match(f.message,/không phải giá trực tiếp/);
 });
 const fakeSnapshot=async()=>({tickers:['MBB','ACB','TCB'],metrics:[{ticker:'MBB',close:19800,m50:19952}],date:'2026-10-23',sha256:'a'.repeat(64),engineVersion:'test-fixture',meta:{source:'explicit test fixture'},audit:{invalid:0},regime:{key:'UNKNOWN'},lastBars:{MBB:{close:19800}}});
 const noAI={status:()=>({usage:{attempts:0}}),analyze:async()=>{throw new Error('Thiếu khóa AI trong fixture');}};

@@ -279,7 +279,7 @@ def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool =
 
     # Vnstock documented interface (4.x): Quote(symbol=..., source='KBS').history(..., interval='d').
     sources = []
-    for src in [source, "KBS", "VCI"]:
+    for src in [source]:
         src = str(src or "").strip().upper()
         if src and src not in sources:
             sources.append(src)
@@ -292,6 +292,7 @@ def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool =
                     try:
                         df = quote.history(start=start, end=end, interval=interval)
                         if df is not None and len(df):
+                            df.attrs["tracker_source"] = src
                             return df
                     except Exception as exc:
                         errors.append(f"Quote.history {src}/{interval}: {exc}")
@@ -299,23 +300,6 @@ def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool =
                 errors.append(f"Quote init {src}: {exc}")
     except Exception as exc:
         errors.append(f"Quote import: {exc}")
-
-    # Optional unified Market interface on builds that expose it.
-    try:
-        from vnstock import Market  # type: ignore
-        market = Market()
-        if is_index and hasattr(market, "index"):
-            try:
-                return market.index.ohlcv(symbol=symbol, start=start, end=end)
-            except Exception as exc:
-                errors.append(f"Market.index.ohlcv: {exc}")
-        if hasattr(market, "equity"):
-            try:
-                return market.equity.ohlcv(symbol=symbol, start=start, end=end)
-            except Exception as exc:
-                errors.append(f"Market.equity.ohlcv: {exc}")
-    except Exception as exc:
-        errors.append(f"Market import: {exc}")
 
     raise RuntimeError(" | ".join(errors) or f"Không lấy được dữ liệu {symbol}")
 
@@ -337,6 +321,7 @@ def normalize_ohlcv_df(df, symbol: str, exchange: str, sector: str, sessions: in
     if any(c is None for c in required):
         raise ValueError(f"Thiếu cột OHLCV. Columns={list(data.columns)}")
     out = pd.DataFrame({
+        "source_provider": df.attrs.get("tracker_source", "UNKNOWN"),
         "ticker": symbol,
         "exchange": exchange or "UNKNOWN",
         "sector": sector or "Chưa phân loại",
