@@ -26,7 +26,7 @@ import argparse
 import sys
 import time
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -36,6 +36,7 @@ DEFAULT_SYMBOLS = [
 ]
 DEFAULT_INDEXES = ["VNINDEX"]
 EXCHANGE_ALLOWLIST = {"HOSE", "HNX", "UPCOM", "UPCoM"}
+OHLCV_DATE_COLUMNS = ("date", "time", "tradingdate", "trading_date")
 
 
 def eprint(*args: object) -> None:
@@ -304,13 +305,37 @@ def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool =
     raise RuntimeError(" | ".join(errors) or f"Không lấy được dữ liệu {symbol}")
 
 
+def sdk_quality_fields(pd, frame):
+    """Tóm tắt ngày SDK trả về trước khi lọc OHLCV, không sửa DataFrame."""
+    fields = {"source_provider": "", "sdk_last_date": ""}
+    if frame is None or not len(frame):
+        return fields
+
+    provider = frame.attrs.get("tracker_source")
+    if isinstance(provider, str) and provider != "UNKNOWN" and re.fullmatch(r"[A-Z][A-Z0-9_-]{0,15}", provider):
+        fields["source_provider"] = provider
+
+    cols = {str(column).lower().strip(): column for column in frame.columns}
+    date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
+    if date_col is None:
+        return fields
+    try:
+        dates = pd.to_datetime(frame[date_col]).dt.strftime("%Y-%m-%d").dropna()
+        if not dates.empty:
+            fields["sdk_last_date"] = dates.max()
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        # Trình chuẩn hóa bên dưới vẫn quyết định có chấp nhận dữ liệu hay không.
+        pass
+    return fields
+
+
 def normalize_ohlcv_df(df, symbol: str, exchange: str, sector: str, sessions: int):
     pd = import_pandas()
     if df is None or len(df) == 0:
         return pd.DataFrame()
     data = df.copy()
     cols = {str(c).lower().strip(): c for c in data.columns}
-    date_col = first_existing(cols, ["date", "time", "tradingdate", "trading_date"])
+    date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
     open_col = first_existing(cols, ["open", "open_price", "o"])
     high_col = first_existing(cols, ["high", "high_price", "h"])
     low_col = first_existing(cols, ["low", "low_price", "l"])
@@ -449,14 +474,25 @@ def main() -> int:
         if symbol in completed:
             print(f"[{i}/{len(tasks)}] SKIP {symbol:>8}  đã có trong file output")
             continue
+        fetch_quality = {
+            "fetch_started_utc": datetime.now(timezone.utc).isoformat(),
+            "fetch_finished_utc": "",
+            "requested_end": end,
+            "source_provider": "",
+            "sdk_last_date": "",
+        }
         try:
-            raw = fetch_ohlcv_with_retry(symbol, start, end, args.source, is_index=is_index, retries=args.retries, retry_sleep=args.retry_sleep)
+            try:
+                raw = fetch_ohlcv_with_retry(symbol, start, end, args.source, is_index=is_index, retries=args.retries, retry_sleep=args.retry_sleep)
+            finally:
+                fetch_quality["fetch_finished_utc"] = datetime.now(timezone.utc).isoformat()
+            fetch_quality.update(sdk_quality_fields(pd, raw))
             df = normalize_ohlcv_df(raw, symbol, exchange, sector, args.sessions)
             if len(df) < args.min_rows:
                 errors.append({"ticker": symbol, "issue": "too_few_rows", "detail": f"{len(df)} rows"})
             if len(df):
                 frames.append(df)
-                quality.append({"ticker": symbol, "rows": len(df), "first_date": df["date"].iloc[0], "last_date": df["date"].iloc[-1], "status": "ok" if len(df) >= args.min_rows else "too_few_rows"})
+                quality.append({"ticker": symbol, "rows": len(df), "first_date": df["date"].iloc[0], "last_date": df["date"].iloc[-1], "status": "ok" if len(df) >= args.min_rows else "too_few_rows", **fetch_quality})
                 print(f"[{i}/{len(tasks)}] OK  {symbol:>8}  rows={len(df):>4}  last={df['date'].iloc[-1]}")
                 success_since_save += 1
                 if args.save_every > 0 and success_since_save >= args.save_every:
@@ -465,7 +501,7 @@ def main() -> int:
                     success_since_save = 0
             else:
                 errors.append({"ticker": symbol, "issue": "empty", "detail": "no rows"})
-                quality.append({"ticker": symbol, "rows": 0, "first_date": "", "last_date": "", "status": "empty"})
+                quality.append({"ticker": symbol, "rows": 0, "first_date": "", "last_date": "", "status": "empty", **fetch_quality})
                 print(f"[{i}/{len(tasks)}] ERR {symbol:>8}  empty")
         except KeyboardInterrupt:
             print("\nNgười dùng đã dừng script. Đang lưu tiến độ hiện có...")
@@ -473,7 +509,7 @@ def main() -> int:
             raise
         except BaseException as exc:
             errors.append({"ticker": symbol, "issue": "fetch_error", "detail": str(exc)[:500]})
-            quality.append({"ticker": symbol, "rows": 0, "first_date": "", "last_date": "", "status": "fetch_error"})
+            quality.append({"ticker": symbol, "rows": 0, "first_date": "", "last_date": "", "status": "fetch_error", **fetch_quality})
             print(f"[{i}/{len(tasks)}] ERR {symbol:>8}  {exc}")
         if args.sleep > 0 and i < len(tasks):
             time.sleep(args.sleep)
