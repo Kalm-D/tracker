@@ -1,7 +1,7 @@
 {
   "source": "Vnstock / VCI",
   "classification": "ICB cấp 3",
-  "updatedAt": "2026-11-02T11:38:55.865936+00:00",
+  "updatedAt": "2026-11-09T12:02:47.286911+00:00",
   "sectors": {
     "A+ FUND": "Quỹ đầu tư",
     "A32": "Hàng cá nhân",
@@ -951,7 +951,7 @@
     "L43": "Xây dựng và Vật liệu",
     "L44": "Công nghiệp nặng",
     "L45": "Xây dựng và Vật liệu",
-    "L61": "Công nghiệp nặng",
+    "L61": "Xây dựng và Vật liệu",
     "L62": "Công nghiệp nặng",
     "L63": "Công nghiệp nặng",
     "LAF": "Sản xuất thực phẩm",
@@ -1214,7 +1214,7 @@
     "PCB": "Ngân hàng",
     "PCC": "Xây dựng và Vật liệu",
     "PCE": "Hóa chất",
-    "PCF": "Bia và đồ uống",
+    "PCF": "Nước & Khí đốt",
     "PCG": "Nước & Khí đốt",
     "PCH": "Hóa chất",
     "PCM": "Xây dựng và Vật liệu",
@@ -2060,6 +2060,9 @@
     "VCBF-CB": "Quỹ đầu tư",
     "": "Quỹ đầu tư",
     "HGI": "Sản xuất thực phẩm",
-    "OFG": "Bất động sản"
+    "OFG": "Bất động sản",
+    "ACBC-BOND": "Quỹ đầu tư",
+    "ACBC-SFUND": "Quỹ đầu tư",
+    "AMY": "Xây dựng và Vật liệu"
   }
 }
