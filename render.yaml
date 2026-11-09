@@ -1,7 +1,7 @@
 # Free compute only. Supabase project/migration must exist first.
 services:
   - type: web
-    name: tracker-ai-free
+    name: tracker-p0-uat
     runtime: node
     plan: free
     buildCommand: bash tools/build-ai.sh
@@ -43,3 +43,5 @@ services:
         value: "440"
       - key: AI_MAX_STATE_MIB
         value: "32"
+      - key: TRACKER_AI_REFRESH_DATA
+        value: "false"
