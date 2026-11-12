@@ -32,6 +32,10 @@ def table_records(frame):
 TABLE_METHODS = ('income_statement', 'balance_sheet', 'cash_flow', 'ratio')
 
 
+class FinanceSourceUnavailableError(RuntimeError):
+    """BCTC chưa có adapter nguồn được cấu hình và kiểm chứng."""
+
+
 def finance_payload(ticker, tables, errors, truncated, partial=False):
     """Đóng gói cả bản tạm và bản cuối, giữ nguyên kỳ/đơn vị nguồn."""
     tables = {name: tables.get(name, []) for name in TABLE_METHODS}
@@ -53,8 +57,7 @@ def finance_payload(ticker, tables, errors, truncated, partial=False):
 def read_finance(ticker, factory=None, on_progress=None):
     """Gửi bản tạm sau từng bảng để bảng chậm không làm mất số liệu đã đọc."""
     if factory is None:
-        from vnstock import Finance
-        factory = Finance
+        raise FinanceSourceUnavailableError('Chưa cấu hình nguồn BCTC đã kiểm chứng cho SDK hiện tại.')
     finance = factory(source='VCI', symbol=ticker, period='quarter')
     tables, errors, truncated = {}, {}, {}
     for method in TABLE_METHODS:
@@ -100,6 +103,8 @@ if __name__ == '__main__':
                 print(json.dumps({'ok': True, 'interim': True, 'data': data}, ensure_ascii=False, allow_nan=False), file=sys.__stdout__, flush=True)
             data = main(req, on_progress=progress)
         result = {'ok': True, 'data': data}
+    except FinanceSourceUnavailableError:
+        result = {'ok': False, 'code': 'FINANCE_SOURCE_UNAVAILABLE', 'message': 'BCTC chưa có nguồn đã cấu hình và kiểm chứng cho SDK hiện tại. Dữ liệu kỹ thuật và PDF vẫn sử dụng được.'}
     except ModuleNotFoundError:
         result = {'ok': False, 'code': 'FINANCE_DEPENDENCY_MISSING', 'message': 'Máy chủ chưa cài đủ thư viện đọc BCTC/PDF. Cần sửa bước build backend.'}
     except BaseException:
