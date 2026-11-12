@@ -26,35 +26,35 @@ def build_map(frame):
     return rows.drop_duplicates('symbol').set_index('symbol')['icb_name'].str.strip().to_dict()
 
 
-def load_sectors(force=False):
+def load_sectors(force=False, metadata=None):
+    """Dùng cache ICB đã có với ngày nguồn thật trong giai đoạn đối chiếu DNSE."""
     cached = {}
     if CACHE.exists():
         try:
             cached = json.loads(CACHE.read_text(encoding='utf-8'))
+            if not isinstance(cached.get('sectors'), dict):
+                raise ValueError('Cache ngành thiếu bảng mã')
             stamp = datetime.fromisoformat(cached['updatedAt'])
-            if not force and datetime.now(timezone.utc) - stamp < timedelta(days=7):
-                return cached['sectors']
+            if stamp.tzinfo is None or stamp > datetime.now(timezone.utc):
+                raise ValueError('Cache ngành có ngày không hợp lệ')
         except (ValueError, KeyError, TypeError):
             cached = {}
-    try:
-        from vnstock import Listing
-        sectors = build_map(Listing(source='VCI').symbols_by_industries())
-        if len(sectors) < 500:
-            raise ValueError('Bảng phân ngành trả về quá ít mã')
-        # Giữ phân loại cũ cho các mã mà nguồn tạm thiếu.
-        merged = {**cached.get('sectors', {}), **sectors}
-        CACHE.parent.mkdir(parents=True, exist_ok=True)
-        CACHE.write_text(json.dumps({'source': 'Vnstock / VCI', 'classification': 'ICB cấp 3', 'updatedAt': datetime.now(timezone.utc).isoformat(), 'sectors': merged}, ensure_ascii=False, indent=2), encoding='utf-8')
-        print(f'Đã cập nhật phân ngành ICB cấp 3: {len(sectors)} mã từ nguồn VCI.')
-        return merged
-    except (Exception, SystemExit) as exc:
-        if cached.get('sectors'):
-            print(f'Nguồn ngành tạm lỗi; giữ bảng ngành cũ: {type(exc).__name__}')
-            return cached['sectors']
-        raise RuntimeError('Chưa lấy được bảng ngành và chưa có bản dự phòng') from exc
+    available = bool(cached.get('sectors'))
+    state = 'MISSING'
+    if available:
+        state = 'FRESH' if datetime.now(timezone.utc) - stamp < timedelta(days=7) else 'STALE'
+    info = {'sectorSource': cached.get('source', 'UNKNOWN'),
+            'sectorSourceUpdatedAt': cached.get('updatedAt'), 'sectorDataStatus': state,
+            'sectorMissingReason': 'Chưa đối chiếu phân ngành DNSE với hợp đồng ICB cấp 3; mã thiếu giữ Chưa phân loại.'}
+    if metadata is not None:
+        metadata.update(info)
+    print(f"Phân ngành cache: {state}; ngày nguồn {info['sectorSourceUpdatedAt'] or 'MISSING'}. " + info['sectorMissingReason'])
+    if force:
+        raise RuntimeError('R4 chưa có nguồn ICB mới đã kiểm chứng để force refresh.')
+    return {ticker: name for ticker, name in cached.get('sectors', {}).items() if valid_sector(name)}
 
 
-def enrich(payload, sectors):
+def enrich(payload, sectors, metadata=None):
     """Ghép ngành theo mã; volume vẫn là khối lượng của ngày trên mỗi dòng."""
     symbols = payload.get('symbols', [])
     if not symbols:
@@ -78,6 +78,7 @@ def enrich(payload, sectors):
             else:
                 missing_volume += 1
     payload.setdefault('meta', {}).update({'sectorClassification': 'ICB cấp 3', 'sectorSource': 'Vnstock / VCI', 'sectorEnrichedAt': datetime.now(timezone.utc).isoformat(), 'classifiedSymbols': classified, 'unclassifiedSymbols': missing, 'volumeUnit': 'cổ phiếu', 'volumeDescription': 'Khối lượng do nguồn giá trả về cho ngày tương ứng; không phải tỷ lệ volume.', 'validVolumeRows': volume_rows, 'missingVolumeRows': missing_volume})
+    payload['meta'].update(metadata or {'sectorSource': 'UNKNOWN', 'sectorSourceUpdatedAt': None, 'sectorDataStatus': 'MISSING'})
     return payload
 
 
@@ -86,12 +87,13 @@ def main():
     parser.add_argument('--force', action='store_true')
     parser.add_argument('--snapshot', action='append', help='Chỉ enrich file staging được chỉ định')
     args = parser.parse_args()
-    sectors = load_sectors(force=args.force)
+    metadata = {}
+    sectors = load_sectors(force=args.force, metadata=metadata)
     for path in ([Path(p) for p in args.snapshot] if args.snapshot else [Path('public/data/market.json.gz'), Path('public/data/market.json')]):
         if not path.exists():
             continue
         raw = gzip.decompress(path.read_bytes()).decode('utf-8') if path.suffix == '.gz' else path.read_text(encoding='utf-8')
-        payload = enrich(json.loads(raw), sectors)
+        payload = enrich(json.loads(raw), sectors, metadata)
         data = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
         temp = path.with_name(path.name + '.tmp')
         temp.write_bytes(gzip.compress(data, mtime=0) if path.suffix == '.gz' else data)
