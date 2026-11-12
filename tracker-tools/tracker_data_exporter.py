@@ -5,17 +5,11 @@ Tracker Data Exporter
 -------------------------
 Tạo file CSV lịch sử giá OHLCV để import vào Tracker v2.x.
 
-Bản v1.5 ưu tiên chạy an toàn với tài khoản Guest của Vnstock và hỗ trợ tách dữ liệu theo sàn:
-- Mặc định nghỉ 3.6 giây/request để tránh vượt 20 requests/phút.
-- Tự chờ và retry nếu gặp rate limit.
-- Tự lưu từng phần để có thể resume khi chạy lại.
-- Có tham số --exchange HOSE/HNX/UPCOM để chỉ tải một sàn.
-
-Nguồn dữ liệu mặc định: Vnstock. Script cố gắng dùng giao diện Vnstock v4 trước,
-sau đó fallback về Quote.history nếu cần.
-
-Lệnh nhanh:
-    python tools/alpha_data_exporter.py --sessions 320 --output data/tracker_prices_250_sessions.csv
+Bản R4 dùng Vnstock 6 và nguồn DNSE tường minh để đối chiếu.
+- Khóa nguồn được đọc từ cấu hình riêng tư của SDK.
+- Nến cổ phiếu có đơn vị nghìn đồng; benchmark có đơn vị điểm.
+- Bỏ nến chưa đóng và dừng khi danh mục nguồn không khả dụng.
+- CSV và các phép tính đã nghiệm thu giữ hợp đồng hiện hành.
 
 CSV xuất ra có cột chuẩn:
     ticker,exchange,sector,date,open,high,low,close,volume,value
@@ -26,14 +20,11 @@ import argparse
 import sys
 import time
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
-DEFAULT_SYMBOLS = [
-    "FPT", "HPG", "MWG", "GMD", "ACV", "MBB", "VCB", "TCB", "ACB", "STB",
-    "DGC", "REE", "VGI", "PVS", "IDC", "VHM", "VNM", "PNJ", "SSI", "HCM",
-]
 DEFAULT_INDEXES = ["VNINDEX"]
 EXCHANGE_ALLOWLIST = {"HOSE", "HNX", "UPCOM", "UPCoM"}
 OHLCV_DATE_COLUMNS = ("date", "time", "tradingdate", "trading_date")
@@ -54,12 +45,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--symbols-file", default="", help="File .txt/.csv chứa danh sách mã, mỗi dòng một mã hoặc cột ticker/symbol/code.")
     parser.add_argument("--exchange", default="ALL", choices=["ALL", "HOSE", "HNX", "UPCOM"], help="Chỉ tải một sàn: HOSE, HNX hoặc UPCOM. Mặc định ALL = toàn bộ.")
     parser.add_argument("--limit", type=int, default=0, help="Giới hạn số mã cổ phiếu để test. 0 = không giới hạn.")
-    parser.add_argument("--sleep", type=float, default=3.6, help="Nghỉ giữa mỗi request. Guest nên dùng >=3.3s vì giới hạn khoảng 20 requests/phút.")
+    parser.add_argument("--sleep", type=float, default=3.6, help="Nghỉ giữa mỗi mã; đối chiếu giới hạn của tài khoản DNSE trước khi tải rộng.")
     parser.add_argument("--retries", type=int, default=20, help="Số lần thử lại khi gặp rate limit/lỗi tạm thời cho mỗi mã.")
     parser.add_argument("--retry-sleep", type=float, default=70.0, help="Số giây chờ khi gặp rate limit trước khi thử lại.")
     parser.add_argument("--save-every", type=int, default=5, help="Lưu file CSV tạm sau mỗi N mã tải thành công. 0 = chỉ lưu cuối cùng.")
     parser.add_argument("--resume", action="store_true", help="Nếu file output đã có dữ liệu, bỏ qua các mã đã tải để chạy tiếp.")
-    parser.add_argument("--source", default="KBS", help="Nguồn ưu tiên cho Quote.history. Mặc định KBS; script sẽ fallback sang VCI nếu cần.")
+    parser.add_argument("--source", default="DNSE", choices=["DNSE"], help="Nguồn DNSE đã được Owner duyệt để đối chiếu trên branch R4.")
     parser.add_argument("--no-index", action="store_true", help="Không tải VNINDEX.")
     parser.add_argument("--min-rows", type=int, default=210, help="Số dòng tối thiểu/mã để coi là đủ dùng cho Tracker.")
     return parser.parse_args()
@@ -75,10 +66,12 @@ def import_pandas():
 
 def import_vnstock():
     try:
-        import vnstock  # noqa: F401
+        import vnstock
+        if not vnstock.__version__.startswith('6.'):
+            raise RuntimeError('R4 cần Vnstock thế hệ 6 trong môi trường riêng.')
         return True
     except Exception as exc:  # pragma: no cover
-        raise RuntimeError("Thiếu vnstock. Hãy chạy: pip install -U vnstock") from exc
+        raise RuntimeError("Chưa có bộ SDK R4. Cài từ tracker-tools/requirements.txt trong venv riêng.") from exc
 
 
 def normalize_ticker(value: object) -> str:
@@ -154,16 +147,24 @@ def first_existing(cols: Dict[str, str], names: Iterable[str]) -> Optional[str]:
     return None
 
 
-def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filter: str) -> List[Dict[str, str]]:
+def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filter: str, source: str = 'DNSE') -> List[Dict[str, str]]:
     if symbols_arg.strip():
         items = [{"ticker": normalize_ticker(x), "exchange": "", "sector": ""} for x in symbols_arg.split(",") if normalize_ticker(x)]
     elif symbols_file:
         items = read_symbols_file(symbols_file)
     else:
-        items = fetch_universe_from_vnstock(exchange_filter)
+        items = fetch_universe_from_vnstock(exchange_filter, source)
+    if source == 'DNSE' and (symbols_arg.strip() or symbols_file):
+        authoritative = {item['ticker']: item for item in fetch_universe_from_vnstock('ALL', source)}
+        for item in items:
+            listed = authoritative.get(item['ticker'])
+            if listed is None:
+                raise ValueError('Mã yêu cầu không có trong danh mục DNSE.')
+            if item.get('exchange') and normalize_exchange(item['exchange']) != listed['exchange']:
+                raise ValueError('Sàn trong file mã khác danh mục DNSE.')
+            item['exchange'] = listed['exchange']
     if not items:
-        eprint("Không tự lấy được universe từ Vnstock. Dùng danh sách fallback để test.")
-        items = [{"ticker": s, "exchange": "", "sector": ""} for s in DEFAULT_SYMBOLS]
+        raise RuntimeError('Universe trống; dừng tải để tránh công bố tập mã thiếu.')
     # Chỉ giữ cổ phiếu cơ sở có đúng 3 ký tự chữ/số; loại chứng quyền, ETF, quỹ, phái sinh.
     before_stock_only = len(items)
     items = [x for x in items if is_plain_stock_ticker(x.get("ticker", ""))]
@@ -174,6 +175,10 @@ def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filte
     items = [x for x in items if x["ticker"] not in {"VNINDEX", "VN30", "HNXINDEX", "UPCOMINDEX"}]
     exchange_filter = normalize_exchange(exchange_filter)
     if exchange_filter != "ALL":
+        if source == 'DNSE':
+            items = [item for item in items if item['exchange'] == exchange_filter]
+            if not items:
+                raise ValueError('Không có mã thuộc sàn yêu cầu trong danh mục DNSE.')
         with_exchange = [x for x in items if normalize_exchange(x.get("exchange", "")) == exchange_filter]
         # Nếu lấy universe từ file/symbol thủ công và không có cột exchange, không tự loại hết; chỉ gắn nhãn theo sàn người dùng chọn.
         if with_exchange:
@@ -187,122 +192,38 @@ def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filte
     return items
 
 
-def fetch_universe_from_vnstock(exchange_filter: str = "ALL") -> List[Dict[str, str]]:
-    """Lấy universe theo API vnstock hiện hành, có fallback cho các phiên bản cũ."""
+def fetch_universe_from_vnstock(exchange_filter: str = "ALL", source: str = "DNSE") -> List[Dict[str, str]]:
+    """Đọc danh mục DNSE một lần, không dùng danh sách mẫu khi nguồn lỗi."""
     import_vnstock()
-    candidates = []
-    exchange_filter = normalize_exchange(exchange_filter)
-    requested_exchanges = ["HOSE", "HNX", "UPCOM"] if exchange_filter == "ALL" else [exchange_filter]
-
-    # Vnstock 4.x documented interface: Listing(source='KBS').all_symbols().
-    try:
-        from vnstock import Listing  # type: ignore
-        for src in ["KBS", "VCI"]:
-            try:
-                listing = Listing(source=src)
-            except TypeError:
-                try:
-                    listing = Listing()
-                except Exception:
-                    continue
-            try:
-                df = listing.all_symbols()
-                if df is not None and len(df):
-                    items = normalize_universe_df(df)
-                    # all_symbols chỉ có mã và tên: bổ sung sàn từ bảng niêm yết xác thực.
-                    # Không thay universe, không gọi lịch sử giá thêm, không suy đoán theo ticker.
-                    try:
-                        by_exchange = listing.symbols_by_exchange()
-                        if by_exchange is not None and len(by_exchange):
-                            if "type" in by_exchange.columns:
-                                by_exchange = by_exchange[by_exchange["type"].astype(str).str.lower().eq("stock")]
-                            known = {}
-                            for item in normalize_universe_df(by_exchange):
-                                if item["exchange"] in {"HOSE", "HNX", "UPCOM"}:
-                                    known[item["ticker"]] = item["exchange"]
-                            for item in items:
-                                if item["exchange"] not in {"HOSE", "HNX", "UPCOM"}:
-                                    item["exchange"] = known.get(item["ticker"], "")
-                            missing = sum(item["exchange"] not in {"HOSE", "HNX", "UPCOM"} for item in items)
-                            print(f"Niêm yết {src}: {len(items) - missing}/{len(items)} mã có sàn xác thực; {missing} mã còn thiếu.")
-                    except Exception as exc:
-                        eprint(f"Chưa bổ sung được sàn từ {src}: {exc}. Giữ UNKNOWN, không suy đoán.")
-                    candidates.extend(items)
-                    if candidates:
-                        break
-            except Exception:
-                continue
-    except Exception:
-        pass
-
-    # Fallback: Reference/equity interface nếu phiên bản cài đặt hỗ trợ.
-    if not candidates:
-        try:
-            from vnstock import Reference  # type: ignore
-            ref = Reference()
-            methods = []
-            if exchange_filter == "ALL":
-                methods.append((None, lambda: ref.equity.list()))
-            for ex in requested_exchanges:
-                methods.append((ex, lambda ex=ex: ref.equity.list_by_exchange(ex)))
-            for ex, fn in methods:
-                try:
-                    df = fn()
-                    if df is not None and len(df):
-                        rows = normalize_universe_df(df)
-                        for item in rows:
-                            if ex and not normalize_exchange(item.get("exchange", "")):
-                                item["exchange"] = ex
-                        candidates.extend(rows)
-                except Exception:
-                    continue
-        except Exception:
-            pass
-
-    seen = set()
-    result = []
-    for item in candidates:
-        ticker = item["ticker"]
-        if not ticker:
-            continue
-        item["exchange"] = normalize_exchange(item.get("exchange", ""))
-        if exchange_filter != "ALL" and item.get("exchange") and item.get("exchange") != exchange_filter:
-            continue
-        if ticker not in seen:
-            seen.add(ticker)
-            result.append(item)
-    return result
+    from vnstock import Reference
+    if source.upper() != 'DNSE':
+        raise ValueError('R4 chỉ đối chiếu nguồn DNSE.')
+    exchange = normalize_exchange(exchange_filter)
+    frame = Reference('dnse').equity.list(exchange=None if exchange == 'ALL' else exchange, compat='v6')
+    items = normalize_universe_df(frame)
+    if any(item['exchange'] not in {'HOSE', 'HNX', 'UPCOM'} for item in items):
+        raise ValueError('Danh mục DNSE thiếu sàn xác thực; dừng để tránh gắn sàn theo suy đoán.')
+    return items
 
 
 def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool = False):
+    """Lấy nến DNSE, giữ độ chính xác của nguồn và khai báo đơn vị tường minh."""
     import_vnstock()
-    errors = []
-
-    # Vnstock documented interface (4.x): Quote(symbol=..., source='KBS').history(..., interval='d').
-    sources = []
-    for src in [source]:
-        src = str(src or "").strip().upper()
-        if src and src not in sources:
-            sources.append(src)
-    try:
-        from vnstock import Quote  # type: ignore
-        for src in sources:
-            try:
-                quote = Quote(symbol=symbol, source=src)
-                for interval in ["d", "1D"]:
-                    try:
-                        df = quote.history(start=start, end=end, interval=interval)
-                        if df is not None and len(df):
-                            df.attrs["tracker_source"] = src
-                            return df
-                    except Exception as exc:
-                        errors.append(f"Quote.history {src}/{interval}: {exc}")
-            except Exception as exc:
-                errors.append(f"Quote init {src}: {exc}")
-    except Exception as exc:
-        errors.append(f"Quote import: {exc}")
-
-    raise RuntimeError(" | ".join(errors) or f"Không lấy được dữ liệu {symbol}")
+    from vnstock import Market
+    if source.upper() != 'DNSE':
+        raise ValueError('R4 chỉ đối chiếu nguồn DNSE.')
+    market = Market('dnse')
+    asset = market.index(symbol) if is_index else market.equity(symbol)
+    frame = asset.ohlcv(start=start, end=end, interval='1D', floating=None, compat='v6')
+    if str(frame.attrs.get('source', '')).lower() != 'dnse':
+        raise ValueError('SDK không xác nhận provenance DNSE.')
+    if len(frame):
+        dates = import_pandas().to_datetime(frame['time']).dt.strftime('%Y-%m-%d')
+        if dates.isna().any() or dates.duplicated().any() or dates.lt(start).any() or dates.gt(end).any():
+            raise ValueError('DNSE trả ngày thiếu, trùng hoặc ngoài cửa sổ yêu cầu.')
+    frame.attrs['tracker_source'] = 'DNSE'
+    frame.attrs['tracker_price_scale'] = 1 if is_index else 1000
+    return frame
 
 
 def sdk_quality_fields(pd, frame):
@@ -314,6 +235,9 @@ def sdk_quality_fields(pd, frame):
     provider = frame.attrs.get("tracker_source")
     if isinstance(provider, str) and provider != "UNKNOWN" and re.fullmatch(r"[A-Z][A-Z0-9_-]{0,15}", provider):
         fields["source_provider"] = provider
+    if provider == 'DNSE':
+        fields.update(sdk_profile='v6', sdk_last_bar_partial=bool(frame.attrs.get('last_bar_partial')),
+                      price_scale=frame.attrs.get('tracker_price_scale'))
 
     cols = {str(column).lower().strip(): column for column in frame.columns}
     date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
@@ -334,6 +258,9 @@ def normalize_ohlcv_df(df, symbol: str, exchange: str, sector: str, sessions: in
     if df is None or len(df) == 0:
         return pd.DataFrame()
     data = df.copy()
+    if df.attrs.get('tracker_source') == 'DNSE' and df.attrs.get('last_bar_partial'):
+        dates = pd.to_datetime(data['time'])
+        data = data.loc[dates.ne(dates.max())]
     cols = {str(c).lower().strip(): c for c in data.columns}
     date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
     open_col = first_existing(cols, ["open", "open_price", "o"])
@@ -362,7 +289,9 @@ def normalize_ohlcv_df(df, symbol: str, exchange: str, sector: str, sessions: in
     # ví dụ FPT = 118 thay vì 118000. Nếu không nhân 1000, GTGD TB20 sẽ
     # bị thấp hơn 1000 lần và bộ lọc thanh khoản có thể về 0.
     median_close = out["close"].dropna().median()
-    price_scale = 1000 if pd.notna(median_close) and 0 < float(median_close) < 1000 else 1
+    price_scale = df.attrs.get('tracker_price_scale')
+    if price_scale is None:
+        price_scale = 1000 if pd.notna(median_close) and 0 < float(median_close) < 1000 else 1
     if price_scale != 1:
         for col in ["open", "high", "low", "close"]:
             out[col] = out[col] * price_scale
@@ -401,14 +330,22 @@ def fetch_ohlcv_with_retry(symbol: str, start: str, end: str, source: str, is_in
             raise
         except BaseException as exc:  # bắt cả SystemExit từ thư viện bên dưới
             last_error = exc
-            text = f"{type(exc).__name__}: {exc}"
-            rate_limited = is_rate_limit_message(text) or isinstance(exc, SystemExit)
+            rate_limited = getattr(exc, 'retryable', False) or is_rate_limit_message(str(exc)) or isinstance(exc, SystemExit)
+            if getattr(exc, 'kind', '') in {'credential', 'auth', 'input', 'policy', 'unsupported'}:
+                raise
             if rate_limited and attempt <= retries:
                 print(f"    Rate limit/lỗi tạm thời ở {symbol}. Chờ {int(retry_sleep)} giây rồi thử lại ({attempt}/{retries})...")
                 time.sleep(retry_sleep)
                 continue
-            raise RuntimeError(text) from None
+            raise
     raise RuntimeError(f"Không tải được {symbol} sau {retries} lần thử. Lỗi cuối: {last_error}")
+
+
+def safe_error(error):
+    """Chỉ ghi loại và mã lỗi, giữ khóa/URL/header của SDK ngoài log và CSV."""
+    code = getattr(error, 'code', '') or ''
+    valid_code = isinstance(code, str) and re.fullmatch(r'[A-Z][A-Z0-9_]{0,80}', code)
+    return type(error).__name__ + (f' ({code})' if valid_code else '')
 
 
 def save_export_files(pd, frames, errors, quality, output: Path, errors_output: Path, quality_output: Path) -> None:
@@ -425,7 +362,7 @@ def main() -> int:
     pd = import_pandas()
     import_vnstock()
 
-    today = date.today()
+    today = datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date()
     calendar_days = args.calendar_days or int(args.sessions * 1.8 + 60)
     start = (today - timedelta(days=calendar_days)).isoformat()
     end = today.isoformat()
@@ -437,7 +374,7 @@ def main() -> int:
     quality_output = Path(args.quality_output)
     quality_output.parent.mkdir(parents=True, exist_ok=True)
 
-    universe = get_universe(args.symbols, args.symbols_file, args.limit, args.exchange)
+    universe = get_universe(args.symbols, args.symbols_file, args.limit, args.exchange, args.source)
     from sector_data import load_sectors
     sector_map = load_sectors()
     for item in universe:
@@ -461,6 +398,22 @@ def main() -> int:
     if args.resume and output.exists():
         try:
             existing = pd.read_csv(output)
+            if args.source == 'DNSE':
+                if 'source_provider' not in existing or not existing['source_provider'].eq('DNSE').all():
+                    raise ValueError('Không resume CSV khác nguồn DNSE.')
+                previous_quality = pd.read_csv(quality_output)
+                task_tickers = {task[0] for task in tasks}
+                valid = previous_quality.loc[
+                    previous_quality['requested_end'].eq(end)
+                    & previous_quality['status'].eq('ok')
+                    & previous_quality['source_provider'].eq('DNSE')
+                    & previous_quality['ticker'].isin(task_tickers)
+                ]
+                existing = existing.loc[existing['ticker'].isin(valid['ticker'])]
+                counts = existing.groupby('ticker').size()
+                valid = valid.loc[valid['ticker'].isin(counts[counts >= args.min_rows].index)]
+                existing = existing.loc[existing['ticker'].isin(valid['ticker'])]
+                quality.extend(valid.to_dict('records'))
             if len(existing) and "ticker" in existing.columns:
                 existing["ticker"] = existing["ticker"].astype(str).str.upper().str.strip()
                 completed = set(existing["ticker"].dropna().unique())
@@ -508,9 +461,12 @@ def main() -> int:
             save_export_files(pd, frames, errors, quality, output, errors_output, quality_output)
             raise
         except BaseException as exc:
-            errors.append({"ticker": symbol, "issue": "fetch_error", "detail": str(exc)[:500]})
+            errors.append({"ticker": symbol, "issue": "fetch_error", "detail": safe_error(exc)})
             quality.append({"ticker": symbol, "rows": 0, "first_date": "", "last_date": "", "status": "fetch_error", **fetch_quality})
-            print(f"[{i}/{len(tasks)}] ERR {symbol:>8}  {exc}")
+            print(f"[{i}/{len(tasks)}] ERR {symbol:>8}  {safe_error(exc)}")
+            if getattr(exc, 'kind', '') in {'credential', 'auth', 'policy', 'unsupported'}:
+                save_export_files(pd, frames, errors, quality, output, errors_output, quality_output)
+                return 1
         if args.sleep > 0 and i < len(tasks):
             time.sleep(args.sleep)
 
@@ -526,11 +482,15 @@ def main() -> int:
 
     print(f"Báo cáo lỗi: {errors_output.resolve()}")
     print(f"Báo cáo chất lượng export: {quality_output.resolve()}")
-    return 0 if frames else 1
+    return 0 if frames and not errors else 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as error:
+        eprint('Exporter dừng an toàn: ' + safe_error(error))
+        raise SystemExit(1) from None
 
 
 

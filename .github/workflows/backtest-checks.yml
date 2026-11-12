@@ -39,3 +39,15 @@ jobs:
           python-version: '3.12'
       - run: bash tools/build-ai.sh
       - run: .venv-ai/bin/python -m unittest discover -s tests -p "test_*.py"
+  market-data-runtime:
+    if: github.head_ref == 'codex/tracker-core-p0-r4-dnse'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Cài bộ SDK DNSE đã ghim
+        run: python -m pip install -r tracker-tools/requirements.txt
+      - name: Kiểm tra adapter bằng fixture, không dùng khóa nguồn
+        run: python -m unittest discover -s tests -p "test_*.py"
