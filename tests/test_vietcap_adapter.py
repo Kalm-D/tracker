@@ -170,6 +170,58 @@ class VietcapAdapterTests(unittest.TestCase):
         with self.assertRaises(adapter.VietcapError):
             self.client(data).listings({'ZZZ'})
 
+    def test_reference_giu_ma_delisted_va_san_chua_xac_minh(self):
+        data = [{'symbol': 'FPT', 'type': 'STOCK', 'board': 'HSX'}, {'symbol': 'OLD', 'type': 'STOCK', 'board': 'DELISTED'}, {'symbol': 'UNK', 'type': 'STOCK', 'board': 'OTHER'}]
+        result = self.client(data).reference()
+        self.assertEqual([x['ticker'] for x in result['active']], ['FPT'])
+        self.assertEqual([x['ticker'] for x in result['inactive']], ['OLD'])
+        self.assertEqual([x['ticker'] for x in result['unverified']], ['UNK'])
+        self.assertIsNone(result['inactive'][0]['exchange'])
+
+    def test_reference_trung_ma_bi_tu_choi(self):
+        data = [{'symbol': 'FPT', 'type': 'STOCK', 'board': 'HSX'}] * 2
+        with self.assertRaises(adapter.VietcapError):
+            self.client(data).reference()
+
+    def test_cat_cua_so_r7_tuong_minh_khong_doi_hanh_vi_r6(self):
+        data = bars()
+        data[0]['t'][0] = datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp()
+        with self.assertRaises(adapter.VietcapError):
+            self.history(self.client(data))
+        frame = self.client(data).history('FPT', '2026-11-01', '2026-11-12', clip_window=True)
+        self.assertEqual(len(frame), 1)
+        self.assertEqual(frame.attrs['rows_before_window'], 1)
+        self.assertEqual(frame['close'].iloc[0], 700.5)
+
+    def test_rong_khac_voi_phan_hoi_sai_ma(self):
+        for data, code in [([], 'VCI_OHLCV_EMPTY'), (bars('MBB'), 'VCI_OHLCV_EMPTY_OR_SYMBOL')]:
+            with self.assertRaises(adapter.VietcapError) as error:
+                self.history(self.client(data))
+            self.assertEqual(error.exception.code, code)
+
+    def test_r7_nhan_cutoff_tuong_minh_tu_lich_da_kiem_chung(self):
+        client = self.client()
+        client.now = lambda: datetime(2026, 11, 13, 9, tzinfo=timezone.utc)
+        client.session_cutoff = '2026-11-13'
+        data = bars()
+        data[0]['t'][1] += 86400
+        client.opener = Mock(side_effect=lambda *a, **kw: response(data))
+        frame = self.history(client)
+        self.assertEqual(frame['time'].iloc[-1], '2026-11-13')
+        client.session_cutoff = '2026-11-14'
+        with self.assertRaises(adapter.VietcapError):
+            self.history(client)
+
+    def test_benchmark_chua_cap_nhat_khong_cache_nhu_da_du_phien(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client = self.client(bars('VNINDEX'), cache_dir=folder)
+            client.now = lambda: datetime(2026, 11, 13, 9, tzinfo=timezone.utc)
+            client.session_cutoff = '2026-11-13'
+            with self.assertRaises(adapter.VietcapError) as error:
+                client.history('VNINDEX', '2026-11-01', '2026-11-13', is_index=True)
+            self.assertEqual(error.exception.code, 'VCI_BENCHMARK_DELAYED')
+            self.assertEqual(list(Path(folder).glob('*')), [])
+
     def test_429_ton_trong_retry_after_va_gioi_han(self):
         for retry_after, expected_calls in [('90', 3), ('600', 1)]:
             opener = Mock(side_effect=urllib.error.HTTPError('https://source', 429, 'Rate limited', {'Retry-After': retry_after}, None))
