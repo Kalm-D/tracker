@@ -63,11 +63,12 @@ def export_lock(folder):
 
 class VietcapClient:
     """Một yêu cầu mỗi mã, cache trong ngày và tối đa hai lần thử lại."""
-    def __init__(self, cache_dir=None, opener=None, sleep=time.sleep, now=None, interval=3.6):
+    def __init__(self, cache_dir=None, opener=None, sleep=time.sleep, now=None, interval=3.6, session_cutoff=None):
         self.cache_dir = Path(cache_dir) if cache_dir else None
         self.opener = opener or urllib.request.urlopen
         self.sleep, self.now, self.interval = sleep, now or (lambda: datetime.now(timezone.utc)), interval
         self.last_request = None
+        self.session_cutoff = session_cutoff
         self.http_calls = 0
         self.cache_hits = 0
 
@@ -158,14 +159,43 @@ class VietcapClient:
             return result
         return self._read('price/symbols/getAll', None, validate)
 
-    def history(self, symbol, start, end, count_back=320, is_index=False):
+    def reference(self):
+        """Giữ mã đang niêm yết, DELISTED và metadata chưa xác minh riêng."""
+        def validate(data):
+            if not isinstance(data, list) or not data:
+                raise VietcapError('VCI_LISTING_SCHEMA')
+            result = {'active': [], 'inactive': [], 'unverified': []}
+            seen = set()
+            for item in data:
+                if not isinstance(item, dict):
+                    raise VietcapError('VCI_LISTING_SCHEMA')
+                ticker = item.get('symbol', '')
+                if item.get('type') != 'STOCK' or not isinstance(ticker, str) or not re.fullmatch(r'[A-Z0-9]{3}', ticker):
+                    continue
+                if ticker in seen:
+                    raise VietcapError('VCI_LISTING_EXCHANGE_OR_DUPLICATE')
+                seen.add(ticker)
+                board = str(item.get('board', '')).upper()
+                record = {'ticker': ticker, 'exchange': EXCHANGES.get(board), 'source_board': board, 'sector': ''}
+                result['active' if record['exchange'] else 'inactive' if board == 'DELISTED' else 'unverified'].append(record)
+            if not result['active']:
+                raise VietcapError('VCI_LISTING_EMPTY')
+            for group in result.values():
+                group.sort(key=lambda item: item['ticker'])
+            return result
+        return self._read('price/symbols/getAll', None, validate)
+
+    def history(self, symbol, start, end, count_back=320, is_index=False, clip_window=False):
         """Giá raw VND/cổ phiếu hoặc điểm chỉ số, không làm tròn."""
         import pandas as pd
         if (is_index and symbol != 'VNINDEX') or (not is_index and not re.fullmatch(r'[A-Z0-9]{3}', symbol)):
             raise VietcapError('VCI_SYMBOL_INVALID', 'input')
         try:
             first = date.fromisoformat(start)
-            last = min(date.fromisoformat(end), date.fromisoformat(closed_cutoff(self.now())))
+            cutoff = date.fromisoformat(self.session_cutoff or closed_cutoff(self.now()))
+            if cutoff > self.now().astimezone(VN).date():
+                raise ValueError('cutoff tương lai')
+            last = min(date.fromisoformat(end), cutoff)
         except (ValueError, TypeError):
             raise VietcapError('VCI_DATE_INVALID', 'input') from None
         if first > last or not isinstance(count_back, int) or not 1 <= count_back <= 2000:
@@ -174,6 +204,8 @@ class VietcapClient:
         payload = {'timeFrame': 'ONE_DAY', 'symbols': [symbol], 'to': until, 'countBack': count_back}
 
         def validate(data):
+            if data == []:
+                raise VietcapError('VCI_OHLCV_EMPTY')
             if not isinstance(data, list) or len(data) != 1 or not isinstance(data[0], dict) or data[0].get('symbol') != symbol:
                 raise VietcapError('VCI_OHLCV_EMPTY_OR_SYMBOL')
             item = data[0]
@@ -200,10 +232,17 @@ class VietcapClient:
                 or (numbers[['open', 'high', 'low', 'close']] <= 0).any().any() or (frame['volume'] < 0).any()
                 or (frame['high'] < frame[['open', 'low', 'close']].max(axis=1)).any()
                 or (frame['low'] > frame[['open', 'high', 'close']].min(axis=1)).any()
-                or (frame['time'] < first.isoformat()).any() or (frame['time'] > last.isoformat()).any()):
+                or (not clip_window and (frame['time'] < first.isoformat()).any()) or (frame['time'] > last.isoformat()).any()):
                 raise VietcapError('VCI_OHLCV_INVALID')
+            before_window = int((frame['time'] < first.isoformat()).sum())
+            if clip_window:
+                frame = frame.loc[frame['time'] >= first.isoformat()]
+                if frame.empty:
+                    raise VietcapError('VCI_OHLCV_EMPTY')
             frame = frame.sort_values('time').reset_index(drop=True)
+            if is_index and self.session_cutoff and frame['time'].iloc[-1] != last.isoformat():
+                raise VietcapError('VCI_BENCHMARK_DELAYED', 'data_delay')
             frame.attrs.update(tracker_source='VCI', tracker_price_scale=1, sdk_profile='direct-v1',
-                price_unit='INDEX_POINTS' if is_index else 'VND', adjustment_mode='unknown', request_end=last.isoformat())
+                price_unit='INDEX_POINTS' if is_index else 'VND', adjustment_mode='unknown', request_end=last.isoformat(), rows_before_window=before_window)
             return frame
         return self._read('chart/OHLCChart/gap-chart', payload, validate)

@@ -17,6 +17,10 @@ CSV xuất ra có cột chuẩn:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import shutil
+import subprocess
 import os
 import sys
 import tempfile
@@ -36,6 +40,17 @@ def eprint(*args: object) -> None:
     print(*args, file=sys.stderr)
 
 
+def market_session(now=None):
+    """Dùng nguyên lịch/cutoff Data Quality Layer, không sao chép ngưỡng vào Python."""
+    binary = os.environ.get('TRACKER_NODE_BINARY') or shutil.which('node')
+    if not binary:
+        raise RuntimeError('R7 cần Node để dùng lịch Data Quality Layer đã nghiệm thu.')
+    policy = Path(__file__).resolve().parents[1] / 'public/shared/data-quality.js'
+    code = "const Q=require(process.argv[1]),now=new Date(process.argv[2]),c=Q.clock(now),a=Q.assess({asOf:c.expectedSession,isDemo:false,snapshotKind:'EOD'},now); if(a.reasonCodes.includes('CALENDAR_UNVERIFIED'))process.exit(2); console.log(JSON.stringify({expectedSession:c.expectedSession,calendarVersion:Q.CALENDAR.version}));"
+    response = subprocess.run([binary, '-e', code, str(policy), (now or datetime.now(timezone.utc)).isoformat()], check=True, capture_output=True, text=True, timeout=10)
+    return json.loads(response.stdout)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export OHLCV CSV cho Tracker")
     parser.add_argument("--sessions", type=int, default=320, help="Số phiên gần nhất muốn giữ trong CSV. Nên >= 252; mặc định 320.")
@@ -53,10 +68,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--save-every", type=int, default=5, help="Lưu file CSV tạm sau mỗi N mã tải thành công. 0 = chỉ lưu cuối cùng.")
     parser.add_argument("--resume", action="store_true", help="Nếu file output đã có dữ liệu, bỏ qua các mã đã tải để chạy tiếp.")
     parser.add_argument("--source", default="DNSE", choices=["DNSE", "VCI"], help="DNSE qua SDK 6 hoặc VCI trực tiếp để dùng cá nhân trên máy Owner.")
+    parser.add_argument('--personal-universe', action='store_true', help='R7: chỉ tạo candidate toàn danh mục VCI trên máy Owner, không thay bản đang dùng.')
     parser.add_argument("--no-index", action="store_true", help="Không tải VNINDEX.")
     parser.add_argument("--min-rows", type=int, default=210, help="Số dòng tối thiểu/mã để coi là đủ dùng cho Tracker.")
     args = parser.parse_args()
-    folder = Path(__file__).resolve().parents[1] / 'work/vci-personal' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f') if args.source == 'VCI' else Path('data')
+    if args.personal_universe and args.source != 'VCI':
+        parser.error('--personal-universe chỉ dùng nguồn VCI.')
+    if args.personal_universe:
+        folder = Path(__file__).resolve().parents[1] / 'work/vci-universe' / (market_session()['expectedSession'] + '-s' + str(args.sessions))
+    else:
+        folder = Path(__file__).resolve().parents[1] / 'work/vci-personal' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f') if args.source == 'VCI' else Path('data')
     args.output = args.output or str(folder / ('market.csv' if args.source == 'VCI' else 'tracker_prices_250_sessions.csv'))
     args.errors_output = args.errors_output or str(folder / 'export_errors.csv')
     args.quality_output = args.quality_output or str(folder / 'export_quality.csv')
@@ -246,7 +267,7 @@ def sdk_quality_fields(pd, frame):
         fields.update(sdk_profile=frame.attrs.get('sdk_profile', 'v6'), sdk_last_bar_partial=bool(frame.attrs.get('last_bar_partial')),
                       price_scale=frame.attrs.get('tracker_price_scale'))
         if provider == 'VCI':
-            fields.update(price_unit=frame.attrs.get('price_unit'), adjustment_mode=frame.attrs.get('adjustment_mode'))
+            fields.update(price_unit=frame.attrs.get('price_unit'), adjustment_mode=frame.attrs.get('adjustment_mode'), rows_before_window=frame.attrs.get('rows_before_window', 0))
 
     cols = {str(column).lower().strip(): column for column in frame.columns}
     date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
@@ -443,8 +464,86 @@ def _run_vietcap(args) -> int:
     return 0
 
 
+def run_vietcap_universe(args) -> int:
+    """Thu thập candidate có checkpoint; giữ mã thiếu phiên ngoài tập tính D2."""
+    from vietcap_adapter import VietcapClient, closed_cutoff, export_lock, VietcapError
+    pd = import_pandas()
+    root = (Path(__file__).resolve().parents[1] / 'work/vci-universe').resolve()
+    paths = [Path(p).resolve() for p in (args.output, args.errors_output, args.quality_output)]
+    if len(set(paths)) != 3 or any(not p.is_relative_to(root) for p in paths):
+        raise ValueError('R7 chỉ ghi candidate trong work/vci-universe.')
+    if args.symbols or args.symbols_file or args.no_index or args.exchange != 'ALL' or args.limit < 0 or not 1 <= args.sessions <= 2000 or args.sleep < 0 or args.calendar_days < 0:
+        raise ValueError('Chế độ toàn danh mục yêu cầu ALL, VNINDEX và cửa sổ hợp lệ.')
+    folder = paths[0].parent
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def atomic_json(path, value):
+        handle, name = tempfile.mkstemp(dir=path.parent, suffix='.tmp')
+        try:
+            with os.fdopen(handle, 'w', encoding='utf-8') as file:
+                json.dump(value, file, ensure_ascii=False, allow_nan=False)
+            os.replace(name, path)
+        finally:
+            Path(name).unlink(missing_ok=True)
+
+    with export_lock(Path(__file__).resolve().parents[1] / 'work/vci-personal'):
+        session = market_session()
+        end = session['expectedSession']
+        client = VietcapClient(cache_dir=Path(__file__).resolve().parents[1] / 'work/vci-personal/cache', interval=max(3.6, args.sleep), session_cutoff=end)
+        reference = client.reference()
+        start = (datetime.fromisoformat(end).date() - timedelta(days=args.calendar_days or int(args.sessions * 1.8 + 60))).isoformat()
+        reference_hash = hashlib.sha256(json.dumps(reference, sort_keys=True).encode()).hexdigest()
+        context = {'source': 'VCI', 'requestedEnd': end, 'sessions': args.sessions, 'referenceHash': reference_hash, 'limit': args.limit, 'calendarVersion': session['calendarVersion']}
+        manifest = folder / 'run.json'
+        if manifest.exists() and json.loads(manifest.read_text(encoding='utf-8')).get('context') != context:
+            raise ValueError('Checkpoint khác ngày, cửa sổ hoặc danh mục; chọn thư mục mới.')
+        atomic_json(folder / 'reference.json', reference)
+        active = reference['active'][:args.limit] if args.limit else reference['active']
+        tasks = [('VNINDEX', 'INDEX', 'Chỉ số', True)] + [(item['ticker'], item['exchange'], 'Chưa phân loại', False) for item in active]
+        frames, quality, errors = [], [], []
+        benchmark_date, fatal = None, False
+        for index, (symbol, exchange, sector, is_index) in enumerate(tasks, 1):
+            q = {'ticker': symbol, 'rows': 0, 'first_date': '', 'last_date': '', 'status': 'missing', 'requested_end': end,
+                'fetch_started_utc': datetime.now(timezone.utc).isoformat(), 'source_provider': '', 'error_code': ''}
+            try:
+                raw = client.history(symbol, start, end, args.sessions, is_index, clip_window=True)
+                frame = normalize_ohlcv_df(raw, symbol, exchange, sector, args.sessions)
+                if len(frame) != len(raw) or frame.empty:
+                    raise VietcapError('VCI_NORMALIZATION_ROW_LOSS')
+                if is_index:
+                    benchmark_date = frame['date'].iloc[-1]
+                frames.append(frame)
+                q.update(sdk_quality_fields(pd, raw))
+                q.update(rows=len(frame), first_date=frame['date'].iloc[0], last_date=frame['date'].iloc[-1],
+                    status='ok' if frame['date'].iloc[-1] == benchmark_date else 'different_session',
+                    history_status='requested_history_available' if len(frame) >= args.sessions else 'short_history')
+            except (VietcapError, ValueError) as error:
+                code = getattr(error, 'code', 'VCI_NORMALIZATION_FAILED')
+                q.update(status='missing' if code == 'VCI_OHLCV_EMPTY' else 'delayed' if getattr(error, 'kind', '') == 'data_delay' else 'invalid' if getattr(error, 'kind', '') == 'invalid' else 'fetch_error', error_code=code)
+                errors.append({'ticker': symbol, 'issue': q['status'], 'detail': code})
+                fatal = is_index or getattr(error, 'kind', '') in {'policy', 'network', 'auth', 'credential'}
+            finally:
+                q['fetch_finished_utc'] = datetime.now(timezone.utc).isoformat()
+            quality.append(q)
+            progress = {'context': context, 'completed': index, 'total': len(tasks), 'rows': sum(len(frame) for frame in frames),
+                'httpCalls': client.http_calls, 'cacheHits': client.cache_hits, 'errors': len(errors), 'complete': index == len(tasks) and not fatal,
+                'updatedAt': datetime.now(timezone.utc).isoformat(), 'candidateOnly': True}
+            atomic_json(manifest, progress)
+            if index % 20 == 0 or fatal or q['status'] != 'ok' or index == len(tasks):
+                print(f"R7 {index}/{len(tasks)} · {symbol} · {q['status']} · HTTP {client.http_calls} · cache {client.cache_hits}", flush=True)
+            if fatal:
+                break
+        # Chỉ candidate riêng được ghi; không thay active hoặc snapshot R6 đã nghiệm thu.
+        save_export_files(pd, frames, errors, quality, paths[0], paths[1], paths[2])
+        print(f'R7 candidate: {paths[0]}', flush=True)
+        print(f'Danh mục {len(active)}; đã thử {len(quality) - 1} cổ phiếu; lỗi {len(errors)}; dữ liệu chỉ để kiểm định.', flush=True)
+        return 1 if fatal or not benchmark_date else 0
+
+
 def main() -> int:
     args = parse_args()
+    if getattr(args, 'personal_universe', False):
+        return run_vietcap_universe(args)
     if args.source == 'VCI':
         return run_vietcap(args)
     pd = import_pandas()
