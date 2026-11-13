@@ -17,7 +17,9 @@ CSV xuất ra có cột chuẩn:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import tempfile
 import time
 import re
 from datetime import datetime, timedelta, timezone
@@ -38,9 +40,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export OHLCV CSV cho Tracker")
     parser.add_argument("--sessions", type=int, default=320, help="Số phiên gần nhất muốn giữ trong CSV. Nên >= 252; mặc định 320.")
     parser.add_argument("--calendar-days", type=int, default=0, help="Số ngày lịch sử theo lịch dương để tải. 0 = tự ước lượng theo sessions.")
-    parser.add_argument("--output", default="data/tracker_prices_250_sessions.csv", help="Đường dẫn CSV đầu ra.")
-    parser.add_argument("--errors-output", default="data/export_errors.csv", help="File ghi các mã lỗi/không tải được.")
-    parser.add_argument("--quality-output", default="data/export_quality.csv", help="File báo cáo ngày dữ liệu từng mã.")
+    parser.add_argument("--output", default=None, help="Đường dẫn CSV đầu ra; VCI chỉ ghi trong work/vci-personal.")
+    parser.add_argument("--errors-output", default=None, help="File ghi các mã lỗi/không tải được.")
+    parser.add_argument("--quality-output", default=None, help="File báo cáo ngày dữ liệu từng mã.")
     parser.add_argument("--symbols", default="", help="Danh sách mã cách nhau bằng dấu phẩy. Bỏ trống = tự lấy universe từ Vnstock.")
     parser.add_argument("--symbols-file", default="", help="File .txt/.csv chứa danh sách mã, mỗi dòng một mã hoặc cột ticker/symbol/code.")
     parser.add_argument("--exchange", default="ALL", choices=["ALL", "HOSE", "HNX", "UPCOM"], help="Chỉ tải một sàn: HOSE, HNX hoặc UPCOM. Mặc định ALL = toàn bộ.")
@@ -50,10 +52,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retry-sleep", type=float, default=70.0, help="Số giây chờ khi gặp rate limit trước khi thử lại.")
     parser.add_argument("--save-every", type=int, default=5, help="Lưu file CSV tạm sau mỗi N mã tải thành công. 0 = chỉ lưu cuối cùng.")
     parser.add_argument("--resume", action="store_true", help="Nếu file output đã có dữ liệu, bỏ qua các mã đã tải để chạy tiếp.")
-    parser.add_argument("--source", default="DNSE", choices=["DNSE"], help="Nguồn DNSE đã được Owner duyệt để đối chiếu trên branch R4.")
+    parser.add_argument("--source", default="DNSE", choices=["DNSE", "VCI"], help="DNSE qua SDK 6 hoặc VCI trực tiếp để dùng cá nhân trên máy Owner.")
     parser.add_argument("--no-index", action="store_true", help="Không tải VNINDEX.")
     parser.add_argument("--min-rows", type=int, default=210, help="Số dòng tối thiểu/mã để coi là đủ dùng cho Tracker.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    folder = Path(__file__).resolve().parents[1] / 'work/vci-personal' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f') if args.source == 'VCI' else Path('data')
+    args.output = args.output or str(folder / ('market.csv' if args.source == 'VCI' else 'tracker_prices_250_sessions.csv'))
+    args.errors_output = args.errors_output or str(folder / 'export_errors.csv')
+    args.quality_output = args.quality_output or str(folder / 'export_quality.csv')
+    return args
 
 
 def import_pandas():
@@ -235,9 +242,11 @@ def sdk_quality_fields(pd, frame):
     provider = frame.attrs.get("tracker_source")
     if isinstance(provider, str) and provider != "UNKNOWN" and re.fullmatch(r"[A-Z][A-Z0-9_-]{0,15}", provider):
         fields["source_provider"] = provider
-    if provider == 'DNSE':
-        fields.update(sdk_profile='v6', sdk_last_bar_partial=bool(frame.attrs.get('last_bar_partial')),
+    if provider in {'DNSE', 'VCI'}:
+        fields.update(sdk_profile=frame.attrs.get('sdk_profile', 'v6'), sdk_last_bar_partial=bool(frame.attrs.get('last_bar_partial')),
                       price_scale=frame.attrs.get('tracker_price_scale'))
+        if provider == 'VCI':
+            fields.update(price_unit=frame.attrs.get('price_unit'), adjustment_mode=frame.attrs.get('adjustment_mode'))
 
     cols = {str(column).lower().strip(): column for column in frame.columns}
     date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
@@ -357,8 +366,80 @@ def save_export_files(pd, frames, errors, quality, output: Path, errors_output: 
     pd.DataFrame(errors).to_csv(errors_output, index=False, encoding="utf-8-sig")
     pd.DataFrame(quality).drop_duplicates(subset=["ticker"], keep="last").to_csv(quality_output, index=False, encoding="utf-8-sig")
 
+def run_vietcap(args) -> int:
+    """Xuất danh mục cá nhân; chỉ thay CSV đích khi toàn bộ tập yêu cầu đạt."""
+    from vietcap_adapter import VietcapClient, closed_cutoff
+    pd = import_pandas()
+    local_root = (Path(__file__).resolve().parents[1] / 'work/vci-personal').resolve()
+    paths = [Path(value).resolve() for value in (args.output, args.errors_output, args.quality_output)]
+    if len(set(paths)) != 3 or any(not path.is_relative_to(local_root) for path in paths):
+        raise ValueError('VCI chỉ ghi ba file riêng trong work/vci-personal, không ghi dữ liệu công khai.')
+    if not (args.symbols or args.symbols_file) or args.resume:
+        raise ValueError('VCI cần danh mục cá nhân --symbols/--symbols-file; dùng cache EOD thay --resume.')
+    if args.symbols and args.symbols_file:
+        raise ValueError('Chỉ chọn một cách nhập danh mục cá nhân.')
+    if not 1 <= args.min_rows <= args.sessions <= 2000 or args.sleep < 0 or args.limit < 0 or args.calendar_days < 0:
+        raise ValueError('Số phiên, số dòng tối thiểu hoặc nhịp đọc không hợp lệ.')
+    requested = [{'ticker': normalize_ticker(t), 'exchange': '', 'sector': ''} for t in args.symbols.split(',') if t.strip()] if args.symbols else read_symbols_file(args.symbols_file)
+    if not requested or any(not is_plain_stock_ticker(item['ticker']) for item in requested):
+        raise ValueError('Danh mục cá nhân rỗng hoặc có mã không hợp lệ.')
+    if len({item['ticker'] for item in requested}) != len(requested):
+        raise ValueError('Danh mục cá nhân có mã trùng.')
+    client = VietcapClient(cache_dir=local_root / 'cache', interval=max(3.6, args.sleep))
+    authoritative = {item['ticker']: item for item in client.listings({item['ticker'] for item in requested})}
+    universe = []
+    for item in requested:
+        source = authoritative.get(item['ticker'])
+        if source is None or (item.get('exchange') and normalize_exchange(item['exchange']) != source['exchange']):
+            raise ValueError('Mã hoặc sàn trong danh mục cá nhân không khớp danh mục VCI.')
+        if args.exchange == 'ALL' or source['exchange'] == args.exchange:
+            universe.append(source)
+    if args.limit:
+        universe = universe[:args.limit]
+    if not universe:
+        raise ValueError('Không có mã thuộc sàn được chọn.')
+    from sector_data import load_sectors
+    sector_map = load_sectors()
+    tasks = ([] if args.no_index else [('VNINDEX', 'INDEX', 'Chỉ số', True)]) + [(item['ticker'], item['exchange'], sector_map.get(item['ticker'], 'Chưa phân loại'), False) for item in universe]
+    end = closed_cutoff()
+    start = (datetime.fromisoformat(end).date() - timedelta(days=args.calendar_days or int(args.sessions * 1.8 + 60))).isoformat()
+    frames, quality = [], []
+    for symbol, exchange, sector, is_index in tasks:
+        started = datetime.now(timezone.utc).isoformat()
+        raw = client.history(symbol, start, end, args.sessions, is_index)
+        frame = normalize_ohlcv_df(raw, symbol, exchange, sector, args.sessions)
+        if len(frame) < args.min_rows:
+            raise ValueError('VCI thiếu số phiên tối thiểu; giữ nguyên CSV đích.')
+        frames.append(frame)
+        quality.append({'ticker': symbol, 'rows': len(frame), 'first_date': frame['date'].iloc[0], 'last_date': frame['date'].iloc[-1], 'status': 'ok',
+            'fetch_started_utc': started, 'fetch_finished_utc': datetime.now(timezone.utc).isoformat(), 'requested_end': end, **sdk_quality_fields(pd, raw)})
+        print(f"VCI {symbol}: {len(frame)} phiên, đến {frame['date'].iloc[-1]}")
+    if len({entry['last_date'] for entry in quality}) != 1:
+        raise ValueError('VCI khác ngày cuối giữa các mã; giữ nguyên CSV đích và báo chậm dữ liệu.')
+    staged = []
+    try:
+        tables = [pd.concat(frames, ignore_index=True).sort_values(['ticker', 'date']), pd.DataFrame(columns=['ticker', 'issue', 'detail']), pd.DataFrame(quality)]
+        for path, table in zip(paths, tables):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            handle, name = tempfile.mkstemp(dir=path.parent, suffix='.tmp')
+            os.close(handle)
+            staged.append(Path(name))
+            table.to_csv(name, index=False, encoding='utf-8-sig')
+        # CSV giá được thay cuối cùng; lỗi tải/chuẩn hóa không chạm snapshot tốt.
+        for index in (1, 2, 0):
+            os.replace(staged[index], paths[index])
+    finally:
+        for path in staged:
+            path.unlink(missing_ok=True)
+    print(f'Dữ liệu cá nhân: {paths[0]}')
+    print(f'HTTP: {client.http_calls}; cache: {client.cache_hits}. Tập con {len(universe)} cổ phiếu, không đại diện toàn thị trường.')
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+    if args.source == 'VCI':
+        return run_vietcap(args)
     pd = import_pandas()
     import_vnstock()
 
