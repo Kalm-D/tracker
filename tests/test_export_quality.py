@@ -126,5 +126,102 @@ class ExportQualityTests(unittest.TestCase):
         self.assertEqual(old_invalid, new_invalid)
 
 
+class VietcapExportTests(unittest.TestCase):
+    def setup_run(self):
+        root = Path(__file__).parents[1] / 'work/vci-personal'
+        root.mkdir(parents=True, exist_ok=True)
+        temp = tempfile.TemporaryDirectory(dir=root)
+        self.addCleanup(temp.cleanup)
+        folder = Path(temp.name)
+        args = Namespace(source='VCI', output=folder/'market.csv', errors_output=folder/'errors.csv',
+            quality_output=folder/'quality.csv', symbols='FPT', symbols_file='', exchange='ALL',
+            no_index=False, resume=False, sessions=320, min_rows=2, calendar_days=636, limit=0, sleep=3.6)
+        from unittest.mock import Mock
+        client = Mock(http_calls=3, cache_hits=0)
+        client.listings.return_value = [{'ticker': 'FPT', 'exchange': 'HOSE', 'sector': ''}]
+        def history(symbol, *a):
+            frame = sdk_frame()
+            frame['close'] = [500.25, 600.75]
+            frame['open'] = [500, 600]
+            frame['high'] = [700, 800]
+            frame['low'] = [400, 500]
+            frame.attrs.update(tracker_source='VCI', tracker_price_scale=1, sdk_profile='direct-v1',
+                price_unit='INDEX_POINTS' if symbol == 'VNINDEX' else 'VND', adjustment_mode='unknown')
+            return frame
+        client.history.side_effect = history
+        from contextlib import nullcontext
+        module = SimpleNamespace(VietcapClient=lambda **kw: client, closed_cutoff=lambda: '2026-11-12', export_lock=lambda folder: nullcontext())
+        return args, client, module
+
+    def run_args(self, args, module):
+        with (patch.object(exporter, 'parse_args', return_value=args),
+              patch.object(exporter, 'import_vnstock', side_effect=AssertionError('Không được gọi SDK')),
+              patch.dict(sys.modules, {'vietcap_adapter': module, 'vnstock': None,
+                  'sector_data': SimpleNamespace(load_sectors=lambda: {})}), redirect_stdout(io.StringIO())):
+            return exporter.main()
+
+    def test_csv_va_provenance_vnd_diem_khong_can_sdk(self):
+        args, client, module = self.setup_run()
+        self.assertEqual(self.run_args(args, module), 0)
+        rows = csv_rows(args.output)
+        self.assertEqual(len(rows), 4)
+        self.assertEqual({r['source_provider'] for r in rows}, {'VCI'})
+        self.assertEqual([float(r['close']) for r in rows], [500.25, 600.75, 500.25, 600.75])
+        quality = csv_rows(args.quality_output)
+        self.assertEqual({r['price_unit'] for r in quality}, {'VND', 'INDEX_POINTS'})
+        self.assertEqual({r['sdk_profile'] for r in quality}, {'direct-v1'})
+        self.assertEqual({r['requested_end'] for r in quality}, {'2026-11-12'})
+        self.assertEqual(client.history.call_count, 2)
+
+    def test_loi_va_khac_phien_khong_ghi_de_snapshot_tot(self):
+        for failure in ('network', 'too_short', 'different_date'):
+            with self.subTest(failure=failure):
+                args, client, module = self.setup_run()
+                args.output.write_bytes(b'SNAPSHOT_TOT')
+                original = client.history.side_effect
+                def history(symbol, *a):
+                    frame = original(symbol, *a)
+                    if symbol == 'FPT':
+                        if failure == 'network':
+                            raise RuntimeError('Lỗi nguồn')
+                        if failure == 'too_short':
+                            frame = frame.iloc[:1]
+                        if failure == 'different_date':
+                            frame.loc[1, 'time'] = '2026-11-05 07:00:00'
+                    return frame
+                client.history.side_effect = history
+                with self.assertRaises((RuntimeError, ValueError)):
+                    self.run_args(args, module)
+                self.assertEqual(args.output.read_bytes(), b'SNAPSHOT_TOT')
+                self.assertFalse(args.quality_output.exists())
+
+    def test_thieu_metadata_va_sai_san_dung_truoc_khi_tai_gia(self):
+        args, client, module = self.setup_run()
+        args.symbols = 'MBB'
+        with self.assertRaises(ValueError):
+            self.run_args(args, module)
+        client.history.assert_not_called()
+
+    def test_khong_ghi_du_lieu_vao_thu_muc_public(self):
+        args, client, module = self.setup_run()
+        args.output = Path(__file__).parents[1]/'public/data/market.json'
+        with self.assertRaises(ValueError):
+            self.run_args(args, module)
+        client.listings.assert_not_called()
+
+    def test_bat_buoc_danh_muc_ca_nhan_va_khong_resume_nguon_cu(self):
+        for setting in ('empty', 'resume', 'duplicate'):
+            args, client, module = self.setup_run()
+            if setting == 'empty':
+                args.symbols = ''
+            elif setting == 'resume':
+                args.resume = True
+            else:
+                args.symbols = 'FPT,FPT'
+            with self.assertRaises(ValueError):
+                self.run_args(args, module)
+            client.listings.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()
