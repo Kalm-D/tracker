@@ -129,6 +129,26 @@ class VietcapAdapterTests(unittest.TestCase):
                 self.history(self.client([], cache_dir=folder))
             self.assertEqual(list(Path(folder).glob('*')), [])
 
+    def test_cache_het_ngay_phai_doc_lai_lich_su(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client = self.client(cache_dir=folder)
+            self.history(client)
+            client.now = lambda: NOW + timedelta(days=1)
+            self.history(client)
+            self.assertEqual((client.http_calls, client.cache_hits), (2, 0))
+
+    def test_khoa_chong_chay_trung_va_tu_nha_sau_loi(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(ValueError):
+                with adapter.export_lock(folder):
+                    with self.assertRaises(adapter.VietcapError) as error:
+                        with adapter.export_lock(folder):
+                            self.fail('Không được lấy khóa lần hai')
+                    self.assertEqual(error.exception.code, 'VCI_EXPORT_ALREADY_RUNNING')
+                    raise ValueError('Lượt tải thất bại')
+            with adapter.export_lock(folder):
+                pass
+
     def test_danh_muc_xac_thuc_san(self):
         listings = [{'symbol': 'FPT', 'type': 'STOCK', 'board': 'HSX'}, {'symbol': 'PVS', 'type': 'STOCK', 'board': 'HNX'}, {'symbol': 'ACV', 'type': 'STOCK', 'board': 'UPCOM'}, {'symbol': 'CFPT2601', 'type': 'CW', 'board': 'HSX'}]
         actual = self.client(listings).listings()

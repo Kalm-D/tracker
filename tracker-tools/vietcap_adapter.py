@@ -9,6 +9,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -28,6 +29,36 @@ class VietcapError(RuntimeError):
 def closed_cutoff(now=None):
     """Chỉ đọc đến ngày lịch trước hôm nay, tránh mọi nến đang chạy."""
     return ((now or datetime.now(timezone.utc)).astimezone(VN).date() - timedelta(days=1)).isoformat()
+
+
+@contextmanager
+def export_lock(folder):
+    """Khóa hệ điều hành tự nhả khi tiến trình đóng, tránh tải trùng."""
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    with (folder / 'export.lock').open('a+b') as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b'0')
+            handle.flush()
+        handle.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise VietcapError('VCI_EXPORT_ALREADY_RUNNING', 'policy') from None
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 class VietcapClient:

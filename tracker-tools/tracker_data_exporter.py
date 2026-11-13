@@ -367,6 +367,13 @@ def save_export_files(pd, frames, errors, quality, output: Path, errors_output: 
     pd.DataFrame(quality).drop_duplicates(subset=["ticker"], keep="last").to_csv(quality_output, index=False, encoding="utf-8-sig")
 
 def run_vietcap(args) -> int:
+    """Chỉ một lượt cập nhật danh mục cá nhân được chạy cùng lúc."""
+    from vietcap_adapter import export_lock
+    with export_lock(Path(__file__).resolve().parents[1] / 'work/vci-personal'):
+        return _run_vietcap(args)
+
+
+def _run_vietcap(args) -> int:
     """Xuất danh mục cá nhân; chỉ thay CSV đích khi toàn bộ tập yêu cầu đạt."""
     from vietcap_adapter import VietcapClient, closed_cutoff
     pd = import_pandas()

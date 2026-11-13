@@ -149,7 +149,8 @@ class VietcapExportTests(unittest.TestCase):
                 price_unit='INDEX_POINTS' if symbol == 'VNINDEX' else 'VND', adjustment_mode='unknown')
             return frame
         client.history.side_effect = history
-        module = SimpleNamespace(VietcapClient=lambda **kw: client, closed_cutoff=lambda: '2026-11-12')
+        from contextlib import nullcontext
+        module = SimpleNamespace(VietcapClient=lambda **kw: client, closed_cutoff=lambda: '2026-11-12', export_lock=lambda folder: nullcontext())
         return args, client, module
 
     def run_args(self, args, module):
