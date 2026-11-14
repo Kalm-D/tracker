@@ -40,6 +40,8 @@
   input.addEventListener('change',()=>{const file=input.files[0];if(file)load(file,true);});
   async function restoreSaved(){if(busy)return;try{const saved=await storage.get();if(saved?.blob)await load(new File([saved.blob],saved.name),false);else message('Chưa có bản lưu. Chọn tệp cá nhân để bắt đầu.');}catch(error){message('Không đọc được bản lưu: '+error.message+' Bạn có thể nhập tệp để dùng trong phiên này.');}}
   restore.addEventListener('click',restoreSaved);
+  // Tab mở lâu vẫn cập nhật tuổi dữ liệu theo lịch Việt Nam, không cần tải giá mới.
+  setInterval(()=>{const state=TrackerDataBridge.getState();if(!state.rawRows.length||!state.dataMeta?.personalUseOnly)return;const q=TrackerDataQuality.assess(state.dataMeta);state.dataMeta.quality=q;state.dataQuality=q;status.textContent=status.textContent.replace(/· (FRESH|DELAYED|STALE|MISSING|INVALID)/,'· '+q.status);window.dispatchEvent(new CustomEvent('tracker-data-status'));},60000);
   // Nút nhập cũ vẫn dùng được nhưng đi qua cùng validator trước khi thay dataset.
   const legacy=document.getElementById('csvInput');legacy.addEventListener('change',event=>{event.stopImmediatePropagation();const f=legacy.files[0];if(f)load(f,true);},true);
   document.getElementById('openDataCenterBtn')?.addEventListener('click',()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
