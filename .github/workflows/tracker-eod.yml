@@ -1,55 +1,14 @@
-name: Tracker DNSE R4 review
-
+name: Personal data policy
 on:
   workflow_dispatch:
-    inputs:
-      dnse_written_permission:
-        description: 'Owner đã xác minh DNSE chấp thuận phạm vi dùng dữ liệu trên cloud'
-        type: boolean
-        default: false
-
 permissions:
   contents: read
-
-concurrency:
-  group: tracker-dnse-r4-review
-  cancel-in-progress: false
-
 jobs:
-  dnse-review:
-    if: github.ref == 'refs/heads/codex/tracker-core-p0-r4-dnse' && inputs.dnse_written_permission
+  policy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      DNSE_API_KEY: ${{ secrets.DNSE_API_KEY }}
-      DNSE_API_SECRET: ${{ secrets.DNSE_API_SECRET }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-node@v4
         with:
-          python-version: '3.12'
-      - name: Cài bộ SDK đã ghim
-        run: python -m pip install -r tracker-tools/requirements.txt
-      - name: Kiểm tra khóa đã cấu hình
-        shell: bash
-        run: |
-          test -n "$DNSE_API_KEY" && test -n "$DNSE_API_SECRET"
-      - name: Đối chiếu nhóm nhỏ bằng khóa nguồn
-        run: >-
-          python tracker-tools/tracker_data_exporter.py
-          --source DNSE --symbols FPT,MBB,PVS,ACV
-          --sessions 320 --min-rows 320 --retries 2
-          --sleep 3.6 --retry-sleep 70 --save-every 1
-          --output work/dnse-review/market.csv
-          --quality-output work/dnse-review/quality.csv
-          --errors-output work/dnse-review/errors.csv
-      - name: Lưu chẩn đoán không chứa giá hoặc khóa
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dnse-r4-quality-${{ github.run_id }}
-          path: |
-            work/dnse-review/quality.csv
-            work/dnse-review/errors.csv
-          retention-days: 3
-          if-no-files-found: ignore
+          node-version: '22'
+      - run: node tools/check-personal-pages.cjs

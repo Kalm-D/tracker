@@ -25,8 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Kiểm định cặp artifact JSON và gzip
-        run: node tools/audit-data.cjs
+      - name: Kiểm định bản web cá nhân không chứa snapshot công khai
+        run: node tools/check-personal-pages.cjs
   financial-runtime:
     runs-on: ubuntu-latest
     steps:

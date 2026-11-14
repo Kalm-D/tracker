@@ -7786,6 +7786,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
     }
 
     async function updateFromFreeSource() {
+      if(window.TRACKER_PERSONAL_WEB){toast("Nhập tệp mới trong Dữ liệu cá nhân để cập nhật.");return;}
       if (state.isUpdating) return;
       const us = updateSettings();
       const provider = PROVIDERS[us.provider] || PROVIDERS.vndirect;
@@ -8974,30 +8975,8 @@ const cv=document.getElementById('v2AdvCanvas');if(!cv)return;const ctx=cv.getCo
        this is loaded from the same-origin data/market.json file. -->
   <script src="./shared/market-data.js?v=20261025-gzip-fallback"></script>
   <script>
-    async function refreshTrackerSharedMarketData() {
-      try {
-        const sourceUrl = window.SHARED_MARKET_DATA_URL || "./data/market.json.gz";
-        const shared = await window.SharedMarketData.load(sourceUrl);
-        if (shared.rows.length >= 1 && window.TrackerDataBridge?.loadRows) {
-          const asOf = shared.meta?.asOf || "latest";
-          const label = shared.meta?.refreshedOnOpen
-            ? `VNDIRECT live on-open • ${asOf}`
-            : shared.meta?.isDemo
-              ? "Dữ liệu mẫu • shared market snapshot"
-              : `Shared market snapshot • ${asOf} • 10:40 & 15:00 T2–T6`;
-          window.TrackerDataBridge.loadRows(shared.rows, label, shared.meta);
-          window.dispatchEvent(new CustomEvent("shared-market-data-ready", { detail: shared }));
-        }
-      } catch (error) {
-        state.dataQuality = {status:state.rawRows.length?"DELAYED":"MISSING",reasons:["Không tải được snapshot thật; không thay bằng demo."]};
-        window.dispatchEvent(new CustomEvent("tracker-data-status"));
-        console.warn("Shared market data chưa sẵn sàng; giữ dataset hiện tại.");
-      }
-    }
-    refreshTrackerSharedMarketData();
-    window.setInterval(() => {
-      if (document.visibilityState !== "hidden") refreshTrackerSharedMarketData();
-    }, 10 * 60 * 1000);
+    // Bản web cá nhân chỉ nhận tệp của người dùng; không tải snapshot từ server.
+    window.TRACKER_PERSONAL_WEB = true;
   </script>
 
   <script id="trackerHeaderLayout">
@@ -11145,5 +11124,9 @@ media.addEventListener('change',sync);if(document.readyState==='loading')documen
   <script src="./ai/analyst-ui.js" defer></script>
   <script src="./ai/accounts-ui.js" defer></script>
   <script src="./ai/chat.js" defer></script>
+<style>#loadDemoBtn,#updateFreeDataBtn{display:none!important}#personalDataPanel p{line-height:1.5}#personalDataPanel label:focus-within{outline:2px solid currentColor}@media(max-width:480px){#personalDataPanel .btn{width:100%;box-sizing:border-box;margin:5px 0!important;justify-content:center}}</style>
+<script src="./shared/fflate.min.js"></script>
+<script src="./shared/personal-data.js"></script>
+<script src="./shared/personal-ui.js" defer></script>
 </body>
 </html>
