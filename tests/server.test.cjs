@@ -1,0 +1,34 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=require('node:child_process'),crypto=require('node:crypto'),zlib=require('node:zlib');
+const B=require('../public/backtest/engine.js');
+const root=path.resolve(__dirname,'..');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+test('runner enforces token/origin, persists jobs, cancels and returns matching results',{timeout:120000},async t=>{
+  fs.mkdirSync(path.join(root,'work'),{recursive:true});
+  const dir=fs.mkdtempSync(path.join(root,'work','runner-test-')),token=crypto.randomBytes(32).toString('hex');
+  const port=19000+Math.floor(Math.random()*9000),url=`http://127.0.0.1:${port}`,raw=zlib.gunzipSync(fs.readFileSync(path.join(root,'public/data/market.json.gz'))),hash=crypto.createHash('sha256').update(JSON.stringify(JSON.parse(raw))).digest('hex');
+  let child;
+  const boot=()=>new Promise((resolve,reject)=>{child=cp.spawn(process.execPath,['server/server.cjs'],{cwd:root,env:{...process.env,TRACKER_RUNNER_TOKEN:token,TRACKER_JOBS_DIR:dir,PORT:String(port)},stdio:['ignore','pipe','pipe']});child.stdout.once('data',resolve);child.once('error',reject);child.stderr.once('data',b=>reject(new Error(b.toString())));});
+  t.after(()=>{child?.kill();});
+  const request=(p,options={})=>fetch(url+'/api/'+p,{...options,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...options.headers},signal:AbortSignal.timeout(8000)});
+  await boot();
+  assert.equal((await request('jobs',{headers:{Authorization:'wrong'}})).status,401);
+  assert.equal((await request('jobs',{headers:{Origin:'https://wrong.example'}})).status,403);
+  const dates=JSON.parse(raw).symbols.find(s=>s.ticker==='VNINDEX').rows.map(r=>r[0]);
+  const config={...B.DEFAULTS,start:dates.at(-4),end:dates.at(-1),method:'market',acknowledge:true};
+  const body=JSON.stringify({config,expectedDataHash:hash});
+  assert.equal((await request('jobs',{method:'POST',body:JSON.stringify({config,expectedDataHash:'bad'})})).status,409);
+  const r=await request('jobs',{method:'POST',body});const j=await r.json();assert.equal(r.status,202,JSON.stringify(j));
+  const r2=await request('jobs',{method:'POST',body});const j2=await r2.json();
+  assert.equal((await (await request('jobs/'+j2.id,{method:'DELETE'})).json()).status,'cancelled');
+  let saved;
+  for(let i=0;i<100;i++){saved=await(await request('jobs/'+j.id)).json();if(saved.status==='completed'||saved.status==='failed')break;await sleep(200);}
+  assert.equal(saved.status,'completed',saved.error);
+  const result=await(await request('jobs/'+j.id+'/result')).json();
+  const local=B.run(JSON.parse(raw),config);assert.deepEqual(result.results,JSON.parse(JSON.stringify(local.results)));assert.equal(result.dataHash,hash);
+  assert.equal(fs.existsSync(path.join(dir,j.id+'.snapshot.gz')),true);
+  await new Promise(resolve=>{child.once('exit',resolve);child.kill();});
+  await boot();
+  assert.equal((await(await request('jobs/'+j.id)).json()).status,'completed');
+  assert.equal((await(await request('jobs/'+j2.id)).json()).status,'cancelled');
+  assert.equal((await request('jobs/'+j.id+'/result',{headers:{Authorization:'wrong'}})).status,401);
+});

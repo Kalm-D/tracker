@@ -1,0 +1,29 @@
+[Unit]
+Description=Tracker AI backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tracker-ai
+Group=tracker-ai
+WorkingDirectory=/opt/tracker-ai
+EnvironmentFile=/etc/tracker-ai/backend.env
+ExecStart=/usr/bin/node /opt/tracker-ai/server/ai/production.cjs
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=60
+TimeoutStopSec=15
+UMask=0077
+StateDirectory=tracker-ai
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/tracker-ai
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target

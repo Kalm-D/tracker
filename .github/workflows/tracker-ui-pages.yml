@@ -1,0 +1,41 @@
+name: Tracker UI Pages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - '.github/workflows/tracker-ui-pages.yml'
+      - 'tools/prepare-pages.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: tracker-pages-publish
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Chỉ công bố HEAD mới nhất
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+      - uses: actions/configure-pages@v5
+      - name: Đóng gói Pages theo policy quyền
+        run: node tools/prepare-pages.cjs
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: work/pages
+      - name: Deploy UI
+        id: deployment
+        uses: actions/deploy-pages@v4

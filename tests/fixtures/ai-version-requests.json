@@ -1,0 +1,108 @@
+{
+  "label": "EXPLICIT SYNTHETIC COMPATIBILITY FIXTURES; generated with historical contract code, no provider output",
+  "cases": [
+    {
+      "sourceCommit": "cdfa3541bb2048a4720323c536b275ebecd00e08",
+      "input": {
+        "question": "Kỹ thuật MBB",
+        "tickers": [
+          "MBB"
+        ],
+        "mode": "Quick"
+      },
+      "serializedRequest": {
+        "schemaVersion": 1,
+        "question": "Kỹ thuật MBB",
+        "mode": "Quick",
+        "tickers": [
+          "MBB"
+        ],
+        "sourceUrls": []
+      }
+    },
+    {
+      "sourceCommit": "423f6c08227220653c4249213ae4e8df67d7b062",
+      "input": {
+        "question": "Swing MBB",
+        "tickers": [
+          "MBB"
+        ],
+        "mode": "Quick",
+        "strategy": {
+          "kind": "swing"
+        }
+      },
+      "serializedRequest": {
+        "schemaVersion": 2,
+        "question": "Swing MBB",
+        "mode": "Quick",
+        "tickers": [
+          "MBB"
+        ],
+        "sourceUrls": [],
+        "strategy": {
+          "kind": "swing",
+          "riskPct": 0.01,
+          "maxWeight": 0.2,
+          "maxSectorWeight": 0.35,
+          "fee": 0.0015,
+          "sellTax": 0.001,
+          "slippage": 0.001,
+          "maxParticipation": 0.01,
+          "minRR": 2,
+          "stressGapPct": 0.1,
+          "acknowledge": false
+        }
+      }
+    },
+    {
+      "sourceCommit": "af27e006022f59dd53a22c638d2cc289ce9ea44a",
+      "input": {
+        "question": "Backtest MBB",
+        "tickers": [
+          "MBB"
+        ],
+        "mode": "Quick",
+        "backtest": {
+          "start": "2026-10-22",
+          "end": "2026-10-23",
+          "capital": 100000000,
+          "acknowledge": true,
+          "method": "both"
+        }
+      },
+      "serializedRequest": {
+        "schemaVersion": 3,
+        "question": "Backtest MBB",
+        "mode": "Quick",
+        "tickers": [
+          "MBB"
+        ],
+        "sourceUrls": [],
+        "backtest": {
+          "start": "2026-10-22",
+          "end": "2026-10-23",
+          "capital": 100000000,
+          "method": "both",
+          "fee": 0.0015,
+          "tax": 0.001,
+          "slippage": 0.001,
+          "maxPositions": 5,
+          "maxWeight": 0.2,
+          "riskBudget": 0.01,
+          "allocation": "equal",
+          "entry": "pivot",
+          "exit": "rr",
+          "rewardR": 2,
+          "targetPct": 0.15,
+          "trailingPct": 0.08,
+          "participation": 0.01,
+          "cooldown": 5,
+          "priority": "score",
+          "liquidate": false,
+          "acknowledge": true
+        }
+      }
+    }
+  ]
+}
