@@ -13,8 +13,8 @@ async function snapshot(file){
  });pending={key,promise};try{return await promise;}finally{if(pending?.promise===promise)pending=null;}
 }
 function freshness(date,now=new Date()){
- const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
- return {dataDate:date,checkedAt:now.toISOString(),status:date<today?'dated_snapshot':'same_calendar_day',message:'Dữ liệu snapshot ngày '+date+'; không phải giá trực tiếp. Chưa đối chiếu lịch nghỉ và giờ đóng cửa.'};
+ const quality=require('../../public/shared/data-quality.js').assess({asOf:date},now);
+ return {...quality,legacyCalendarStatus:date<quality.expectedSession?'dated_snapshot':'same_calendar_day'};
 }
 function remember(file,value){const st=fs.statSync(file);cached={key:path.resolve(file)+':'+st.size+':'+st.mtimeMs,value};}
 module.exports={snapshot,freshness,remember};

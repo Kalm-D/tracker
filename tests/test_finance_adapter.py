@@ -1,7 +1,12 @@
 """Kiểm thử phục hồi nguồn tài chính, không gọi API trong CI."""
 import importlib.util
+import io
+import json
+import subprocess
+import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 import pandas as pd
 
 spec = importlib.util.spec_from_file_location('finance_adapter', Path(__file__).parents[1] / 'server/ai/finance_adapter.py')
@@ -9,6 +14,33 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class FinanceAdapterTests(unittest.TestCase):
+    def test_nguon_chua_cau_hinh_khong_goi_sdk_hoac_tra_so_gia(self):
+        with patch.dict(sys.modules, {'vnstock': None}):
+            with self.assertRaises(module.FinanceSourceUnavailableError):
+                module.read_finance('FPT')
+
+    def test_cli_phan_biet_chua_co_nguon_voi_thieu_dependency(self):
+        result = subprocess.run([sys.executable, '-X', 'utf8', str(Path(module.__file__))],
+                                input=json.dumps({'ticker': 'FPT'}), text=True, encoding='utf-8',
+                                capture_output=True, timeout=10, check=True)
+        payload = json.loads(result.stdout)
+        self.assertFalse(payload['ok'])
+        self.assertEqual(payload['code'], 'FINANCE_SOURCE_UNAVAILABLE')
+        self.assertIn('cấu hình', payload['message'])
+        self.assertNotIn('tables', payload)
+
+    def test_pdf_van_doc_duoc_khi_chua_cau_hinh_nguon_bctc(self):
+        import base64
+        from pypdf import PdfWriter
+        buffer = io.BytesIO()
+        writer = PdfWriter()
+        writer.add_blank_page(width=100, height=100)
+        writer.write(buffer)
+        payload = module.main({'type': 'pdf', 'data': base64.b64encode(buffer.getvalue()).decode()})
+        self.assertEqual(payload['pages'], 1)
+        self.assertEqual(payload['pagesRead'], 1)
+        self.assertEqual(payload['text'], '')
+
     def test_ratio_error_preserves_three_statement_tables(self):
         class Finance:
             def __init__(self, **kwargs): pass

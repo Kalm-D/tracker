@@ -20,6 +20,12 @@ test('Cloud restores jobs, monitors and quota into a fresh ephemeral directory; 
 test('Cloud failure never silently falls back to an empty local quota and does not leak database response',async()=>{
  const dir=temp(),db=fakeDB();let store;try{store=await new CloudState(env,{fetcher:db.fetch}).open(dir);db.fail=true;store.put('gateway/usage.json',{schemaVersion:1});await assert.rejects(store.flush(),/cloud/);assert.equal(store.status().healthy,false);assert.doesNotMatch(JSON.stringify(store.status()),/PRIVATE_INTERNAL_TEXT|fixture-service/);assert.throws(()=>store.put('gateway/usage.json',{}));}finally{await store?.release();clean(dir);}
 });
+
+test('Tài khoản khôi phục qua cloud giữ danh tính/quyền và không lộ hash trong API',async()=>{
+ const {Accounts,passwordHash}=require('../server/ai/accounts.cjs'),a=temp(),b=temp(),db=fakeDB(),accountEnv={TRACKER_AI_PASSWORD_HASH:passwordHash('fixture-owner-password')};let first,second;
+ try{first=await new CloudState(env,{fetcher:db.fetch}).open(a);const accounts=new Accounts({dir:a,env:accountEnv,durability:first}),user=accounts.create(accounts.owner(),{username:'fixture-person',password:'fixture-person-password',canResearch:true});await first.flush();assert.ok(db.files['accounts/users.json']);await first.release();second=await new CloudState(env,{fetcher:db.fetch}).open(b);const restored=new Accounts({dir:b,env:accountEnv,durability:second}),identity=restored.authenticate({username:user.username,password:'fixture-person-password'});assert.equal(identity.id,user.id);assert.equal(identity.canResearch,true);assert.equal(identity.role,'user');assert.doesNotMatch(JSON.stringify(restored.list(restored.owner())),/passwordHash/);
+ }finally{await first?.release();await second?.release();clean(a);clean(b);}
+});
 test('Cloud lease expiry blocks writes, malformed restored paths never escape the private directory',async()=>{
  const dir=temp(),db=fakeDB();let now=1000,store;try{store=await new CloudState(env,{fetcher:db.fetch,clock:()=>now}).open(dir);now+=60001;assert.throws(()=>store.put('gateway/usage.json',{}),/hết hạn/);await store.release();db.files={'../escape':{}};await assert.rejects(new CloudState(env,{fetcher:db.fetch}).open(dir),/không hợp lệ/);assert.equal(db.owner,null);}finally{await store?.release();clean(dir);}
 });

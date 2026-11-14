@@ -14,7 +14,7 @@ const expectedIndex = expected.symbols.find(item => item.ticker === 'VNINDEX').r
 
 function browser(decompressor) {
   let scriptLoads = 0;
-  const root = { Response };
+  const root = { Response, crypto:require('node:crypto').webcrypto, TrackerDataQuality:require('../public/shared/data-quality.js') };
   if (decompressor) root.DecompressionStream = decompressor;
   const document = {
     baseURI: 'https://example.test/tracker/',
@@ -31,7 +31,7 @@ function browser(decompressor) {
     constructor(...args) { super(...(args.length ? args : [expected.meta.asOf + 'T18:00:00Z'])); }
   }
   const context = vm.createContext({
-    window: root, self: root, document, URL, Uint8Array, AbortController,
+    window: root, self: root, document, URL, Uint8Array, AbortController, TextEncoder,
     Date: FixedDate, setTimeout, clearTimeout,
     fetch: async url => {
       assert.equal(url, 'https://example.test/tracker/data/market.json.gz');
@@ -53,7 +53,8 @@ for (const [name, decoder, expectedScripts] of [
     const index = result.rows.filter(row => row.ticker === 'VNINDEX');
     assert.equal(result.meta.isDemo, false);
     assert.equal(result.meta.asOf, expected.meta.asOf);
-    assert.equal(result.rows.length, expected.meta.rowCount);
+    assert.equal(result.rows.length, require('../public/backtest/engine.js').prepare(expected).audit.rows);
+    assert.equal(result.meta.validation.invalidRows, require('../public/backtest/engine.js').prepare(expected).audit.invalid);
     assert.equal(index.at(-1).close, expectedIndex[4]);
     assert.equal(index.at(-1).date, expectedIndex[0]);
     assert.equal(app.scriptLoads(), expectedScripts);

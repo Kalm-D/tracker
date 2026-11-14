@@ -34,7 +34,7 @@ begin
  if p_action='write' then
   if p_changes is null or jsonb_typeof(p_changes)<>'object' then raise exception 'invalid_changes'; end if;
   for k,v in select * from jsonb_each(p_changes) loop
-   if k !~ '^(jobs/[a-f0-9-]{36}[.]json|gateway/(usage|restore-hold)[.]json|monitoring/monitors[.]json)$'
+   if k !~ '^(jobs/[a-f0-9-]{36}[.]json|gateway/(usage|restore-hold)[.]json|monitoring/monitors[.]json|accounts/users[.]json)$'
     or jsonb_typeof(v)<>'object' or octet_length(v::text)>8388608 then raise exception 'invalid_file'; end if;
   end loop;
   for k,v in select * from jsonb_each(p_changes) loop
@@ -43,7 +43,7 @@ begin
     on conflict(key) do update set value=excluded.value,byte_size=excluded.byte_size,updated_at=clock_timestamp();
   end loop;
   select count(*),coalesce(sum(byte_size),0) into amount,total from public.tracker_ai_cloud_documents;
-  if amount>103 or total>33554432 then raise exception 'state_limit'; end if;
+  if amount>104 or total>33554432 then raise exception 'state_limit'; end if;
  end if;
  update public.tracker_ai_cloud_lease set lease_until=clock_timestamp()+interval '120 seconds' where id=1;
  return jsonb_build_object('ok',true);

@@ -1,4 +1,7 @@
-# Phiên bản đã đối chiếu API và kiểm thử trong môi trường riêng.
---extra-index-url https://vnstocks.com/api/simple
-vnstock==4.0.9
+# -*- coding: utf-8 -*-
+# Bộ phiên bản đã đối chiếu trong môi trường riêng.
+--extra-index-url https://vnstocks.com/api/packages
+pandas==2.3.3
+vnstock==6.0.0
+vnstock-oapi==0.1.1
 pypdf==6.21.4

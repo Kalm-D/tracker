@@ -1,0 +1,4 @@
+--extra-index-url https://vnstocks.com/api/packages
+pandas==2.3.3
+vnstock==6.0.0
+vnstock-oapi==0.1.1

@@ -1,238 +1,29 @@
-(function (root) {
-  "use strict";
-  const LIVE_CACHE_KEY = "tracker.shared.live.v1";
-  const gzipFallbackUrl = new URL("./fflate.min.js", document.currentScript?.src || new URL("./shared/market-data.js", document.baseURI)).href;
-  let gzipFallbackPromise;
-
-  function loadGzipFallback() {
-    if (root.fflate?.gunzipSync) return Promise.resolve(root.fflate);
-    if (!gzipFallbackPromise) {
-      gzipFallbackPromise = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = gzipFallbackUrl;
-        script.onload = () => root.fflate?.gunzipSync
-          ? resolve(root.fflate)
-          : reject(new Error("Không tải được bộ giải nén dữ liệu."));
-        script.onerror = () => reject(new Error("Không tải được bộ giải nén dữ liệu."));
-        document.head.appendChild(script);
-      }).catch(error => { gzipFallbackPromise = null; throw error; });
-    }
-    return gzipFallbackPromise;
+(function(root){
+  'use strict';
+  const quality=root.TrackerDataQuality,fallbackUrl=new URL('./fflate.min.js',document.currentScript?.src||new URL('./shared/market-data.js',document.baseURI)).href;
+  let decoder,pending;const knownGood=new Map();
+  function gzipFallback(){if(root.fflate?.gunzipSync)return Promise.resolve(root.fflate);if(!decoder)decoder=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=fallbackUrl;script.onload=()=>root.fflate?.gunzipSync?resolve(root.fflate):reject(Error('Không tải được bộ giải nén.'));script.onerror=()=>reject(Error('Không tải được bộ giải nén.'));document.head.appendChild(script);}).catch(e=>{decoder=null;throw e;});return decoder;}
+  const number=v=>v===null||v===''||typeof v==='boolean'?NaN:Number(v);
+  function normalizeRow(row,ticker,exchange,sector){if(Array.isArray(row)){const [date,open,high,low,close,volume]=row;return {ticker,exchange,sector,date:String(date),open:number(open),high:number(high),low:number(low),close:number(close),volume:number(volume)};}if(!row?.ticker||!row?.date)return null;return {...row,ticker:String(row.ticker).trim().toUpperCase(),date:String(row.date).slice(0,10),open:number(row.open),high:number(row.high),low:number(row.low),close:number(row.close),volume:number(row.volume)};}
+  function inflate(payload){if(Array.isArray(payload))return {meta:{},rows:payload.map(r=>normalizeRow(r)).filter(Boolean)};if(Array.isArray(payload?.rows))return {meta:payload.meta||{},rows:payload.rows.map(r=>normalizeRow(r)).filter(Boolean)};return {meta:payload?.meta||{},rows:(payload?.symbols||[]).flatMap(s=>(s.rows||[]).map(r=>normalizeRow(r,String(s.ticker||'').toUpperCase(),s.exchange,s.sector)).filter(Boolean))};}
+  async function parsePayload(response,url){if(!url.endsWith('.gz'))return response.json();const bytes=new Uint8Array(await response.arrayBuffer());if(typeof root.DecompressionStream==='function')try{return await new root.Response(new root.Response(bytes).body.pipeThrough(new root.DecompressionStream('gzip'))).json();}catch(_){}const gzip=await gzipFallback();return JSON.parse(gzip.strFromU8(gzip.gunzipSync(bytes)));}
+  async function digest(payload){if(!root.crypto?.subtle)throw Error('Trình duyệt thiếu SHA-256; cần HTTPS hoặc localhost.');const bytes=await root.crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(payload)));return 'sha256:'+Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');}
+  async function refreshLatest(result){
+    // Không trộn giá VNDIRECT/cache live vào snapshot KBS chưa đối chiếu nguồn.
+    result.meta={...result.meta,quality:quality.assess(result.meta),refreshedOnOpen:false};return result;
   }
-
-  function finite(value, fallback = 0) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
-  }
-
-  function normalizeRow(row, ticker, exchange, sector) {
-    if (Array.isArray(row)) {
-      const [date, open, high, low, close, volume] = row;
-      return { ticker, exchange, sector, date: String(date), open: finite(open), high: finite(high), low: finite(low), close: finite(close), volume: finite(volume) };
-    }
-    const t = String(row?.ticker || ticker || "").trim().toUpperCase();
-    const date = String(row?.date || "").slice(0, 10);
-    if (!t || !date) return null;
-    return {
-      ticker: t,
-      exchange: String(row?.exchange || exchange || "UNKNOWN").toUpperCase(),
-      sector: String(row?.sector || sector || "Chưa phân loại"),
-      date,
-      open: finite(row?.open),
-      high: finite(row?.high),
-      low: finite(row?.low),
-      close: finite(row?.close),
-      volume: finite(row?.volume)
-    };
-  }
-
-  function normalizeProviderRow(item) {
-    const ticker = String(item?.code || item?.symbol || item?.ticker || item?.stockCode || "").trim().toUpperCase();
-    const date = String(item?.date || item?.tradingDate || item?.time || item?.tradingdate || "").slice(0, 10);
-    if (!ticker || !/^([A-Z0-9]{3}|VNINDEX)$/.test(ticker) || !date) return null;
-    const number = (value) => {
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
-    };
-    const open = number(item?.adOpen ?? item?.open ?? item?.o ?? item?.basicPrice);
-    const high = number(item?.adHigh ?? item?.high ?? item?.h ?? item?.ceilingPrice);
-    const low = number(item?.adLow ?? item?.low ?? item?.l ?? item?.floorPrice);
-    const close = number(item?.adClose ?? item?.close ?? item?.c ?? item?.average ?? item?.basicPrice);
-    const volume = number(item?.nmVolume ?? item?.volume ?? item?.matchVolume ?? item?.totalVolume ?? item?.vol) ?? 0;
-    if (![open, high, low, close].every(Number.isFinite)) return null;
-    const isIndex = ticker === "VNINDEX" || ticker.endsWith("INDEX");
-    const scale = !isIndex && close > 0 && close < 1000 ? 1000 : 1;
-    return {
-      ticker,
-      exchange: String(item?.floor || item?.exchange || (isIndex ? "INDEX" : "UNKNOWN")).trim().toUpperCase(),
-      sector: isIndex ? "Chỉ số" : "Chưa phân loại",
-      date,
-      open: open * scale,
-      high: high * scale,
-      low: low * scale,
-      close: close * scale,
-      volume
-    };
-  }
-
-  function dateDaysAgo(date, days) {
-    const value = new Date(`${date}T12:00:00Z`);
-    value.setUTCDate(value.getUTCDate() - days);
-    return value.toISOString().slice(0, 10);
-  }
-
-  function expectedTradingDate() {
-    const now = new Date();
-    const weekday = now.getUTCDay();
-    const daysBack = weekday === 0 ? 2 : weekday === 6 ? 1 : 0;
-    now.setUTCDate(now.getUTCDate() - daysBack);
-    return now.toISOString().slice(0, 10);
-  }
-
-  function mergeRows(baseRows, extraRows) {
-    const merged = new Map(baseRows.map(row => [`${row.ticker}|${row.date}`, row]));
-    for (const row of extraRows) merged.set(`${row.ticker}|${row.date}`, row);
-    return [...merged.values()].sort((a, b) => `${a.ticker}|${a.date}`.localeCompare(`${b.ticker}|${b.date}`));
-  }
-
-  function readLiveCache() {
-    try {
-      const raw = root.localStorage?.getItem(LIVE_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed && Array.isArray(parsed.rows) ? parsed : null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function writeLiveCache(rows, meta, publishedDate) {
-    try {
-      const liveRows = rows.filter(row => String(row.date) > String(publishedDate || ""));
-      if (!liveRows.length) return;
-      root.localStorage?.setItem(LIVE_CACHE_KEY, JSON.stringify({
-        meta: { asOf: meta?.asOf || "", source: meta?.liveSource || "VNDIRECT public API", cachedAt: new Date().toISOString() },
-        rows: liveRows
-      }));
-    } catch (_) {}
-  }
-
-  async function refreshLatest(result) {
-    const asOf = String(result.meta?.asOf || "").slice(0, 10);
-    const expected = expectedTradingDate();
-    if (asOf && asOf >= expected) {
-      result.meta = { ...result.meta, expectedTradingDate: expected, refreshedOnOpen: Boolean(result.meta?.cachedOnOpen), freshness: "current" };
-      return result;
-    }
-
-    const fromDate = dateDaysAgo(expected, 3);
-    const urls = [
-      `https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:${fromDate}&size=3000&page=1`,
-      `https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:${fromDate}&size=3000&page=1`
-    ];
-    let payload = null;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
-    for (const url of urls) {
-      try {
-        const response = await fetch(url, { signal: controller.signal, cache: "no-store", headers: { Accept: "application/json" } });
-        if (response.ok) { payload = await response.json(); break; }
-      } catch (_) {}
-    }
-    clearTimeout(timeout);
-    const items = Array.isArray(payload) ? payload : payload?.data || payload?.items || payload?.results || [];
-    const liveRows = items.map(normalizeProviderRow).filter(Boolean);
-    if (!liveRows.length) {
-      result.meta = { ...result.meta, expectedTradingDate: expected, refreshedOnOpen: false, freshness: "stale" };
-      return result;
-    }
-
-    const merged = new Map(result.rows.map(row => [`${row.ticker}|${row.date}`, row]));
-    for (const row of liveRows) {
-      const key = `${row.ticker}|${row.date}`;
-      if (row.date >= asOf || !merged.has(key)) merged.set(key, row);
-    }
-    result.rows = [...merged.values()].sort((a, b) => `${a.ticker}|${a.date}`.localeCompare(`${b.ticker}|${b.date}`));
-    const latest = result.rows.reduce((max, row) => row.date > max ? row.date : max, "");
-    result.meta = { ...result.meta, asOf: latest || result.meta?.asOf, expectedTradingDate: expected, refreshedOnOpen: latest > asOf, freshness: latest >= expected ? "current" : "stale", liveSource: "VNDIRECT public API" };
-    writeLiveCache(result.rows, result.meta, asOf);
-    return result;
-  }
-
-  function inflate(payload) {
-    if (Array.isArray(payload)) {
-      return { meta: {}, rows: payload.map(row => normalizeRow(row)).filter(Boolean) };
-    }
-    if (Array.isArray(payload?.rows)) {
-      return { meta: payload.meta || {}, rows: payload.rows.map(row => normalizeRow(row)).filter(Boolean) };
-    }
-    if (Array.isArray(payload?.symbols)) {
-      const rows = [];
-      for (const item of payload.symbols) {
-        const ticker = String(item?.ticker || "").trim().toUpperCase();
-        if (!ticker || !Array.isArray(item.rows)) continue;
-        for (const row of item.rows) {
-          const normalized = normalizeRow(row, ticker, item.exchange, item.sector);
-          if (normalized) rows.push(normalized);
-        }
-      }
-      return { meta: payload.meta || {}, rows };
-    }
-    return { meta: {}, rows: [] };
-  }
-
-  async function parsePayload(response, absolute) {
-    if (!absolute.endsWith(".gz")) return response.json();
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (typeof root.DecompressionStream === "function") {
-      try {
-        const stream = new root.Response(bytes).body.pipeThrough(new root.DecompressionStream("gzip"));
-        return await new root.Response(stream).json();
-      } catch (_) {
-        // Older Safari builds may expose the API but fail to decode gzip.
-      }
-    }
-    const gzip = await loadGzipFallback();
-    return JSON.parse(gzip.strFromU8(gzip.gunzipSync(bytes)));
-  }
-
-  async function load(url = "./data/market.json.gz") {
-    let absolute = new URL(url, document.baseURI).href;
-    let response = await fetch(absolute, { cache: "no-store", headers: { Accept: "application/json, application/gzip" } });
-    if (!response.ok && absolute.endsWith(".gz")) {
-      absolute = absolute.slice(0, -3);
-      response = await fetch(absolute, { cache: "no-store", headers: { Accept: "application/json" } });
-    }
-    if (!response.ok) throw new Error(`Shared market data HTTP ${response.status}`);
-    const payload = await parsePayload(response, absolute);
-    const result = inflate(payload);
-    result.meta = { ...(result.meta || {}), url: absolute, loadedAt: new Date().toISOString() };
-    const cached = readLiveCache();
-    const publishedDate = String(result.meta?.asOf || "").slice(0, 10);
-    if (cached?.rows?.length) {
-      const cachedRows = cached.rows.filter(row => String(row.date) > publishedDate);
-      if (cachedRows.length) {
-        result.rows = mergeRows(result.rows, cachedRows);
-        result.meta = { ...result.meta, asOf: cached.meta?.asOf || result.meta?.asOf, cachedOnOpen: true, liveSource: cached.meta?.source || "VNDIRECT public API" };
-      }
-    }
-    const metadata = new Map();
-    result.rows.forEach(row => {
-      const saved = metadata.get(row.ticker) || {};
-      if (row.sector && row.sector !== 'Chưa phân loại') saved.sector = row.sector;
-      if (row.exchange && row.exchange !== 'UNKNOWN') saved.exchange = row.exchange;
-      metadata.set(row.ticker, saved);
-    });
-    const refreshed = await refreshLatest(result);
-    // Giữ ngành và sàn đã biết khi dữ liệu giá mới không có các trường này.
-    refreshed.rows.forEach(row => {
-      const saved = metadata.get(row.ticker);
-      if (saved?.sector) row.sector = saved.sector;
-      if ((!row.exchange || row.exchange === 'UNKNOWN') && saved?.exchange) row.exchange = saved.exchange;
-    });
-    return refreshed;
-  }
-
-  root.SharedMarketData = { load, inflate, normalizeRow, refreshLatest };
+  async function read(url){const key=new URL(url,document.baseURI).href;let absolute=key;try{
+    if(!quality)throw Error('Thiếu Data Quality Layer.');const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);let payload;
+    try{let response=await fetch(absolute,{signal:controller.signal,cache:'no-store',headers:{Accept:'application/json, application/gzip'}});if(!response.ok&&absolute.endsWith('.gz')){absolute=absolute.slice(0,-3);response=await fetch(absolute,{signal:controller.signal,cache:'no-store'});}if(!response.ok)throw Error('Shared market data HTTP '+response.status);payload=await parsePayload(response,absolute);}finally{clearTimeout(timer);}
+    if(payload?.meta?.isDemo!==false)throw Error('Từ chối dữ liệu demo hoặc chưa xác nhận nguồn thật.');
+    const result=inflate(payload);if(payload.meta.rowCount!==result.rows.length)throw Error("Số dòng snapshot không khớp metadata.");const validation=quality.sanitize(result.rows);if(!validation.rows.length)throw Error('Không có thanh giá hợp lệ.');
+    const latest=validation.rows.reduce((d,r)=>r.date>d?r.date:d,''),asOf=result.meta.asOf;
+    if(!quality.dateValid(asOf)||latest!==asOf||asOf>quality.clock().today)throw Error('Phiên snapshot không khớp dữ liệu hoặc ở tương lai.');
+    const benchmark=validation.rows.filter(r=>r.ticker==='VNINDEX');if(benchmark.length<210||benchmark.at(-1).date!==asOf)throw Error('Thiếu VNINDEX đủ lịch sử và cùng phiên snapshot.');
+    const prior=knownGood.get(key);if(prior&&asOf<prior.meta.asOf)throw Error('Snapshot mới cũ hơn bản đang dùng.');
+    result.rows=validation.rows;result.meta={...result.meta,validation:validation.validation,snapshotId:await digest(payload),hashBasis:'json-stringify-utf8-v1',url:absolute,loadedAt:new Date().toISOString()};
+    await refreshLatest(result);if(knownGood.size>=2&&!knownGood.has(key))knownGood.delete(knownGood.keys().next().value);knownGood.set(key,result);return result;
+  }catch(error){const prior=knownGood.get(key);if(!prior)throw error;const result={rows:prior.rows,meta:{...prior.meta,refreshError:true,loadedAt:new Date().toISOString()}};return refreshLatest(result);}}
+  async function load(url='./data/market.json.gz'){const key=new URL(url,document.baseURI).href;if(pending?.key===key)return pending.promise;const promise=read(url);pending={key,promise};try{return await promise;}finally{if(pending?.promise===promise)pending=null;}}
+  root.SharedMarketData={load,inflate,normalizeRow,refreshLatest};
 })(window);
-

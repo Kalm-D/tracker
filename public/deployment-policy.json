@@ -1,0 +1,6 @@
+{
+  "version": "personal-files-web-1",
+  "marketDataMode": "personal-file-only",
+  "publicMarketSnapshots": false,
+  "automaticEod": false
+}
