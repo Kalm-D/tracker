@@ -35,6 +35,17 @@ DEFAULT_INDEXES = ["VNINDEX"]
 EXCHANGE_ALLOWLIST = {"HOSE", "HNX", "UPCOM", "UPCoM"}
 OHLCV_DATE_COLUMNS = ("date", "time", "tradingdate", "trading_date")
 
+_kbs_client = None
+
+
+def kbs_client():
+    """Dùng chung nhịp gọi KBS cho danh mục và nến trong một tiến trình."""
+    global _kbs_client
+    if _kbs_client is None:
+        from kbs_adapter import KbsClient
+        _kbs_client = KbsClient()
+    return _kbs_client
+
 
 def eprint(*args: object) -> None:
     print(*args, file=sys.stderr)
@@ -67,7 +78,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retry-sleep", type=float, default=70.0, help="Số giây chờ khi gặp rate limit trước khi thử lại.")
     parser.add_argument("--save-every", type=int, default=5, help="Lưu file CSV tạm sau mỗi N mã tải thành công. 0 = chỉ lưu cuối cùng.")
     parser.add_argument("--resume", action="store_true", help="Nếu file output đã có dữ liệu, bỏ qua các mã đã tải để chạy tiếp.")
-    parser.add_argument("--source", default="DNSE", choices=["DNSE", "VCI"], help="DNSE qua SDK 6 hoặc VCI trực tiếp để dùng cá nhân trên máy Owner.")
+    parser.add_argument("--source", default="DNSE", choices=["DNSE", "VCI", "KBS"], help="DNSE qua SDK 6; VCI/KBS trực tiếp, không tự đổi nguồn.")
     parser.add_argument('--personal-universe', action='store_true', help='R7: chỉ tạo candidate toàn danh mục VCI trên máy Owner, không thay bản đang dùng.')
     parser.add_argument("--no-index", action="store_true", help="Không tải VNINDEX.")
     parser.add_argument("--min-rows", type=int, default=210, help="Số dòng tối thiểu/mã để coi là đủ dùng cho Tracker.")
@@ -78,7 +89,9 @@ def parse_args() -> argparse.Namespace:
         folder = Path(__file__).resolve().parents[1] / 'work/vci-universe' / (market_session()['expectedSession'] + '-s' + str(args.sessions))
     else:
         folder = Path(__file__).resolve().parents[1] / 'work/vci-personal' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f') if args.source == 'VCI' else Path('data')
-    args.output = args.output or str(folder / ('market.csv' if args.source == 'VCI' else 'tracker_prices_250_sessions.csv'))
+    if args.source == 'KBS':
+        folder = Path(__file__).resolve().parents[1] / 'work/kbs-eod' / (market_session()['expectedSession'] + '-s' + str(args.sessions))
+    args.output = args.output or str(folder / ('market.csv' if args.source in {'VCI', 'KBS'} else 'tracker_prices_250_sessions.csv'))
     args.errors_output = args.errors_output or str(folder / 'export_errors.csv')
     args.quality_output = args.quality_output or str(folder / 'export_quality.csv')
     return args
@@ -182,12 +195,12 @@ def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filte
         items = read_symbols_file(symbols_file)
     else:
         items = fetch_universe_from_vnstock(exchange_filter, source)
-    if source == 'DNSE' and (symbols_arg.strip() or symbols_file):
+    if source in {'DNSE', 'KBS'} and (symbols_arg.strip() or symbols_file):
         authoritative = {item['ticker']: item for item in fetch_universe_from_vnstock('ALL', source)}
         for item in items:
             listed = authoritative.get(item['ticker'])
             if listed is None:
-                raise ValueError('Mã yêu cầu không có trong danh mục DNSE.')
+                raise ValueError('Mã yêu cầu không có trong danh mục ' + source + '.')
             if item.get('exchange') and normalize_exchange(item['exchange']) != listed['exchange']:
                 raise ValueError('Sàn trong file mã khác danh mục DNSE.')
             item['exchange'] = listed['exchange']
@@ -203,7 +216,7 @@ def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filte
     items = [x for x in items if x["ticker"] not in {"VNINDEX", "VN30", "HNXINDEX", "UPCOMINDEX"}]
     exchange_filter = normalize_exchange(exchange_filter)
     if exchange_filter != "ALL":
-        if source == 'DNSE':
+        if source in {'DNSE', 'KBS'}:
             items = [item for item in items if item['exchange'] == exchange_filter]
             if not items:
                 raise ValueError('Không có mã thuộc sàn yêu cầu trong danh mục DNSE.')
@@ -222,6 +235,10 @@ def get_universe(symbols_arg: str, symbols_file: str, limit: int, exchange_filte
 
 def fetch_universe_from_vnstock(exchange_filter: str = "ALL", source: str = "DNSE") -> List[Dict[str, str]]:
     """Đọc danh mục DNSE một lần, không dùng danh sách mẫu khi nguồn lỗi."""
+    if source == 'KBS':
+        items = kbs_client().listings()
+        exchange = normalize_exchange(exchange_filter)
+        return items if exchange == 'ALL' else [item for item in items if item['exchange'] == exchange]
     import_vnstock()
     from vnstock import Reference
     if source.upper() != 'DNSE':
@@ -236,6 +253,8 @@ def fetch_universe_from_vnstock(exchange_filter: str = "ALL", source: str = "DNS
 
 def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool = False):
     """Lấy nến DNSE, giữ độ chính xác của nguồn và khai báo đơn vị tường minh."""
+    if source == 'KBS':
+        return kbs_client().history(symbol, start, end, is_index=is_index)
     import_vnstock()
     from vnstock import Market
     if source.upper() != 'DNSE':
@@ -263,7 +282,7 @@ def sdk_quality_fields(pd, frame):
     provider = frame.attrs.get("tracker_source")
     if isinstance(provider, str) and provider != "UNKNOWN" and re.fullmatch(r"[A-Z][A-Z0-9_-]{0,15}", provider):
         fields["source_provider"] = provider
-    if provider in {'DNSE', 'VCI'}:
+    if provider in {'DNSE', 'VCI', 'KBS'}:
         fields.update(sdk_profile=frame.attrs.get('sdk_profile', 'v6'), sdk_last_bar_partial=bool(frame.attrs.get('last_bar_partial')),
                       price_scale=frame.attrs.get('tracker_price_scale'))
         if provider == 'VCI':
@@ -547,12 +566,13 @@ def main() -> int:
     if args.source == 'VCI':
         return run_vietcap(args)
     pd = import_pandas()
-    import_vnstock()
+    if args.source != 'KBS':
+        import_vnstock()
 
     today = datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date()
     calendar_days = args.calendar_days or int(args.sessions * 1.8 + 60)
     start = (today - timedelta(days=calendar_days)).isoformat()
-    end = today.isoformat()
+    end = market_session()['expectedSession'] if args.source == 'KBS' else today.isoformat()
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

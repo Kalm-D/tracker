@@ -1,0 +1,2 @@
+# Nhánh KBS trực tiếp không cài vnstock/vnai đã ngừng xác thực.
+pandas==2.3.3
