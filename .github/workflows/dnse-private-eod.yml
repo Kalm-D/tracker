@@ -1,0 +1,46 @@
+name: DNSE personal EOD
+on:
+  schedule:
+    - cron: '17 9 * * 1-5'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tracker-dnse-private-eod
+  cancel-in-progress: false
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Kiểm tra lịch và cờ bật, chưa đọc khóa nguồn
+        id: plan
+        env:
+          TRACKER_DNSE_EOD_ENABLED: ${{ vars.TRACKER_DNSE_EOD_ENABLED }}
+        run: node tools/run-private-dnse-eod.cjs --plan
+      - uses: actions/setup-python@v5
+        if: steps.plan.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Cài runtime DNSE đã ghim từ đúng package index
+        if: steps.plan.outputs.run == 'true'
+        run: python -m pip install -r tracker-tools/requirements.txt
+      - name: Chỉ cập nhật khi HEAD main không đổi
+        if: steps.plan.outputs.run == 'true'
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+      - name: Xuất và phát hành vào bucket private, không upload artifact giá
+        if: steps.plan.outputs.run == 'true'
+        env:
+          TRACKER_DNSE_EOD_ENABLED: ${{ vars.TRACKER_DNSE_EOD_ENABLED }}
+          DNSE_API_KEY: ${{ secrets.DNSE_API_KEY }}
+          DNSE_API_SECRET: ${{ secrets.DNSE_API_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node tools/run-private-dnse-eod.cjs --publish

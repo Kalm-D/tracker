@@ -572,7 +572,7 @@ def main() -> int:
     today = datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date()
     calendar_days = args.calendar_days or int(args.sessions * 1.8 + 60)
     start = (today - timedelta(days=calendar_days)).isoformat()
-    end = market_session()['expectedSession'] if args.source == 'KBS' else today.isoformat()
+    end = market_session()['expectedSession'] if args.source in {'KBS', 'DNSE'} else today.isoformat()
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

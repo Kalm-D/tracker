@@ -14,6 +14,13 @@ function configuration(env){
  return {env:{...env,TRACKER_AI_HOST:host},dir:path.resolve(env.TRACKER_AI_JOBS_DIR),port,host};
 }
 async function prepare(env=process.env,snapshot=D.snapshot){
+ let privateMarket=null;
+ if(env.TRACKER_MARKET_PRIVATE_DNSE==='true'){
+  const {PrivateMarket,PrivateStore}=require('./private-market.cjs');
+  if(!env.TRACKER_DNSE_CACHE_DIR||!path.isAbsolute(env.TRACKER_DNSE_CACHE_DIR))throw Error('Cần thư mục cache DNSE riêng tuyệt đối.');
+  privateMarket=new PrivateMarket({store:new PrivateStore(env),dir:env.TRACKER_DNSE_CACHE_DIR});
+  const current=await privateMarket.refresh();env={...env,TRACKER_AI_DATA_FILE:current.file,TRACKER_AI_REFRESH_DATA:'false'};
+ }
  let config=configuration(env),durability=null,instance;
  if(env.TRACKER_AI_STORAGE==='supabase'){
   const {CloudState}=require('./cloud-state.cjs'),State=require('../../tools/ai-state.cjs');
@@ -24,7 +31,7 @@ async function prepare(env=process.env,snapshot=D.snapshot){
  // Uses the existing Quant worker; demo or malformed sources are refused before binding.
  const shared=snapshot===D.snapshot&&env.TRACKER_AI_REFRESH_DATA!=='false'?require('./shared-snapshot.cjs').sharedSnapshot(env.TRACKER_AI_DATA_FILE):null;
  await (shared?shared.read():snapshot(env.TRACKER_AI_DATA_FILE));
- instance=createApp({...config,durability,...(shared?{tools:{snapshot:()=>shared.read()}}:{})});if(instance.gateway.status().usage.healthy===false||instance.monitoring.status().storageProblem||instance.accounts.problem){instance.dispose();throw Error('Bộ lưu chưa sẵn sàng; kiểm tra ledger/monitor và khôi phục trước khi chạy.');}
+ instance=createApp({...config,durability,privateMarket,...(privateMarket?{tools:{snapshot:()=>privateMarket.quant()}}:shared?{tools:{snapshot:()=>shared.read()}}:{})});if(instance.gateway.status().usage.healthy===false||instance.monitoring.status().storageProblem||instance.accounts.problem){instance.dispose();throw Error('Bộ lưu chưa sẵn sàng; kiểm tra ledger/monitor và khôi phục trước khi chạy.');}
  await durability?.flush();return {...config,...instance,durability};
  }catch(e){instance?.dispose();await durability?.release();throw e;}
 }

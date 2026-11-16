@@ -1,7 +1,5 @@
-name: Automatic EOD (source gated)
+name: Legacy KBS EOD (disabled by policy)
 on:
-  schedule:
-    - cron: '17 9 * * 1-5'
   workflow_dispatch:
 permissions:
   contents: read
