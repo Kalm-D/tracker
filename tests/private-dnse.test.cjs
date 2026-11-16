@@ -39,19 +39,32 @@ test('Job DNSE không có quyền Pages/artifact; cờ tắt và ngày nghỉ kh
  const w=fs.readFileSync(path.join(root,'.github/workflows/dnse-private-eod.yml'),'utf8');assert.ok(w.includes("cron: '17 9 * * 1-5'"));for(const unsafe of ['pages: write','upload-artifact','upload-pages-artifact','deploy-pages','git push'])assert.ok(!w.includes(unsafe));
 });
 test('HTTP: anon 401, User/Admin 403 cả dữ liệu và AI; Owner dùng bearer+CSRF; logout thu hồi phiên',async()=>{
- const dir=directory(),password='FIXTURE only 123456',market={asset:async()=>({type:'application/json',bytes:Buffer.from('{"privateFixture":true}')})};
- const instance=createApp({dir,env:{TRACKER_AI_ENABLED:'true',TRACKER_AI_PASSWORD_HASH:passwordHash(password),TRACKER_MARKET_PRIVATE_DNSE:'true',GEMINI_API_KEY:'fixture-key',GEMINI_MODEL:'fixture-model',GEMINI_FREE_TIER_CONFIRMED:'true'},privateMarket:market,tools:{snapshot:async()=>({date:'2026-11-13',tickers:['AAA'],metrics:[],meta:{source:'DNSE FIXTURE'},quality:{status:'FRESH'},lastBars:{}})}});
+ const dir=directory(),password='FIXTURE only 123456',origin='https://kalm-d.github.io',market={asset:async()=>({type:'application/json',bytes:Buffer.from('{"privateFixture":true}')})};
+ const instance=createApp({dir,env:{TRACKER_AI_ENABLED:'true',TRACKER_AI_ALLOWED_ORIGIN:origin,TRACKER_AI_PASSWORD_HASH:passwordHash(password),TRACKER_MARKET_PRIVATE_DNSE:'true',GEMINI_API_KEY:'fixture-key',GEMINI_MODEL:'fixture-model',GEMINI_FREE_TIER_CONFIRMED:'true'},privateMarket:market,tools:{snapshot:async()=>({date:'2026-11-13',tickers:['AAA'],metrics:[],meta:{source:'DNSE FIXTURE'},quality:{status:'FRESH'},lastBars:{}})}});
  await new Promise(r=>instance.app.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+instance.app.address().port;
- const call=(route,options={})=>fetch(base+route,options),login=async username=>{const r=await call('/api/ai/login',{method:'POST',headers:{Origin:base},body:JSON.stringify({username,password})});assert.equal(r.status,200);return r.json();};
+ const call=(route,options={})=>fetch(base+route,options),login=async username=>{const r=await call('/api/ai/login',{method:'POST',headers:{Origin:origin},body:JSON.stringify({username,password})});assert.equal(r.status,200);return r.json();};
  try{
  assert.equal((await call('/api/ai/market/active.json')).status,401);for(const route of ['/data/market.json.gz','/%64ata/market.json','/shared/%2e%2e/data/market.json.gz'])assert.equal((await call(route)).status,404);
  const owner=await login('owner');assert.match(owner.token,/^[a-f0-9]{64}$/);assert.equal(instance.gateway.status().providers.length,0);
  for(const role of ['admin','user'])instance.accounts.create(instance.accounts.owner(),{username:role+'-fixture',role,password,canResearch:true});
- for(const role of ['admin','user']){const s=await login(role+'-fixture'),h={Authorization:'Bearer '+s.token,Origin:base};for(const route of ['market/active.json','market/snapshots/'+'a'.repeat(64)+'.json.gz','jobs','monitors'])assert.equal((await call('/api/ai/'+route,{headers:h})).status,403);}
- const headers={Authorization:'Bearer '+owner.token,Origin:base,'X-Tracker-CSRF':owner.csrf};const good=await call('/api/ai/market/active.json',{headers});assert.equal(good.status,200);assert.equal(good.headers.get('cache-control'),'private, no-store');
+ for(const role of ['admin','user']){const s=await login(role+'-fixture'),h={Authorization:'Bearer '+s.token,Origin:origin};for(const route of ['market/active.json','market/snapshots/'+'a'.repeat(64)+'.json.gz','jobs','monitors'])assert.equal((await call('/api/ai/'+route,{headers:h})).status,403);}
+ const headers={Authorization:'Bearer '+owner.token,Origin:origin,'X-Tracker-CSRF':owner.csrf};const good=await call('/api/ai/market/active.json',{headers});assert.equal(good.status,200);assert.equal(good.headers.get('cache-control'),'private, no-store');assert.equal(good.headers.get('access-control-allow-origin'),origin);
+ const preflight=await call('/api/ai/market/active.json',{method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Headers':'authorization'}});assert.equal(preflight.status,204);assert.ok(preflight.headers.get('access-control-allow-headers').includes('Authorization'));
  assert.equal((await call('/api/ai/market/active.json',{headers:{...headers,Origin:'https://evil.test'}})).status,403);
  assert.equal((await call('/api/ai/jobs',{method:'POST',headers,body:'{}'})).status,409);
- assert.equal((await call('/api/ai/logout',{method:'POST',headers:{Authorization:headers.Authorization,Origin:base}})).status,403);
+ assert.equal((await call('/api/ai/logout',{method:'POST',headers:{Authorization:headers.Authorization,Origin:origin}})).status,403);
  assert.equal((await call('/api/ai/logout',{method:'POST',headers})).status,200);assert.equal((await call('/api/ai/market/active.json',{headers})).status,401);
  }finally{instance.dispose();await new Promise(r=>instance.app.close(r));fs.rmSync(dir,{recursive:true,force:true});}
+});
+test('Web Pages dùng bearer ở RAM, bỏ cookie bên thứ ba, chặn gửi token sai host và xóa view khi hết phiên',async()=>{
+ const listeners={},password={value:'FIXTURE'},submit={},status={},logout={addEventListener:(name,fn)=>listeners[name]=fn},form={querySelector:s=>s==='input'?password:submit,addEventListener:(name,fn)=>listeners[name]=fn};
+ const panel={style:{},querySelector:s=>s==='[role=status]'?status:s==='form'?form:logout},document={createElement:()=>panel,getElementById:()=>({before(){}}),addEventListener(){}};
+ const calls=[];let expired=false,reloads=0,mounts=0;const root={TRACKER_PRIVATE_MARKET_WEB:true,TRACKER_PRIVATE_API_BASE:'https://tracker-ai-free.onrender.com'},automatic={mount(){mounts++;}};
+ const fetcher=async(url,options)=>{calls.push({url,options});return url.endsWith('/session')?Response.json({error:'login'},{status:401}):url.endsWith('/login')?Response.json({role:'owner',token:'a'.repeat(64),csrf:'fixture-csrf'}):Response.json({ok:true},{status:expired?401:200});};
+ const c=vm.createContext({window:root,document,location:{href:'https://kalm-d.github.io/tracker/',reload(){reloads++;}},fetch:fetcher,URL,TrackerAutomaticData:automatic});
+ await vm.runInContext(fs.readFileSync(path.join(rootPath(),'public/shared/private-market-ui.js'),'utf8'),c);assert.equal(form.hidden,false);
+ await listeners.submit({preventDefault(){}});assert.equal(mounts,1);assert.equal(password.value,'');
+ await root.TrackerPrivateFetch('https://tracker-ai-free.onrender.com/api/ai/market/active.json');assert.equal(calls.at(-1).options.credentials,'omit');assert.equal(calls.at(-1).options.headers.Authorization,'Bearer '+'a'.repeat(64));assert.equal(calls.at(-1).options.redirect,'error');
+ assert.throws(()=>root.TrackerPrivateFetch('https://evil.test/'),/máy chủ khác/);expired=true;await root.TrackerPrivateFetch('https://tracker-ai-free.onrender.com/api/ai/market/active.json');assert.equal(reloads,1);
+ function rootPath(){return path.resolve(__dirname,'..');}
 });
