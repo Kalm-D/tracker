@@ -1,0 +1,40 @@
+name: KBS source review
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kbs-source-review
+  cancel-in-progress: false
+jobs:
+  review:
+    if: github.ref == 'refs/heads/codex/tracker-auto-eod-kbs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r tracker-tools/requirements-kbs.txt
+      - name: Đọc nhóm đối chứng bằng cùng nguồn KBS, không SDK cũ
+        run: >-
+          python tracker-tools/tracker_data_exporter.py
+          --source KBS --symbols FPT,MBB,PVS,ACV
+          --sessions 320 --sleep 3.6 --retries 2
+          --output work/kbs-review/market.csv
+          --quality-output work/kbs-review/quality.csv
+          --errors-output work/kbs-review/errors.csv
+      - name: Chỉ lưu chẩn đoán; không tải CSV giá hoặc deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kbs-source-diagnostics
+          path: |
+            work/kbs-review/quality.csv
+            work/kbs-review/errors.csv
+          retention-days: 3
+          if-no-files-found: ignore
