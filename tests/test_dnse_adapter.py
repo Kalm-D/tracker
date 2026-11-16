@@ -35,6 +35,28 @@ def sdk_frame():
 
 
 class DnseAdapterTests(unittest.TestCase):
+    def test_exporter_dnse_dung_phien_da_dong_tu_cung_calendar(self):
+        """Không yêu cầu nến hôm nay khi lịch/cutoff vẫn chỉ xác nhận phiên trước."""
+        from argparse import Namespace
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp)
+            args = Namespace(output=folder/'market.csv', errors_output=folder/'errors.csv',
+                             quality_output=folder/'quality.csv', calendar_days=636, sessions=320,
+                             symbols=None, symbols_file=None, limit=None, exchange='ALL', no_index=True,
+                             resume=False, source='DNSE', retries=1, retry_sleep=70, min_rows=1,
+                             save_every=0, sleep=0, personal_universe=False)
+            frame = sdk_frame()
+            frame.attrs.update(tracker_source='DNSE', tracker_price_scale=1000)
+            with (patch.object(exporter, 'parse_args', return_value=args),
+                  patch.object(exporter, 'market_session', return_value={'expectedSession': '2026-11-10'}),
+                  patch.object(exporter, 'import_vnstock'),
+                  patch.object(exporter, 'get_universe', return_value=[{'ticker': 'FPT', 'exchange': 'HOSE'}]),
+                  patch.object(exporter, 'fetch_ohlcv_with_retry', return_value=frame) as fetch,
+                  patch.dict(sys.modules, {'sector_data': SimpleNamespace(load_sectors=lambda: {})}),
+                  redirect_stdout(io.StringIO())):
+                self.assertEqual(exporter.main(), 0)
+            self.assertEqual(fetch.call_args.args[2], '2026-11-10')
+
     def fetch(self, frame, is_index=False):
         market = Mock()
         market.equity.return_value.ohlcv.return_value = frame

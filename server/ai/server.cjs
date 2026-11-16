@@ -32,22 +32,104 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
   if(!url.pathname.startsWith('/api/ai/')){
    if(!['GET','HEAD'].includes(req.method))return json(res,405,{error:'Phương thức không hợp lệ.'});
    let decoded;try{decoded=decodeURIComponent(url.pathname);}catch{return json(res,400,{error:'URL không hợp lệ.'});}
-   const file=path.resolve(publicDir,'.'+(decoded==='/'?'/index.html':decoded))…16891 tokens truncated…er == 'VNINDEX' else universe[ticker]['exchange'], 'Chưa phân loại', 320)
-                valid = len(frame) == 320 and frame['date'].iloc[-1] == end
-                report['checks'].append({'ticker': ticker, 'rows': len(frame), 'lastDate': frame['date'].iloc[-1] if len(frame) else None, 'sameSession320': bool(valid)})
-                frames.append(frame)
-            exporter.import_pandas().concat(frames, ignore_index=True).to_csv(folder / 'market.csv', index=False, encoding='utf-8-sig')
-            report['ready'] = all(item['sameSession320'] for item in report['checks'])
-            report['stage'] = 'complete'
-    except BaseException as error:
-        report['error'] = exporter.safe_error(error)
-    report['checkedAt'] = datetime.now(timezone.utc).isoformat()
-    # Không tự coi 5 mã là đủ điều kiện bootstrap toàn danh mục.
-    report['fullUniverseValidated'] = False
-    destination = root.parents[1] / 'outputs/DNSE_PRIVATE_LIVE.json'
-    destination.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
-    return 0 if report['ready'] else 1
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
+   const file=path.resolve(publicDir,'.'+(decoded==='/'?'/index.html':decoded));
+   if(!file.startsWith(publicDir+path.sep)||decoded.split('/').some(p=>p.startsWith('.')))return json(res,404,{error:'Không tìm thấy.'});
+   if(privateMode){
+    if(path.relative(publicDir,file).split(path.sep)[0].toLowerCase()==='data')return json(res,404,{error:'Không phục vụ dữ liệu giá qua đường dẫn public.'});
+    if(file===path.join(publicDir,'deployment-policy.json'))return json(res,200,{marketDataMode:'dnse-owner-private',publicMarketSnapshots:false,sourceProvider:'DNSE'});
+    if(file===path.join(publicDir,'index.html')){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'});return res.end(req.method==='HEAD'?'':require('./private-market.cjs').renderIndex(fs.readFileSync(file,'utf8')));}
+   }
+   if(path.relative(publicDir,file).split(path.sep)[0].toLowerCase()==='backtest'){
+   res.setHeader('Cache-Control','private, no-store');
+   const sid=(req.headers.cookie||'').match(/(?:^|;\s*)tracker_ai_session=([a-f0-9]{64})(?:;|$)/)?.[1],stored=sessions.get(sid),principal=stored?.until>Date.now()?accounts.current(stored.identity):null;
+   if(!principal||!capabilities(principal).includes('backtest'))return json(res,principal?403:401,{error:'Backtest chỉ dành cho Owner/Admin.'});
+  }
+   try{if(!fs.statSync(file).isFile())throw 0;const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.gz':'application/gzip','.svg':'image/svg+xml'};res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream'});if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res);}catch{json(res,404,{error:'Không tìm thấy.'});}return;
+  }
+  res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'");
+  if(!enabled)return json(res,503,{error:'AI đã tắt độc lập bằng Feature Flag.'});
+  const expected=env.TRACKER_AI_ALLOWED_ORIGIN||'http://'+req.headers.host,origin=req.headers.origin;
+  if(origin&&origin!==expected)return json(res,403,{error:'Nguồn yêu cầu không được phép.'});
+  if(origin){res.setHeader('Access-Control-Allow-Origin',expected);res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Vary','Origin');}
+  if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Headers':'Content-Type, X-Tracker-CSRF'+(privateMode?', Authorization':''),'Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS'});return res.end();}
+  if(durability)try{await durability.flush();}catch{return json(res,503,{error:'Bộ lưu cloud chưa sẵn sàng. Thử lại sau khi kết nối được khôi phục.'});}
+  const durableJson=async(status,fn)=>{const value=fn();await durability?.flush();return json(res,status,value);};
+  const route=url.pathname.slice('/api/ai/'.length);
+  const logRoute=/^(login|logout|session|jobs|monitors|operations)(\/|$)/.exec(route)?.[1]||'unknown';res.once('finish',()=>operations.record('http',{route:logRoute,status:res.statusCode}));
+  try{
+   if(route==='login'&&req.method==='POST'){
+    // Bound both memory and expensive scrypt attempts, including requests without Origin.
+    const ip=req.socket.remoteAddress,now=Date.now();let a=attempts.get(ip);
+    if(!a||now-a.at>900000){a={at:now,count:0};if(attempts.size>=100)attempts.clear();attempts.set(ip,a);}
+    if(++a.count>5)return json(res,429,{error:'Thử đăng nhập quá nhiều. Chờ 15 phút.'});
+    const b=await body(req),identity=accounts.authenticate(b);if(!identity)return json(res,401,{error:'Mật khẩu không hợp lệ hoặc máy chủ chưa cấu hình tài khoản.'});
+    for(const [k,s] of sessions)if(s.until<Date.now())sessions.delete(k);
+    if(sessions.size>=10)sessions.delete(sessions.keys().next().value);
+    const id=crypto.randomBytes(32).toString('hex'),csrf=crypto.randomBytes(24).toString('hex');sessions.set(id,{identity,until:Date.now()+7200000,csrf,rateAt:Date.now(),rateCount:0});
+    res.setHeader('Set-Cookie',[cookie(id,7200),cookie('',0).replace('Path=/;','Path=/api/ai;')]);return json(res,200,{ok:true,csrf,...(privateMode?{token:id}:{}),role:identity.role,identity:{id:identity.id,username:identity.username},capabilities:capabilities(identity)});
+   }
+   const id=privateMode&&req.headers.authorization!==undefined?String(req.headers.authorization).match(/^Bearer ([a-f0-9]{64})$/)?.[1]:(req.headers.cookie||'').match(/(?:^|;\s*)tracker_ai_session=([a-f0-9]{64})(?:;|$)/)?.[1],session=sessions.get(id);
+   if(!session||session.until<Date.now()){if(id)sessions.delete(id);return json(res,401,{error:'Cần đăng nhập vào backend AI.'});}
+   const identity=accounts.current(session.identity);if(!identity){sessions.delete(id);return json(res,401,{error:'Tài khoản hoặc quyền đã đổi; cần đăng nhập lại.'});}
+   const permissions=capabilities(identity);
+   if(Date.now()-session.rateAt>60000){session.rateAt=Date.now();session.rateCount=0;}if(++session.rateCount>120)return json(res,429,{error:'Quá nhiều yêu cầu.'});
+   if(!['GET','HEAD'].includes(req.method)&&(!origin||origin!==expected||!safeEqual(req.headers['x-tracker-csrf']||'',session.csrf)))return json(res,403,{error:'Thiếu mã bảo vệ phiên hoặc Origin hợp lệ.'});
+   if(route==='session'&&req.method==='GET')return json(res,200,{role:identity.role,identity:{id:identity.id,username:identity.username},capabilities:permissions,csrf:session.csrf,...(identity.role==='owner'?gateway.status():{}),version:VERSION});
+   if(route==='logout'&&req.method==='POST'){sessions.delete(id);res.setHeader('Set-Cookie',[cookie('',0),cookie('',0).replace('Path=/;','Path=/api/ai;')]);return json(res,200,{ok:true});}
+   if(privateMode&&(/^(market|jobs|monitors|operations)(\/|$)/.test(route))&&identity.role!=='owner')return json(res,403,{error:'Dữ liệu và nghiên cứu DNSE cá nhân chỉ dành cho chủ tài khoản nguồn.'});
+   if(privateMode&&route==='jobs'&&req.method==='POST')return json(res,409,{error:'Nguồn DNSE cá nhân chưa bật gửi dữ liệu sang AI bên ngoài. Screener và phân tích bằng engine vẫn dùng được.'});
+   if(privateMode&&route.startsWith('market/')&&['GET','HEAD'].includes(req.method)){
+    const name=route.slice(7);if(name!=='active.json'&&!/^snapshots\/[a-f0-9]{64}\.json\.gz$/.test(name))return json(res,404,{error:'Không tìm thấy snapshot riêng.'});
+    try{const asset=await privateMarket.asset(name);res.writeHead(200,{'Content-Type':asset.type,'Cache-Control':'private, no-store'});return res.end(req.method==='HEAD'?undefined:asset.bytes);}catch{return json(res,503,{error:'Snapshot DNSE riêng chưa sẵn sàng; giữ dữ liệu trước.'});}
+   }
+   if(route==='users'&&req.method==='GET'){if(!permissions.includes('users'))return json(res,403,{error:'Không có quyền.'});return json(res,200,accounts.list(identity));}
+   if(route==='users'&&req.method==='POST'){if(!permissions.includes('users'))return json(res,403,{error:'Không có quyền.'});const input=await body(req);if(input.role==='admin'&&identity.role!=='owner')return json(res,403,{error:'Chỉ Owner được cấp Admin.'});return await durableJson(201,()=>accounts.create(identity,input));}
+   const userRoute=route.match(/^users\/([a-f0-9-]{36}|owner)$/);
+   if(userRoute&&req.method==='POST'){if(!permissions.includes('users')||userRoute[1]==='owner')return json(res,403,{error:'Owner được bảo vệ hoặc thiếu quyền.'});const input=await body(req),target=accounts.users.find(u=>u.id===userRoute[1]);if(identity.role!=='owner'&&(target?.role!=='user'||input.role==='admin'||input.role==='owner'))return json(res,403,{error:'Admin chỉ quản lý User.'});return await durableJson(200,()=>accounts.update(identity,userRoute[1],input));}
+   if(route==='operations'&&identity.role!=='owner')return json(res,403,{error:'Chỉ Owner được xem vận hành.'});
+   if(/^(jobs|monitors)(\/|$)/.test(route)&&!permissions.includes('research'))return json(res,403,{error:'Tài khoản chưa được cấp AI Research.'});
+   if(route==='jobs'&&req.method==='GET')return json(res,200,[...research.jobs.values()].filter(j=>owned(j,identity)).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).map(({id,status,createdAt,request})=>({id,status,createdAt,question:request?.question||'Bản lưu cần kiểm tra'})));
+   if(route==='jobs'&&req.method==='POST'){operations.assertCanStart();const input=await body(req);if(input.backtest&&!permissions.includes('backtest'))return json(res,403,{error:'Backtest chỉ dành cho Owner/Admin.'});return await durableJson(202,()=>research.create(input,identity.id));}
+   if(route==='operations'&&req.method==='GET')return json(res,200,{...await operations.report({research,gateway,monitoring,env,snapshot:research.tools.snapshot}),storage:durability?.status()||{kind:'local',healthy:true}});
+   if(route==='monitors'&&req.method==='GET')return json(res,200,{...monitoring.status(),records:monitoring.list().filter(r=>owned(r,identity))});
+   if(route==='monitors'&&req.method==='POST'){const b=await body(req),job=research.jobs.get(b.jobId);if(!owned(job,identity))return json(res,404,{error:'Không tìm thấy báo cáo.'});return await durableJson(201,()=>monitoring.create(job));}
+   if(route==='monitors/check'&&req.method==='POST'){await monitoring.checkAll(identity.id);return json(res,200,{...monitoring.status(),records:monitoring.list().filter(r=>owned(r,identity))});}
+   const monitor=route.match(/^monitors\/([a-f0-9-]{36})$/);
+   if(monitor&&!owned(monitoring.records.get(monitor[1]),identity))return json(res,404,{error:'Không tìm thấy theo dõi.'});
+   if(monitor&&req.method==='POST'){const b=await body(req);return await durableJson(200,()=>monitoring.setEnabled(monitor[1],b.enabled));}
+   if(monitor&&req.method==='DELETE'){return await durableJson(200,()=>{monitoring.remove(monitor[1]);return {ok:true};});}
+   const stream=route.match(/^jobs\/([a-f0-9-]{36})\/events$/),streamJob=stream&&research.jobs.get(stream[1]);
+   if(streamJob&&owned(streamJob,identity)&&req.method==='GET'){
+    if(research.events.listenerCount('job')>=8)return json(res,429,{error:'Đang mở quá nhiều luồng tiến độ.'});
+    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','Connection':'keep-alive','X-Accel-Buffering':'no'});
+    res.flushHeaders();
+    let stopped=false,heartbeat;
+    const cleanup=()=>{if(stopped)return;stopped=true;clearInterval(heartbeat);research.events.off('job',update);};
+    const update=j=>{
+     if(j.id!==streamJob.id||stopped)return;
+     if(sessions.get(id)!==session||session.until<Date.now()||!accounts.current(session.identity)){cleanup();res.end();return;}
+     res.write('event: job\ndata: '+JSON.stringify(j)+'\n\n');
+     if(!['queued','running'].includes(j.status)){cleanup();res.end();}
+    };
+    res.on('close',cleanup);res.on('error',cleanup);
+    research.events.on('job',update);
+    heartbeat=setInterval(()=>{if(sessions.get(id)!==session||session.until<Date.now()||!accounts.current(session.identity)){cleanup();res.end();}else res.write(': keepalive\n\n');},15000);
+    update(streamJob);return;
+   }
+   const m=route.match(/^jobs\/([a-f0-9-]{36})$/),job=m&&research.jobs.get(m[1]);
+   if(job&&owned(job,identity)&&req.method==='GET')return json(res,200,job);
+   if(job&&owned(job,identity)&&req.method==='DELETE')return await durableJson(200,()=>research.cancel(job.id));
+   return json(res,404,{error:'Không tìm thấy tác vụ.'});
+  }catch(e){json(res,400,{error:e.message});}
+ });
+ app.requestTimeout=30000;app.headersTimeout=10000;app.keepAliveTimeout=5000;app.maxHeadersCount=64;
+ const dispose=()=>{research.shutdown();monitoring.shutdown();operations.shutdown();runtimeLock.release();};
+ app.on('close',dispose);
+ return {app,research,gateway,monitoring,operations,accounts,dispose};
+}
+if(require.main===module){
+ const {app,research}=createApp();const port=Number(process.env.TRACKER_AI_PORT||8790),host=process.env.TRACKER_AI_HOST||'127.0.0.1';
+ app.listen(port,host,()=>console.log('Tracker AI preview: http://'+host+':'+port));
+ const end=()=>{research.shutdown();app.close(()=>process.exit(0));setTimeout(()=>process.exit(0),3000).unref();};process.on('SIGINT',end);process.on('SIGTERM',end);
+}
+module.exports={createApp,passwordHash,verifyPassword};

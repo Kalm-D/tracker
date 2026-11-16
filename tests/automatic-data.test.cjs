@@ -95,7 +95,7 @@ test('Khôi phục snapshot trước theo manifest/hash, không bootstrap ngầm
 });
 test('Lịch và UI deploy dùng một khóa, source gate đứng trước pip/export/upload và HEAD được kiểm tra',()=>{
   const workflow=fs.readFileSync(path.join(root,'.github/workflows/automatic-eod.yml'),'utf8'),ui=fs.readFileSync(path.join(root,'.github/workflows/tracker-ui-pages.yml'),'utf8');
-  assert.ok(workflow.includes("cron: '17 9 * * 1-5'"));assert.ok(workflow.includes("github.ref == 'refs/heads/main'"));
+  assert.ok(!workflow.includes('schedule:'));assert.ok(workflow.includes("github.ref == 'refs/heads/main'"));
   for(const s of [workflow,ui]){assert.ok(s.includes('group: tracker-pages-publish'));assert.ok(s.includes('cancel-in-progress: false'));assert.ok(s.includes('git rev-parse origin/main'));}
   assert.ok(workflow.indexOf('--plan')<workflow.indexOf('pip install'));assert.ok(workflow.indexOf('--publish')<workflow.indexOf('upload-pages-artifact'));
   assert.ok(ui.includes('run-automatic-eod.cjs --ui-only'));assert.ok(!workflow.includes('upload-artifact@'));
