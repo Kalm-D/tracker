@@ -6,6 +6,9 @@ on:
       - 'public/**'
       - '.github/workflows/tracker-ui-pages.yml'
       - 'tools/prepare-pages.cjs'
+      - 'tools/prepare-automatic-pages.cjs'
+      - 'tools/run-automatic-eod.cjs'
+      - 'config/public-eod.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,7 +34,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
       - uses: actions/configure-pages@v5
       - name: Đóng gói Pages theo policy quyền
-        run: node tools/prepare-pages.cjs
+        run: node tools/run-automatic-eod.cjs --ui-only
 
       - uses: actions/upload-pages-artifact@v4
         with:

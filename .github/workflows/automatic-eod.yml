@@ -1,0 +1,52 @@
+name: Automatic EOD (source gated)
+on:
+  schedule:
+    - cron: '17 9 * * 1-5'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: tracker-pages-publish
+  cancel-in-progress: false
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gate nguồn và lịch Việt Nam trước mọi request dữ liệu
+        id: plan
+        run: node tools/run-automatic-eod.cjs --plan
+      - uses: actions/setup-python@v5
+        if: steps.plan.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Cài riêng pandas, không cài Vnstock
+        if: steps.plan.outputs.run == 'true'
+        run: python -m pip install -r tracker-tools/requirements-kbs.txt
+      - name: Export, kiểm định, giữ rollback và tạo artifact
+        if: steps.plan.outputs.run == 'true'
+        run: node tools/run-automatic-eod.cjs --publish
+      - name: Chỉ công bố HEAD main đã chạy
+        if: steps.plan.outputs.run == 'true'
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+      - uses: actions/configure-pages@v5
+        if: steps.plan.outputs.run == 'true'
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.plan.outputs.run == 'true'
+        with:
+          path: work/pages
+      - uses: actions/deploy-pages@v4
+        if: steps.plan.outputs.run == 'true'
+        id: deployment

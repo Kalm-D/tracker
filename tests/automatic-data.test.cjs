@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),zlib=require('node:zlib'),crypto=require('node:crypto');
-const root=path.resolve(__dirname,'..'),Q=require('../public/shared/data-quality.js'),P=require('../tools/publish-snapshot.cjs'),A=require('../tools/prepare-automatic-pages.cjs'),C=require('../public/shared/automatic-data.js');
+const root=path.resolve(__dirname,'..'),Q=require('../public/shared/data-quality.js'),P=require('../tools/publish-snapshot.cjs'),A=require('../tools/prepare-automatic-pages.cjs'),C=require('../public/shared/automatic-data.js'),E=require('../tools/run-automatic-eod.cjs');
 const now=new Date('2026-11-14T02:00:00Z');
 // Cấu hình giả chỉ dùng trong test; không phải bằng chứng quyền nguồn thật.
 const fixtureConfig={enabled:true,provider:'KBS',rights:{status:'verified',reference:'TEST FIXTURE — không dùng production'}};
@@ -69,4 +69,34 @@ test('Mạng lỗi, manifest độc hại/sai hash hoặc lùi phiên giữ dữ
   c.controls.failure=false;c.controls.manifest.active={...c.entry,file:'https://other.test/prices'};await assert.rejects(c.app.refresh(),/Manifest/);assert.equal(c.applied(),1);
   c.controls.manifest.active={...c.entry,id:'0'.repeat(64),file:'snapshots/'+'0'.repeat(64)+'.json.gz'};await assert.rejects(c.app.refresh(),/không khớp manifest/);assert.equal(c.state.rawRows,rows);
   c.controls.manifest.active=c.entry;c.state.dataMeta.asOf='2026-11-16';await assert.rejects(c.app.refresh(),/lùi phiên/);assert.equal(c.applied(),1);
+});
+test('Lịch EOD dùng cùng calendar; config tắt không gọi nguồn, ngày nghỉ/trước đóng cửa không chạy',()=>{
+  assert.equal(E.plan({enabled:false},now).run,false);
+  assert.equal(E.plan(fixtureConfig,now).run,false);
+  assert.equal(E.plan(fixtureConfig,new Date('2026-11-16T06:00:00Z')).run,false);
+  assert.equal(E.plan(fixtureConfig,new Date('2026-11-16T09:17:00Z')).run,true);
+  assert.equal(E.plan(fixtureConfig,new Date('2026-09-02T09:17:00Z')).run,false);
+  assert.throws(()=>E.plan({...fixtureConfig,rights:{status:'pending'}},now),/PUBLIC_EOD_NOT_CLEARED/);
+  assert.throws(()=>E.plan(fixtureConfig,new Date('2027-01-08T09:17:00Z')),/Lịch giao dịch/);
+});
+test('Khôi phục snapshot trước theo manifest/hash, không bootstrap ngầm khi HTTP hoặc archive lỗi',async()=>{
+  const dir=folder();try{
+    const source=dataset(dir),out=path.join(dir,'restored'),manifest=fs.readFileSync(path.join(source,'active.json'));
+    const fetcher=async url=>new Response(url.endsWith('active.json')?manifest:fs.readFileSync(path.join(source,JSON.parse(manifest).active.file)));
+    await E.restore(out,{fetcher,now});
+    assert.deepEqual(fs.readFileSync(path.join(out,'market.json.gz')),fs.readFileSync(path.join(source,'market.json.gz')));
+    await assert.rejects(E.restore(path.join(dir,'missing'),{fetcher:async()=>new Response('',{status:404}),now}),/HTTP 404/);
+    const m=JSON.parse(manifest);m.active.file='../outside.json.gz';
+    await assert.rejects(E.restore(path.join(dir,'unsafe'),{fetcher:async()=>new Response(JSON.stringify(m)),now}),/Archive trước/);
+    await assert.rejects(E.restore(path.join(dir,'corrupt'),{fetcher:async url=>new Response(url.endsWith('active.json')?manifest:zlib.gzipSync('{}')),now}),/không khớp/);
+    assert.equal(fs.existsSync(path.join(dir,'missing')),false);assert.equal(fs.existsSync(path.join(dir,'unsafe')),false);assert.equal(fs.existsSync(path.join(dir,'corrupt')),false);
+    await assert.rejects(E.run({config:fixtureConfig,now:new Date('2026-11-13T10:00:00Z'),bootstrap:path.join(dir,'candidate.json')}),/BOOTSTRAP_NOT_REVIEWED/);
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+test('Lịch và UI deploy dùng một khóa, source gate đứng trước pip/export/upload và HEAD được kiểm tra',()=>{
+  const workflow=fs.readFileSync(path.join(root,'.github/workflows/automatic-eod.yml'),'utf8'),ui=fs.readFileSync(path.join(root,'.github/workflows/tracker-ui-pages.yml'),'utf8');
+  assert.ok(workflow.includes("cron: '17 9 * * 1-5'"));assert.ok(workflow.includes("github.ref == 'refs/heads/main'"));
+  for(const s of [workflow,ui]){assert.ok(s.includes('group: tracker-pages-publish'));assert.ok(s.includes('cancel-in-progress: false'));assert.ok(s.includes('git rev-parse origin/main'));}
+  assert.ok(workflow.indexOf('--plan')<workflow.indexOf('pip install'));assert.ok(workflow.indexOf('--publish')<workflow.indexOf('upload-pages-artifact'));
+  assert.ok(ui.includes('run-automatic-eod.cjs --ui-only'));assert.ok(!workflow.includes('upload-artifact@'));
 });
