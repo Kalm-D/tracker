@@ -1,0 +1,23 @@
+name: DNSE network health (no credentials)
+on:
+  push:
+    branches: [codex/tracker-auto-eod-release]
+    paths: ['tools/probe-dnse-network.py', '.github/workflows/dnse-network-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  network:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Chỉ DNS, TCP, TLS và HTTP status; không đọc giá hoặc khóa
+        run: python tools/probe-dnse-network.py
