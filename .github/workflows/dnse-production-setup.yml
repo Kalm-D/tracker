@@ -1,0 +1,37 @@
+name: DNSE production preparation (private candidate)
+on:
+  push:
+    branches: [codex/tracker-auto-eod-release]
+    paths: ['config/dnse-source-request.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tracker-dnse-private-eod
+  cancel-in-progress: false
+jobs:
+  candidate:
+    if: github.repository == 'Kalm-D/tracker' && github.ref == 'refs/heads/codex/tracker-auto-eod-release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+      - name: Kiểm tra đủ khóa, không in giá trị
+        env:
+          DNSE_API_KEY: ${{ secrets.DNSE_API_KEY }}
+          DNSE_API_SECRET: ${{ secrets.DNSE_API_SECRET }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node -e "const a=['DNSE_API_KEY','DNSE_API_SECRET','SUPABASE_SERVICE_ROLE_KEY'].filter(k=>!process.env[k]);if(a.length){console.error('MISSING_REPOSITORY_SECRETS: '+a.join(', '));process.exit(2)}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r tracker-tools/requirements.txt
+      - name: Lấy toàn danh mục vào kho riêng, chưa publish active
+        env:
+          DNSE_API_KEY: ${{ secrets.DNSE_API_KEY }}
+          DNSE_API_SECRET: ${{ secrets.DNSE_API_SECRET }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node tools/prepare-dnse-production.cjs

@@ -1,0 +1,11 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const S=require('../tools/prepare-dnse-production.cjs');
+test('Chuẩn bị production dừng trước HTTP nếu thiếu Secrets; không in giá trị',async()=>{assert.deepEqual(S.missing({DNSE_API_KEY:'fixture'}),['DNSE_API_SECRET','SUPABASE_SERVICE_ROLE_KEY']);assert.equal(await S.run({}),2);});
+test('Chỉ tạo bucket khi 404; không ghi đè bucket public hay coi 401/5xx là bootstrap',async()=>{
+ for(const code of [401,403,500]){let writes=0;const s={bucket:'fixture',base:'https://fixture.test',key:'fixture',fetcher:async()=>new Response('',{status:code}),request:async()=>{writes++;},assertPrivate:async()=>{}};await assert.rejects(S.bucket(s),/PRIVATE_BUCKET_AUTH_OR_NETWORK/);assert.equal(writes,0);}
+ let writes=0,checked=false;const s={bucket:'fixture',base:'https://fixture.test',key:'fixture',fetcher:async()=>new Response('',{status:404}),request:async(route,o)=>{writes++;assert.equal(route,'/bucket');assert.equal(JSON.parse(o.body).public,false);},assertPrivate:async()=>{checked=true;}};await S.bucket(s);assert.equal(writes,1);assert.equal(checked,true);
+ const existing={...s,fetcher:async()=>new Response('{}'),assertPrivate:async()=>{throw Error('PUBLIC');}};await assert.rejects(S.bucket(existing),/PUBLIC/);assert.equal(writes,1);
+});
+test('Báo cáo candidate tách lỗi/mã thiếu, không đánh dấu phát hành thành công',()=>{const r=S.summary({meta:{asOf:'2026-11-16',rowCount:320}},[{status:'ok',rows:'320'},{status:'too_few_rows',rows:'15'},{status:'fetch_error',rows:'0'}],1);assert.equal(r.productionPublished,false);assert.equal(r.exportSucceeded,false);assert.equal(r.missing,1);assert.equal(r.shortHistory,1);assert.equal(r.fetchErrors,1);});
+test('Workflow chỉ branch review, không deploy/đăng artifact giá hoặc ghi active',()=>{const w=fs.readFileSync(path.join(__dirname,'../.github/workflows/dnse-production-setup.yml'),'utf8');for(const unsafe of ['pages: write','upload-artifact','deploy-pages','git push'])assert.ok(!w.includes(unsafe));assert.ok(w.indexOf('Kiểm tra đủ khóa')<w.indexOf('pip install'));const s=fs.readFileSync(path.join(__dirname,'../tools/prepare-dnse-production.cjs'),'utf8');assert.ok(!s.includes("put('active.json'"));assert.ok(!s.includes("stdio:'inherit'"));});
