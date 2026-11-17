@@ -5,12 +5,16 @@ const {PrivateStore}=require('../server/ai/private-market.cjs');
 const root=path.resolve(__dirname,'..'),project='https://ckuoasopcyansrydvnam.supabase.co';
 function missing(env){return ['DNSE_API_KEY','DNSE_API_SECRET','SUPABASE_SERVICE_ROLE_KEY'].filter(k=>!env[k]?.trim());}
 async function bucket(store){
- const route='/bucket/'+store.bucket;
- // Chỉ 404 mới là chưa tồn tại; 401/403/5xx không được xem như bootstrap.
- const r=await store.fetcher(store.base+route,{redirect:'error',signal:AbortSignal.timeout(30000),headers:{apikey:store.key,Authorization:'Bearer '+store.key}});
- if(r.status===404)await store.request('/bucket',{method:'POST',body:Buffer.from(JSON.stringify({id:store.bucket,name:store.bucket,public:false,file_size_limit:16*1048576,allowed_mime_types:['application/gzip','application/json']})),max:65536});
- else if(!r.ok)throw Error('PRIVATE_BUCKET_AUTH_OR_NETWORK');
- await store.assertPrivate();
+ // Xác thực bằng danh sách bucket: API cũ có thể trả 400 khi bucket chưa tồn tại.
+ // Không suy diễn 400/401/403/5xx là được phép tạo hoặc ghi dữ liệu.
+ const r=await store.fetcher(store.base+'/bucket',{redirect:'error',signal:AbortSignal.timeout(30000),headers:{apikey:store.key,Authorization:'Bearer '+store.key}});
+ if(!r.ok)throw Object.assign(Error('PRIVATE_BUCKET_LIST_FAILED'),{code:'PRIVATE_BUCKET_HTTP_'+r.status});
+ const buckets=await r.json();if(!Array.isArray(buckets)||buckets.some(b=>typeof b.id!=='string'))throw Object.assign(Error('PRIVATE_BUCKET_LIST_INVALID'),{code:'PRIVATE_BUCKET_LIST_INVALID'});
+ if(!buckets.some(b=>b.id===store.bucket)){
+  try{await store.request('/bucket',{method:'POST',body:Buffer.from(JSON.stringify({id:store.bucket,name:store.bucket,public:false,file_size_limit:16*1048576,allowed_mime_types:['application/gzip','application/json']})),max:65536});}
+  catch{throw Object.assign(Error('PRIVATE_BUCKET_CREATE_FAILED'),{code:'PRIVATE_BUCKET_CREATE_FAILED'});}
+ }
+ try{await store.assertPrivate();}catch{throw Object.assign(Error('PRIVATE_BUCKET_VERIFY_FAILED'),{code:'PRIVATE_BUCKET_VERIFY_FAILED'});}
 }
 function summary(payload,quality,exitCode){
  const count=status=>quality.filter(r=>r.status===status).length;
@@ -36,5 +40,5 @@ async function run(env=process.env){
  // Candidate có lỗi được giữ riêng để điều tra, không biến job thành release thành công.
  return result.status===0&&payload?0:1;
 }
-if(require.main===module)run().then(code=>{process.exitCode=code;}).catch(()=>{console.error('DNSE_SETUP_STOPPED: chưa phát hành production; kiểm tra khóa, quyền hoặc dữ liệu.');process.exitCode=1;});
+if(require.main===module)run().then(code=>{process.exitCode=code;}).catch(e=>{const code=/^PRIVATE_BUCKET_(HTTP_\d{3}|LIST_INVALID|CREATE_FAILED|VERIFY_FAILED)$/.test(e.code||'')?e.code:'DNSE_SETUP_STOPPED';console.error(code+': chưa phát hành production; không in khóa hoặc nội dung phản hồi riêng.');process.exitCode=1;});
 module.exports={missing,bucket,summary,run};

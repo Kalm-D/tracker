@@ -41,6 +41,6 @@ jobs:
           TRACKER_DNSE_EOD_ENABLED: ${{ vars.TRACKER_DNSE_EOD_ENABLED }}
           DNSE_API_KEY: ${{ secrets.DNSE_API_KEY }}
           DNSE_API_SECRET: ${{ secrets.DNSE_API_SECRET }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: https://ckuoasopcyansrydvnam.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node tools/run-private-dnse-eod.cjs --publish
