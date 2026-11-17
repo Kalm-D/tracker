@@ -20,6 +20,14 @@ function summary(payload,quality,exitCode){
  const count=status=>quality.filter(r=>r.status===status).length;
  return {candidateOnly:true,productionPublished:false,exportSucceeded:exitCode===0,attempted:quality.length,withRows:quality.filter(r=>Number(r.rows)>0).length,missing:quality.filter(r=>!Number(r.rows)).length,shortHistory:count('too_few_rows'),fetchErrors:count('fetch_error'),asOf:payload?.meta?.asOf||null,rows:payload?.meta?.rowCount||0};
 }
+function diagnostics(result){
+ // Chỉ tên exception/frame và mã đã biết; tuyệt đối không in stderr hoặc thông báo SDK.
+ const stderr=result.stderr||'',frames=[...stderr.matchAll(/File "([^"\r\n]+)", line (\d+), in ([A-Za-z_<>][A-Za-z_0-9<>]*)/g)].map(m=>({file:m[1].split(/[\\/]/).at(-1),line:Number(m[2]),fn:m[3]})).slice(-12);
+ const exceptions=[...new Set([...stderr.matchAll(/^([A-Za-z_][A-Za-z_0-9.]*?(?:Error|Exception|Exit)):/gm)].map(m=>m[1]))];
+ const modules=[...stderr.matchAll(/ModuleNotFoundError: No module named '([A-Za-z_][A-Za-z_0-9.]*)'/g)].map(m=>m[1]);
+ const known={SDK_IMPORT_FAILED:'Chưa có bộ SDK R4.',EXCHANGE_MAPPING_FAILED:'Danh mục DNSE thiếu sàn xác thực',SDK_VERSION_FAILED:'R4 cần Vnstock thế hệ 6'};
+ return {exitCode:result.status,signal:result.signal||null,frames,exceptions,modules,known:Object.keys(known).filter(k=>stderr.includes(known[k]))};
+}
 async function run(env=process.env){
  const absent=missing(env);if(absent.length){console.error('MISSING_REPOSITORY_SECRETS: '+absent.join(', '));return 2;}
  const store=new PrivateStore({...env,SUPABASE_URL:project});await bucket(store);
@@ -29,7 +37,7 @@ async function run(env=process.env){
  const readCsv=file=>{if(!fs.existsSync(file))return [];const s=cp.execFileSync(python,['-c','import csv,json,sys; print(json.dumps(list(csv.DictReader(open(sys.argv[1],encoding="utf-8-sig")))))',file],{encoding:'utf8',maxBuffer:8*1048576});return JSON.parse(s);};
  const qualityRows=readCsv(quality),errorRows=readCsv(errors);let payload=null;
  if(fs.existsSync(csv))try{cp.execFileSync(python,[path.join(root,'tracker-tools/pack_market_data.py'),'--input',csv,'--output',candidate,'--source','DNSE Lightspeed cá nhân','--export-quality',quality],{cwd:root,stdio:'pipe'});payload=JSON.parse(zlib.gunzipSync(fs.readFileSync(candidate),{maxOutputLength:64*1048576}));}catch{}
- const report=summary(payload,qualityRows,result.status),envelope=zlib.gzipSync(JSON.stringify({version:1,payload,qualityRows,errorRows,report}));
+ const report={...summary(payload,qualityRows,result.status),diagnostics:diagnostics(result)},envelope=zlib.gzipSync(JSON.stringify({version:1,payload,qualityRows,errorRows,report}));
  if(envelope.length>16*1048576)throw Error('PRIVATE_CANDIDATE_TOO_LARGE');
  const id=String(env.GITHUB_RUN_ID||Date.now());if(!/^\d{1,20}$/.test(id))throw Error('INVALID_RUN_ID');
  const name='candidates/eod-'+id+'.json.gz';
@@ -41,4 +49,4 @@ async function run(env=process.env){
  return result.status===0&&payload?0:1;
 }
 if(require.main===module)run().then(code=>{process.exitCode=code;}).catch(e=>{const code=/^PRIVATE_BUCKET_(HTTP_\d{3}|LIST_INVALID|CREATE_FAILED|VERIFY_FAILED)$/.test(e.code||'')?e.code:'DNSE_SETUP_STOPPED';console.error(code+': chưa phát hành production; không in khóa hoặc nội dung phản hồi riêng.');process.exitCode=1;});
-module.exports={missing,bucket,summary,run};
+module.exports={missing,bucket,summary,diagnostics,run};
