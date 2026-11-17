@@ -21,7 +21,8 @@ jobs:
           DNSE_API_KEY: ${{ secrets.DNSE_API_KEY }}
           DNSE_API_SECRET: ${{ secrets.DNSE_API_SECRET }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node -e "const a=['DNSE_API_KEY','DNSE_API_SECRET','SUPABASE_SERVICE_ROLE_KEY'].filter(k=>!process.env[k]);if(a.length){console.error('MISSING_REPOSITORY_SECRETS: '+a.join(', '));process.exit(2)}"
+        run: |
+          node -e "const a=['DNSE_API_KEY','DNSE_API_SECRET','SUPABASE_SERVICE_ROLE_KEY'].filter(k=>!process.env[k]);if(a.length){console.error('MISSING_REPOSITORY_SECRETS: '+a.join(', '));process.exit(2)}"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
