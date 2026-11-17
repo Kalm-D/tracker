@@ -26,7 +26,9 @@ function diagnostics(result){
  const exceptions=[...new Set([...stderr.matchAll(/^([A-Za-z_][A-Za-z_0-9.]*?(?:Error|Exception|Exit)):/gm)].map(m=>m[1]))];
  const modules=[...stderr.matchAll(/ModuleNotFoundError: No module named '([A-Za-z_][A-Za-z_0-9.]*)'/g)].map(m=>m[1]);
  const known={SDK_IMPORT_FAILED:'Chưa có bộ SDK R4.',EXCHANGE_MAPPING_FAILED:'Danh mục DNSE thiếu sàn xác thực',SDK_VERSION_FAILED:'R4 cần Vnstock thế hệ 6'};
- return {exitCode:result.status,signal:result.signal||null,frames,exceptions,modules,known:Object.keys(known).filter(k=>stderr.includes(known[k]))};
+ let chain=[];const line=stderr.split('\n').findLast(l=>l.startsWith('TRACKER_EXPORT_DIAGNOSTIC:'));
+ if(line)try{chain=JSON.parse(line.slice('TRACKER_EXPORT_DIAGNOSTIC:'.length)).slice(0,5).map(e=>({type:/^[A-Za-z_]\w{0,80}$/.test(e.type)?e.type:'Unknown',httpStatus:Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599?e.httpStatus:null,frames:(e.frames||[]).slice(-8).map(f=>({file:/^[\w.-]{1,100}$/.test(f.file)?f.file:'unknown',line:Number.isInteger(f.line)?f.line:0,fn:/^[A-Za-z_<>][\w<>]{0,100}$/.test(f.fn)?f.fn:'unknown'}))}));}catch{}
+ return {exitCode:result.status,signal:result.signal||null,frames,exceptions,modules,chain,known:Object.keys(known).filter(k=>stderr.includes(known[k]))};
 }
 async function run(env=process.env){
  const absent=missing(env);if(absent.length){console.error('MISSING_REPOSITORY_SECRETS: '+absent.join(', '));return 2;}

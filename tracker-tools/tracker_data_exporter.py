@@ -397,6 +397,23 @@ def safe_error(error):
     return type(error).__name__ + (f' ({code})' if valid_code else '')
 
 
+def error_diagnostics(error):
+    """Giữ chuỗi loại lỗi/vị trí và HTTP status; bỏ toàn bộ message, URL và khóa."""
+    chain, seen = [], set()
+    while error is not None and id(error) not in seen and len(chain) < 5:
+        seen.add(id(error))
+        frames, tb = [], error.__traceback__
+        while tb is not None:
+            frames.append({'file': Path(tb.tb_frame.f_code.co_filename).name,
+                           'line': tb.tb_lineno, 'fn': tb.tb_frame.f_code.co_name})
+            tb = tb.tb_next
+        status = getattr(error, 'http_status', None)
+        chain.append({'type': type(error).__name__, 'frames': frames[-8:],
+                      'httpStatus': status if type(status) is int and 100 <= status <= 599 else None})
+        error = error.__cause__ or error.__context__
+    return chain
+
+
 def save_export_files(pd, frames, errors, quality, output: Path, errors_output: Path, quality_output: Path) -> None:
     """Lưu dữ liệu hiện có ra đĩa để không mất tiến độ nếu script dừng giữa chừng."""
     if frames:
@@ -697,6 +714,7 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as error:
         eprint('Exporter dừng an toàn: ' + safe_error(error))
+        eprint('TRACKER_EXPORT_DIAGNOSTIC:' + json.dumps(error_diagnostics(error)))
         raise SystemExit(1) from None
 
 

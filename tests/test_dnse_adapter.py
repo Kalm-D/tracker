@@ -35,6 +35,22 @@ def sdk_frame():
 
 
 class DnseAdapterTests(unittest.TestCase):
+    def test_chan_doan_loi_giu_cause_nhung_khong_lo_noi_dung_khoa(self):
+        """Lỗi khởi tạo vẫn điều tra được mà không in message/URL/header."""
+        try:
+            try:
+                raise ValueError('https://private.invalid?api_key=fixture-private-key')
+            except ValueError as cause:
+                cause.http_status = 401
+                raise RuntimeError('Authorization: fixture-private-secret') from cause
+        except RuntimeError as error:
+            report = exporter.error_diagnostics(error)
+        self.assertEqual([item['type'] for item in report], ['RuntimeError', 'ValueError'])
+        self.assertEqual(report[1]['httpStatus'], 401)
+        self.assertTrue(report[0]['frames'])
+        self.assertNotIn('fixture-private', json.dumps(report))
+        self.assertNotIn('private.invalid', json.dumps(report))
+
     def test_exporter_dnse_dung_phien_da_dong_tu_cung_calendar(self):
         """Không yêu cầu nến hôm nay khi lịch/cutoff vẫn chỉ xác nhận phiên trước."""
         from argparse import Namespace
