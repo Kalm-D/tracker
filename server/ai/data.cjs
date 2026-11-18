@@ -5,9 +5,9 @@ async function snapshot(file){
  const st=fs.statSync(file),key=path.resolve(file)+':'+st.size+':'+st.mtimeMs;
  if(cached?.key===key)return cached.value;if(pending?.key===key)return pending.promise;
  const promise=new Promise((resolve,reject)=>{
-  const w=new Worker(path.join(__dirname,'quant-worker.cjs'),{workerData:{file}});let received=false;
+  const w=new Worker(path.join(__dirname,'quant-worker.cjs'),{workerData:{file},env:{}});let received=false;
   const timer=setTimeout(()=>{w.terminate();reject(new Error('Quant worker vượt thời gian.'));},30000);
-  w.once('message',m=>{received=true;clearTimeout(timer);w.terminate();if(m.error)reject(new Error(m.error));else {cached={key,value:m};resolve(m);}});
+  w.once('message',m=>{received=true;clearTimeout(timer);void w.terminate().then(()=>{if(m.error)reject(new Error(m.error));else {cached={key,value:m};resolve(m);}}).catch(reject);});
   w.once('error',e=>{clearTimeout(timer);reject(e);});
   w.once('exit',()=>{if(!received){clearTimeout(timer);reject(new Error('Quant worker dừng trước khi trả kết quả.'));}});
  });pending={key,promise};try{return await promise;}finally{if(pending?.promise===promise)pending=null;}

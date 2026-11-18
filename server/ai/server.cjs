@@ -49,8 +49,9 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
   res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'");
   if(!enabled)return json(res,503,{error:'AI đã tắt độc lập bằng Feature Flag.'});
   const expected=env.TRACKER_AI_ALLOWED_ORIGIN||'http://'+req.headers.host,origin=req.headers.origin;
-  if(origin&&origin!==expected)return json(res,403,{error:'Nguồn yêu cầu không được phép.'});
-  if(origin){res.setHeader('Access-Control-Allow-Origin',expected);res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Vary','Origin');}
+  const privateSelf=privateMode&&origin==='https://tracker-ai-free.onrender.com'&&req.headers.host==='tracker-ai-free.onrender.com';
+  if(origin&&origin!==expected&&!privateSelf)return json(res,403,{error:'Nguồn yêu cầu không được phép.'});
+  if(origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Vary','Origin');}
   if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Headers':'Content-Type, X-Tracker-CSRF'+(privateMode?', Authorization':''),'Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS'});return res.end();}
   if(durability)try{await durability.flush();}catch{return json(res,503,{error:'Bộ lưu cloud chưa sẵn sàng. Thử lại sau khi kết nối được khôi phục.'});}
   const durableJson=async(status,fn)=>{const value=fn();await durability?.flush();return json(res,status,value);};

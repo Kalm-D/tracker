@@ -20,6 +20,10 @@ Lượt đầu 17/11 tải 1.518 mã/chỉ số, 44 rỗng. Lỗi đã phát hi�
 
 ## Phát hành và rollback
 
+Đo bộ thật 337.047 bar trên Windows: bản đầu đạt đỉnh RSS 541 MiB. Validator và Quant dùng worker có hàng đợi, HTTP chỉ giữ metadata và hash archive đã xác minh; đỉnh RSS đo lại 379 MiB. Hash toàn bộ metrics/regime/analysis context trước/sau cùng `bb2074937267d48547535879b6193b89fa2658b6bfa38ace430dd3736c47a03f`. Đây là đo cục bộ, vẫn kiểm tra tình trạng Render sau phát hành. Công thức/điểm không đổi.
+
+Backtest từ Pages mở backend first-party để Safari dùng phiên Owner. Worker đọc manifest/archive qua API riêng, kiểm tra hash và phiên trước khi dùng cùng engine cũ; không fallback snapshot public khi xác thực hoặc kiểm định lỗi. Danh tính first-party chỉ đồng bộ ở backend, không đổi vùng Watchlist trên Pages. 290/290 Node đạt cục bộ, bao gồm từ chối sai origin/Host, role, manifest/hash và kiểm tra import tệp/đường public cũ.
+
 Baseline DNSE đầy đủ phải qua kiểm định và tồn tại trong bucket private trước khi bật `TRACKER_MARKET_PRIVATE_DNSE` trên Render. Backend live/xác thực Owner được kiểm tra trước khi đổi policy Pages sang `dnse-owner-private`. GitHub scheduler DNSE không bật khi Windows là writer.
 
 Nếu lỗi, dừng/disable task Windows, giữ ciphertext và snapshot để điều tra; tắt mode mới và phục hồi commit/backend đã ghi trong báo cáo. Không xóa Watchlist, tài khoản/nghiên cứu hoặc chuyển snapshot DNSE sang public. Không vô hiệu hóa/tạo lại khóa qua agent; Owner tự thao tác khi cần đổi khóa.

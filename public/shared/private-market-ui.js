@@ -1,6 +1,6 @@
 (async function(){
   'use strict';if(!window.TRACKER_PRIVATE_MARKET_WEB)return;
-  const panel=document.createElement('section');panel.className='panel';panel.style.cssText='margin:12px 0;padding:14px';
+  const panel=document.createElement('section');panel.id='privateMarketLogin';panel.className='panel';panel.style.cssText='margin:12px 0;padding:14px';
   panel.innerHTML='<strong>Tracker · Dữ liệu DNSE cá nhân</strong><p role="status" aria-live="polite">Đang kiểm tra phiên đăng nhập…</p><form hidden><label>Mật khẩu Tracker <input type="password" autocomplete="current-password" required maxlength="256" style="font-size:16px;max-width:100%"></label><button class="btn primary" style="min-height:44px">Đăng nhập Owner</button></form><button type="button" class="btn" hidden style="min-height:44px">Đăng xuất</button>';
   (document.getElementById('trackerDataStatus')||document.querySelector('.app>.grid')).before(panel);
   const status=panel.querySelector('[role=status]'),form=panel.querySelector('form'),password=form.querySelector('input'),logout=panel.querySelector('button[type=button]');let csrf='',token='',loaded=false;
@@ -11,6 +11,8 @@
   function accept(s){csrf=s.csrf;if(s.token)token=s.token;if(s.role!=='owner'){status.textContent='Dữ liệu DNSE này chỉ dành cho chủ tài khoản nguồn.';form.hidden=true;logout.hidden=false;return;}
     form.hidden=true;logout.hidden=false;status.textContent='Đã đăng nhập Owner. Đang tải dữ liệu cuối ngày.';
     if(!loaded){loaded=true;TrackerAutomaticData.mount(window,document);}
+    // Chỉ đồng bộ danh tính trên backend first-party cho Backtest; giữ vùng Watchlist Pages.
+    if(!base){const identity=s.identity||{id:'owner',role:'owner'};if(window.TrackerAccountId!==identity.id){window.TrackerAccountId=identity.id;document.dispatchEvent(new CustomEvent('tracker-session',{detail:identity}));}}
   }
   form.addEventListener('submit',async e=>{e.preventDefault();const b=form.querySelector('button');b.disabled=true;try{accept(await api('login',{method:'POST',body:JSON.stringify({username:'owner',password:password.value})}));}catch(error){status.textContent=error.message;}finally{password.value='';b.disabled=false;}});
   logout.addEventListener('click',async()=>{try{await api('logout',{method:'POST'});token='';csrf='';location.reload();}catch(error){status.textContent=error.message;}});

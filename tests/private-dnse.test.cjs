@@ -20,6 +20,12 @@ test('Cache DNSE dùng hash, giữ known-good khi mất nguồn/lùi phiên, kh�
  assert.throws(()=>new M.PrivateMarket({store:s,dir:path.join(root,'public')}),/ngoài public/);
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+test('HTTP chỉ giữ metadata; archive cache bị sửa vẫn bị validator chặn',async()=>{
+ const dir=directory();try{const s=storeFixture(),cache=new M.PrivateMarket({store:s,dir,clock:()=>+now}),current=await cache.refresh();assert.equal(current.payload.symbols,undefined);const asset=await cache.asset(current.manifest.active.file);assert.ok(asset.bytes.length);fs.writeFileSync(current.file,Buffer.from('fixture-khong-phai-gzip'));await assert.rejects(cache.asset(current.manifest.active.file),/kiểm định/);}finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+test('Hàng đợi giới hạn một tác vụ nặng và phục hồi sau tác vụ lỗi',async()=>{
+ const dir=directory();try{const cache=new M.PrivateMarket({store:storeFixture(),dir,clock:()=>+now});let active=0,peak=0;const jobs=Array.from({length:3},(_,i)=>cache.work(async()=>{active++;peak=Math.max(peak,active);try{await new Promise(r=>setTimeout(r,5));if(i===1)throw Error('FIXTURE');return i;}finally{active--;}}));const result=await Promise.allSettled(jobs);assert.equal(peak,1);assert.equal(result[1].status,'rejected');assert.equal(result[2].value,2);}finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
 test('Phát hành private kiểm tra archive trước thay manifest; lỗi không thay active',async()=>{
  const dir=directory();try{const s=storeFixture();await E.restore(s,dir,now);const original=s.objects.get('active.json');
  const p=fixture();p.meta.generatedAt='2026-11-14T02:00:00Z';const file=path.join(dir,'candidate.json');fs.writeFileSync(file,JSON.stringify(p));P.publish(file,dir,{sourceProvider:'DNSE',now});
@@ -30,6 +36,7 @@ test('Phát hành private kiểm tra archive trước thay manifest; lỗi khôn
 test('Pages DNSE vẫn không chứa giá/Backtest/secret; HTML và token chỉ dùng endpoint riêng',()=>{
  const dir=directory();try{const site=Pages.prepare(path.join(dir,'site'),{marketDataMode:'dnse-owner-private',sourceProvider:'DNSE',automaticEod:true,publicMarketSnapshots:false,apiBase:'https://tracker-ai-free.onrender.com'}),html=fs.readFileSync(path.join(site,'index.html'),'utf8');
  assert.ok(html.includes('TRACKER_PRIVATE_MARKET_WEB = true'));assert.ok(html.includes('https://tracker-ai-free.onrender.com/api/ai/market/'));assert.equal(fs.existsSync(path.join(site,'data')),false);assert.equal(fs.existsSync(path.join(site,'backtest')),false);assert.ok(!html.includes('SUPABASE_SERVICE_ROLE_KEY'));
+ assert.ok(html.includes('"launchUrl":"https://tracker-ai-free.onrender.com"'));assert.ok(html.includes('"enabled":false'));assert.ok(!M.renderIndex(fs.readFileSync(path.join(root,'public/index.html'),'utf8')).includes('"launchUrl"'));
  for(const name of ['private-market-ui.js','automatic-data.js'])new vm.Script(fs.readFileSync(path.join(site,'shared',name),'utf8'));
  assert.throws(()=>M.renderIndex(html,{apiBase:'https://evil.test'}));
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
@@ -45,6 +52,10 @@ test('HTTP: anon 401, User/Admin 403 cả dữ liệu và AI; Owner dùng bearer
  const call=(route,options={})=>fetch(base+route,options),login=async username=>{const r=await call('/api/ai/login',{method:'POST',headers:{Origin:origin},body:JSON.stringify({username,password})});assert.equal(r.status,200);return r.json();};
  try{
  assert.equal((await call('/api/ai/market/active.json')).status,401);for(const route of ['/data/market.json.gz','/%64ata/market.json','/shared/%2e%2e/data/market.json.gz'])assert.equal((await call(route)).status,404);
+ const selfOrigin='https://tracker-ai-free.onrender.com';
+ assert.equal((await call('/api/ai/session',{headers:{Origin:selfOrigin}})).status,403);
+ const self=await new Promise((resolve,reject)=>{const req=require('node:http').get(base+'/api/ai/session',{headers:{Origin:selfOrigin,Host:'tracker-ai-free.onrender.com'}},r=>{r.resume();r.on('end',()=>resolve({status:r.statusCode,origin:r.headers['access-control-allow-origin']}));});req.on('error',reject);});assert.equal(self.status,401);assert.equal(self.origin,selfOrigin);
+ assert.equal((await call('/api/ai/session',{headers:{Origin:'https://evil.test',Host:'tracker-ai-free.onrender.com'}})).status,403);
  const owner=await login('owner');assert.match(owner.token,/^[a-f0-9]{64}$/);assert.equal(instance.gateway.status().providers.length,0);
  for(const role of ['admin','user'])instance.accounts.create(instance.accounts.owner(),{username:role+'-fixture',role,password,canResearch:true});
  for(const role of ['admin','user']){const s=await login(role+'-fixture'),h={Authorization:'Bearer '+s.token,Origin:origin};for(const route of ['market/active.json','market/snapshots/'+'a'.repeat(64)+'.json.gz','jobs','monitors'])assert.equal((await call('/api/ai/'+route,{headers:h})).status,403);}
@@ -63,7 +74,7 @@ test('Web Pages dùng bearer ở RAM, bỏ cookie bên thứ ba, chặn gửi to
  const fetcher=async(url,options)=>{calls.push({url,options});return url.endsWith('/session')?Response.json({error:'login'},{status:401}):url.endsWith('/login')?Response.json({role:'owner',token:'a'.repeat(64),csrf:'fixture-csrf'}):Response.json({ok:true},{status:expired?401:200});};
  const c=vm.createContext({window:root,document,location:{href:'https://kalm-d.github.io/tracker/',reload(){reloads++;}},fetch:fetcher,URL,TrackerAutomaticData:automatic});
  await vm.runInContext(fs.readFileSync(path.join(rootPath(),'public/shared/private-market-ui.js'),'utf8'),c);assert.equal(form.hidden,false);
- await listeners.submit({preventDefault(){}});assert.equal(mounts,1);assert.equal(password.value,'');
+ await listeners.submit({preventDefault(){}});assert.equal(mounts,1);assert.equal(password.value,'');assert.equal(root.TrackerAccountId,undefined);
  await root.TrackerPrivateFetch('https://tracker-ai-free.onrender.com/api/ai/market/active.json');assert.equal(calls.at(-1).options.credentials,'omit');assert.equal(calls.at(-1).options.headers.Authorization,'Bearer '+'a'.repeat(64));assert.equal(calls.at(-1).options.redirect,'error');
  assert.throws(()=>root.TrackerPrivateFetch('https://evil.test/'),/máy chủ khác/);expired=true;await root.TrackerPrivateFetch('https://tracker-ai-free.onrender.com/api/ai/market/active.json');assert.equal(reloads,1);
  function rootPath(){return path.resolve(__dirname,'..');}
