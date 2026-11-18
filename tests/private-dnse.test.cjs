@@ -65,6 +65,7 @@ test('HTTP: anon 401, User/Admin 403 cả dữ liệu và AI; Owner dùng bearer
  assert.equal((await call('/api/ai/jobs',{method:'POST',headers,body:'{}'})).status,409);
  assert.equal((await call('/api/ai/logout',{method:'POST',headers:{Authorization:headers.Authorization,Origin:origin}})).status,403);
  assert.equal((await call('/api/ai/logout',{method:'POST',headers})).status,200);assert.equal((await call('/api/ai/market/active.json',{headers})).status,401);
+ const selfSession=await login('owner');const selfPost=csrf=>new Promise((resolve,reject)=>{const req=require('node:http').request(base+'/api/ai/logout',{method:'POST',headers:{Origin:selfOrigin,Host:'tracker-ai-free.onrender.com',Authorization:'Bearer '+selfSession.token,...(csrf?{'X-Tracker-CSRF':csrf}:{})}},r=>{r.resume();r.on('end',()=>resolve(r.statusCode));});req.on('error',reject);req.end();});assert.equal(await selfPost(''),403);assert.equal(await selfPost('wrong'),403);assert.equal(await selfPost(selfSession.csrf),200);assert.equal((await call('/api/ai/session',{headers:{Authorization:'Bearer '+selfSession.token,Origin:origin}})).status,401);
  }finally{instance.dispose();await new Promise(r=>instance.app.close(r));fs.rmSync(dir,{recursive:true,force:true});}
 });
 test('Web Pages dùng bearer ở RAM, bỏ cookie bên thứ ba, chặn gửi token sai host và xóa view khi hết phiên',async()=>{
