@@ -74,7 +74,7 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
    const identity=accounts.current(session.identity);if(!identity){sessions.delete(id);return json(res,401,{error:'Tài khoản hoặc quyền đã đổi; cần đăng nhập lại.'});}
    const permissions=capabilities(identity);
    if(Date.now()-session.rateAt>60000){session.rateAt=Date.now();session.rateCount=0;}if(++session.rateCount>120)return json(res,429,{error:'Quá nhiều yêu cầu.'});
-   if(!['GET','HEAD'].includes(req.method)&&(!origin||origin!==expected||!safeEqual(req.headers['x-tracker-csrf']||'',session.csrf)))return json(res,403,{error:'Thiếu mã bảo vệ phiên hoặc Origin hợp lệ.'});
+   if(!['GET','HEAD'].includes(req.method)&&(!origin||origin!==expected&&!privateSelf||!safeEqual(req.headers['x-tracker-csrf']||'',session.csrf)))return json(res,403,{error:'Thiếu mã bảo vệ phiên hoặc Origin hợp lệ.'});
    if(route==='session'&&req.method==='GET')return json(res,200,{role:identity.role,identity:{id:identity.id,username:identity.username},capabilities:permissions,csrf:session.csrf,...(identity.role==='owner'?gateway.status():{}),version:VERSION});
    if(route==='logout'&&req.method==='POST'){sessions.delete(id);res.setHeader('Set-Cookie',[cookie('',0),cookie('',0).replace('Path=/;','Path=/api/ai;')]);return json(res,200,{ok:true});}
    if(privateMode&&(/^(market|jobs|monitors|operations)(\/|$)/.test(route))&&identity.role!=='owner')return json(res,403,{error:'Dữ liệu và nghiên cứu DNSE cá nhân chỉ dành cho chủ tài khoản nguồn.'});
