@@ -35,6 +35,16 @@ def sdk_frame():
 
 
 class DnseAdapterTests(unittest.TestCase):
+    def test_empty_frame_van_giu_provider_da_xac_minh(self):
+        """Không biến kết quả DNSE rỗng thành không biết nguồn; không tạo bar giả."""
+        frame = pd.DataFrame()
+        frame.attrs.update(tracker_source='DNSE', tracker_price_scale=1000)
+        before = frame.copy()
+        result = exporter.sdk_quality_fields(pd, frame)
+        self.assertEqual(result['source_provider'], 'DNSE')
+        self.assertEqual(result['sdk_last_date'], '')
+        pd.testing.assert_frame_equal(frame, before)
+
     def test_chan_doan_loi_giu_cause_nhung_khong_lo_noi_dung_khoa(self):
         """Lỗi khởi tạo vẫn điều tra được mà không in message/URL/header."""
         try:
@@ -210,6 +220,44 @@ class DnseAdapterTests(unittest.TestCase):
             pd.testing.assert_frame_equal(first, pd.read_csv(output))
             self.assertEqual(sdk.Market.call_count, 3)
             self.assertEqual(len(pd.read_csv(quality)), 3)
+
+    def test_resume_windows_giu_ket_qua_ngan_da_doc_khong_doi_du_lieu(self):
+        reference = Mock()
+        reference.equity.list.return_value = pd.DataFrame({'symbol': ['FPT', 'PVS'], 'exchange': ['HOSE', 'HNX']})
+        market = Mock()
+        market.equity.return_value.ohlcv.side_effect = lambda **kwargs: sdk_frame()
+        sdk = SimpleNamespace(__version__='6.0.0', Market=Mock(return_value=market), Reference=Mock(return_value=reference))
+        with tempfile.TemporaryDirectory() as folder:
+            output, quality = Path(folder)/'market.csv', Path(folder)/'quality.csv'
+            args = ['exporter', '--symbols', 'FPT,PVS', '--source', 'DNSE', '--min-rows', '3', '--no-index', '--sleep', '0', '--output', str(output), '--quality-output', str(quality), '--errors-output', str(Path(folder)/'errors.csv')]
+            with patch.dict(sys.modules, {'vnstock': sdk, 'sector_data': SimpleNamespace(load_sectors=lambda:{})}), patch.object(exporter, 'market_session', return_value={'expectedSession':'2026-11-10'}), patch.object(sys, 'argv', args), redirect_stdout(io.StringIO()):
+                self.assertEqual(exporter.main(), 1)
+            before = pd.read_csv(output)
+            self.assertEqual(sdk.Market.call_count, 2)
+            with patch.dict(sys.modules, {'vnstock': sdk, 'sector_data': SimpleNamespace(load_sectors=lambda:{})}), patch.object(exporter, 'market_session', return_value={'expectedSession':'2026-11-10'}), patch.object(sys, 'argv', args+['--resume','--resume-known-results']), redirect_stdout(io.StringIO()):
+                self.assertEqual(exporter.main(), 1)
+            self.assertEqual(sdk.Market.call_count, 2)
+            pd.testing.assert_frame_equal(before, pd.read_csv(output))
+            self.assertEqual(set(pd.read_csv(quality)['status']), {'too_few_rows'})
+
+    def test_resume_windows_doc_lai_ma_nguon_tung_chua_co_du_phien(self):
+        reference = Mock()
+        reference.equity.list.return_value = pd.DataFrame({'symbol':['FPT'], 'exchange':['HOSE']})
+        newer = sdk_frame()
+        newer.loc[len(newer)] = [pd.Timestamp('2026-11-11 07:00', tz='Asia/Ho_Chi_Minh'), 12., 14., 11., 13., 230.]
+        market = Mock()
+        market.equity.return_value.ohlcv.side_effect = [sdk_frame(), newer]
+        sdk = SimpleNamespace(__version__='6.0.0', Market=Mock(return_value=market), Reference=Mock(return_value=reference))
+        with tempfile.TemporaryDirectory() as folder:
+            output, quality = Path(folder)/'market.csv', Path(folder)/'quality.csv'
+            args = ['exporter','--symbols','FPT','--source','DNSE','--min-rows','1','--no-index','--sleep','0','--output',str(output),'--quality-output',str(quality),'--errors-output',str(Path(folder)/'errors.csv')]
+            with patch.dict(sys.modules, {'vnstock':sdk,'sector_data':SimpleNamespace(load_sectors=lambda:{})}), patch.object(exporter,'market_session',return_value={'expectedSession':'2026-11-11'}), patch.object(sys,'argv',args), redirect_stdout(io.StringIO()):
+                self.assertEqual(exporter.main(),0)
+            self.assertEqual(pd.read_csv(quality)['last_date'].iloc[0],'2026-11-10')
+            with patch.dict(sys.modules, {'vnstock':sdk,'sector_data':SimpleNamespace(load_sectors=lambda:{})}), patch.object(exporter,'market_session',return_value={'expectedSession':'2026-11-11'}), patch.object(sys,'argv',args+['--resume','--resume-known-results']), redirect_stdout(io.StringIO()):
+                self.assertEqual(exporter.main(),0)
+            self.assertEqual(sdk.Market.call_count,2)
+            self.assertEqual(pd.read_csv(quality)['last_date'].iloc[0],'2026-11-11')
 
 
 class SectorCacheTests(unittest.TestCase):

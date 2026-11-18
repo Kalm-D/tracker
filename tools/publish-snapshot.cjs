@@ -20,6 +20,7 @@ function validate(candidate,previous,{allowMissing=[],now=new Date(),sourceProvi
   if(!['EOD','INTRADAY'].includes(m.snapshotKind))throw Error('Chưa xác định EOD/intraday.');
   if(!['KBS','DNSE'].includes(sourceProvider)||!Array.isArray(m.sourceProviders)||m.sourceProviders.length!==1||m.sourceProviders[0]!==sourceProvider)throw Error('Nguồn thực chưa được duyệt; không đổi provider ngầm.');
   if(sourceProvider==='DNSE'&&previous&&(previous.meta.sourceProviders?.length!==1||previous.meta.sourceProviders[0]!=='DNSE'))throw Error('Không trộn baseline khác nguồn vào kho DNSE cá nhân.');
+  if(sourceProvider==='DNSE'&&m.coverage?.policy){const C=require('./dnse-coverage.cjs');allowMissing=[...allowMissing,...C.validate(candidate,previous)];}
   const failed=m.coverage?.failedTickers||[];if(failed.some(t=>!allowMissing.includes(t)))throw Error('Thiếu mã trong universe: '+failed.filter(t=>!allowMissing.includes(t)).join(','));
   if(previous){if(m.asOf<previous.meta.asOf)throw Error('Không thay bản tốt bằng phiên cũ hơn.');const available=new Set(candidate.symbols.map(s=>s.ticker)),missing=previous.symbols.filter(s=>!available.has(s.ticker)&&!allowMissing.includes(s.ticker));if(missing.length)throw Error('Mất mã so với bản trước: '+missing.map(s=>s.ticker).join(','));
     const regressions=[];
