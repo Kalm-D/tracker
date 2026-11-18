@@ -33,7 +33,7 @@
       if(d.type==='dataset')download(d.text,`tracker-data-${d.dataHash.slice(0,12)}.json`,'application/json');
     };
     worker.onerror=e=>{status('Worker lỗi: '+e.message);setBusy(false);};
-    worker.postMessage({type:'load',raw:importedRaw});
+    worker.postMessage({type:'load',raw:importedRaw,privateDnse:window.TRACKER_PRIVATE_MARKET_WEB===true});
   }
   function renderData(){
     const d=loaded;$('bt-data').innerHTML=`<strong>${money(d.audit.symbols)} mã/chỉ số · ${money(d.audit.rows)} bar</strong><p>${esc(d.meta.source)} · ${esc(d.audit.first)} → ${esc(d.audit.last)} · ${d.audit.invalid} bar lỗi bị loại</p><p class="bt-muted">Khoảng toàn bộ file không đồng nghĩa mọi mã có đủ lịch sử. Backtest cần 252 phiên làm nóng và pivot từ trước phiên mua. Dữ liệu demo bị từ chối; không trộn dữ liệu live khi đang chạy.</p><code>SHA-256 ${esc(d.dataHash)}</code>`;

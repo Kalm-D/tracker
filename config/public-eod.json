@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "provider": "KBS",
+  "rights": {
+    "status": "pending",
+    "reference": null
+  },
+  "bootstrapReview": {
+    "status": "pending",
+    "candidateId": null,
+    "symbolCount": null,
+    "reference": null
+  },
+  "reason": "Chưa xác minh phạm vi phát hành snapshot KBS công khai; không bật nguồn bằng quyền deploy của chủ website."
+}

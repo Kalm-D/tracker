@@ -78,11 +78,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retry-sleep", type=float, default=70.0, help="Số giây chờ khi gặp rate limit trước khi thử lại.")
     parser.add_argument("--save-every", type=int, default=5, help="Lưu file CSV tạm sau mỗi N mã tải thành công. 0 = chỉ lưu cuối cùng.")
     parser.add_argument("--resume", action="store_true", help="Nếu file output đã có dữ liệu, bỏ qua các mã đã tải để chạy tiếp.")
+    parser.add_argument('--resume-known-results', action='store_true', help='DNSE Windows: giữ kết quả cùng kỳ đã xác minh kể cả rỗng/lịch sử ngắn; không đổi điều kiện tính điểm.')
     parser.add_argument("--source", default="DNSE", choices=["DNSE", "VCI", "KBS"], help="DNSE qua SDK 6; VCI/KBS trực tiếp, không tự đổi nguồn.")
     parser.add_argument('--personal-universe', action='store_true', help='R7: chỉ tạo candidate toàn danh mục VCI trên máy Owner, không thay bản đang dùng.')
     parser.add_argument("--no-index", action="store_true", help="Không tải VNINDEX.")
     parser.add_argument("--min-rows", type=int, default=210, help="Số dòng tối thiểu/mã để coi là đủ dùng cho Tracker.")
     args = parser.parse_args()
+    if args.resume_known_results and (not args.resume or args.source != 'DNSE'):
+        parser.error('--resume-known-results yêu cầu --resume và nguồn DNSE.')
     if args.personal_universe and args.source != 'VCI':
         parser.error('--personal-universe chỉ dùng nguồn VCI.')
     if args.personal_universe:
@@ -276,7 +279,7 @@ def fetch_ohlcv(symbol: str, start: str, end: str, source: str, is_index: bool =
 def sdk_quality_fields(pd, frame):
     """Tóm tắt ngày SDK trả về trước khi lọc OHLCV, không sửa DataFrame."""
     fields = {"source_provider": "", "sdk_last_date": ""}
-    if frame is None or not len(frame):
+    if frame is None:
         return fields
 
     provider = frame.attrs.get("tracker_source")
@@ -287,6 +290,9 @@ def sdk_quality_fields(pd, frame):
                       price_scale=frame.attrs.get('tracker_price_scale'))
         if provider == 'VCI':
             fields.update(price_unit=frame.attrs.get('price_unit'), adjustment_mode=frame.attrs.get('adjustment_mode'), rows_before_window=frame.attrs.get('rows_before_window', 0))
+
+    if not len(frame):
+        return fields
 
     cols = {str(column).lower().strip(): column for column in frame.columns}
     date_col = first_existing(cols, OHLCV_DATE_COLUMNS)
@@ -395,6 +401,23 @@ def safe_error(error):
     code = getattr(error, 'code', '') or ''
     valid_code = isinstance(code, str) and re.fullmatch(r'[A-Z][A-Z0-9_]{0,80}', code)
     return type(error).__name__ + (f' ({code})' if valid_code else '')
+
+
+def error_diagnostics(error):
+    """Giữ chuỗi loại lỗi/vị trí và HTTP status; bỏ toàn bộ message, URL và khóa."""
+    chain, seen = [], set()
+    while error is not None and id(error) not in seen and len(chain) < 5:
+        seen.add(id(error))
+        frames, tb = [], error.__traceback__
+        while tb is not None:
+            frames.append({'file': Path(tb.tb_frame.f_code.co_filename).name,
+                           'line': tb.tb_lineno, 'fn': tb.tb_frame.f_code.co_name})
+            tb = tb.tb_next
+        status = getattr(error, 'http_status', None)
+        chain.append({'type': type(error).__name__, 'frames': frames[-8:],
+                      'httpStatus': status if type(status) is int and 100 <= status <= 599 else None})
+        error = error.__cause__ or error.__context__
+    return chain
 
 
 def save_export_files(pd, frames, errors, quality, output: Path, errors_output: Path, quality_output: Path) -> None:
@@ -572,7 +595,7 @@ def main() -> int:
     today = datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date()
     calendar_days = args.calendar_days or int(args.sessions * 1.8 + 60)
     start = (today - timedelta(days=calendar_days)).isoformat()
-    end = market_session()['expectedSession'] if args.source == 'KBS' else today.isoformat()
+    end = market_session()['expectedSession'] if args.source in {'KBS', 'DNSE'} else today.isoformat()
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -610,15 +633,26 @@ def main() -> int:
                     raise ValueError('Không resume CSV khác nguồn DNSE.')
                 previous_quality = pd.read_csv(quality_output)
                 task_tickers = {task[0] for task in tasks}
+                keep_known = getattr(args, 'resume_known_results', False)
                 valid = previous_quality.loc[
                     previous_quality['requested_end'].eq(end)
-                    & previous_quality['status'].eq('ok')
+                    & previous_quality['status'].isin(['ok', 'too_few_rows', 'empty'] if keep_known else ['ok'])
                     & previous_quality['source_provider'].eq('DNSE')
                     & previous_quality['ticker'].isin(task_tickers)
                 ]
+                if keep_known:
+                    # Không giữ một kết quả cũ được tải quá sớm khi nguồn chưa có EOD.
+                    valid = valid.loc[valid['status'].eq('empty') | valid['last_date'].eq(end)]
                 existing = existing.loc[existing['ticker'].isin(valid['ticker'])]
                 counts = existing.groupby('ticker').size()
-                valid = valid.loc[valid['ticker'].isin(counts[counts >= args.min_rows].index)]
+                if keep_known:
+                    expected_rows = pd.to_numeric(valid['rows'], errors='coerce')
+                    actual_rows = valid['ticker'].map(counts).fillna(0)
+                    valid = valid.loc[expected_rows.eq(actual_rows) & ((expected_rows.gt(0) & valid['status'].ne('empty')) | (expected_rows.eq(0) & valid['status'].eq('empty')))]
+                    completed.update(valid['ticker'])
+                    errors.extend({'ticker': item['ticker'], 'issue': item['status'], 'detail': 'no rows' if item['status'] == 'empty' else str(item['rows'])+' rows'} for item in valid.to_dict('records') if item['status'] != 'ok')
+                else:
+                    valid = valid.loc[valid['ticker'].isin(counts[counts >= args.min_rows].index)]
                 existing = existing.loc[existing['ticker'].isin(valid['ticker'])]
                 quality.extend(valid.to_dict('records'))
             if len(existing) and "ticker" in existing.columns:
@@ -697,6 +731,7 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as error:
         eprint('Exporter dừng an toàn: ' + safe_error(error))
+        eprint('TRACKER_EXPORT_DIAGNOSTIC:' + json.dumps(error_diagnostics(error)))
         raise SystemExit(1) from None
 
 

@@ -8,7 +8,11 @@ const root=path.resolve(__dirname,'../..'),publicDir=path.join(root,'public');
 const safeEqual=(a,b)=>{const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&crypto.timingSafeEqual(x,y);};
 const {Accounts,passwordHash,verifyPassword,capabilities,owned}=require('./accounts.cjs');
 async function body(req){const chunks=[];let size=0;for await(const x of req){size+=x.length;if(size>20000)throw new Error('Yêu cầu quá lớn.');chunks.push(x);}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks))||'{}');}
-function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||path.join(root,'.ai-jobs')),gateway,tools,durability=null}={}){
+function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||path.join(root,'.ai-jobs')),gateway,tools,durability=null,privateMarket=null}={}){
+ const privateMode=env.TRACKER_MARKET_PRIVATE_DNSE==='true';
+ if(privateMode&&!privateMarket)throw Error('Web DNSE cá nhân cần kho snapshot riêng, không fallback dữ liệu public.');
+ // Không gửi dữ liệu gốc/đã xử lý của tài khoản DNSE sang nhà cung cấp AI bên ngoài.
+ if(privateMode)env={...env,GEMINI_API_KEY:'',GROQ_API_KEY:''};
  if(env.TRACKER_AI_ENABLED==='true'&&env.TRACKER_AI_HOST&&!['127.0.0.1','localhost','::1'].includes(env.TRACKER_AI_HOST)&&(env.TRACKER_AI_COOKIE_SECURE!=='true'||!/^https:\/\/[^/]+$/.test(env.TRACKER_AI_ALLOWED_ORIGIN||'')))throw new Error('Bind ngoài loopback cần Origin HTTPS chính xác và cookie Secure.');
  const enabled=env.TRACKER_AI_ENABLED==='true',sessions=new Map(),attempts=new Map(),runtimeLock=acquire(dir);
  const operations=new Operations({dir,env});
@@ -30,6 +34,11 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
    let decoded;try{decoded=decodeURIComponent(url.pathname);}catch{return json(res,400,{error:'URL không hợp lệ.'});}
    const file=path.resolve(publicDir,'.'+(decoded==='/'?'/index.html':decoded));
    if(!file.startsWith(publicDir+path.sep)||decoded.split('/').some(p=>p.startsWith('.')))return json(res,404,{error:'Không tìm thấy.'});
+   if(privateMode){
+    if(path.relative(publicDir,file).split(path.sep)[0].toLowerCase()==='data')return json(res,404,{error:'Không phục vụ dữ liệu giá qua đường dẫn public.'});
+    if(file===path.join(publicDir,'deployment-policy.json'))return json(res,200,{marketDataMode:'dnse-owner-private',publicMarketSnapshots:false,sourceProvider:'DNSE'});
+    if(file===path.join(publicDir,'index.html')){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'});return res.end(req.method==='HEAD'?'':require('./private-market.cjs').renderIndex(fs.readFileSync(file,'utf8')));}
+   }
    if(path.relative(publicDir,file).split(path.sep)[0].toLowerCase()==='backtest'){
    res.setHeader('Cache-Control','private, no-store');
    const sid=(req.headers.cookie||'').match(/(?:^|;\s*)tracker_ai_session=([a-f0-9]{64})(?:;|$)/)?.[1],stored=sessions.get(sid),principal=stored?.until>Date.now()?accounts.current(stored.identity):null;
@@ -40,9 +49,10 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
   res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'");
   if(!enabled)return json(res,503,{error:'AI đã tắt độc lập bằng Feature Flag.'});
   const expected=env.TRACKER_AI_ALLOWED_ORIGIN||'http://'+req.headers.host,origin=req.headers.origin;
-  if(origin&&origin!==expected)return json(res,403,{error:'Nguồn yêu cầu không được phép.'});
-  if(origin){res.setHeader('Access-Control-Allow-Origin',expected);res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Vary','Origin');}
-  if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Headers':'Content-Type, X-Tracker-CSRF','Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS'});return res.end();}
+  const privateSelf=privateMode&&origin==='https://tracker-ai-free.onrender.com'&&req.headers.host==='tracker-ai-free.onrender.com';
+  if(origin&&origin!==expected&&!privateSelf)return json(res,403,{error:'Nguồn yêu cầu không được phép.'});
+  if(origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Access-Control-Allow-Credentials','true');res.setHeader('Vary','Origin');}
+  if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Headers':'Content-Type, X-Tracker-CSRF'+(privateMode?', Authorization':''),'Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS'});return res.end();}
   if(durability)try{await durability.flush();}catch{return json(res,503,{error:'Bộ lưu cloud chưa sẵn sàng. Thử lại sau khi kết nối được khôi phục.'});}
   const durableJson=async(status,fn)=>{const value=fn();await durability?.flush();return json(res,status,value);};
   const route=url.pathname.slice('/api/ai/'.length);
@@ -57,9 +67,9 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
     for(const [k,s] of sessions)if(s.until<Date.now())sessions.delete(k);
     if(sessions.size>=10)sessions.delete(sessions.keys().next().value);
     const id=crypto.randomBytes(32).toString('hex'),csrf=crypto.randomBytes(24).toString('hex');sessions.set(id,{identity,until:Date.now()+7200000,csrf,rateAt:Date.now(),rateCount:0});
-    res.setHeader('Set-Cookie',[cookie(id,7200),cookie('',0).replace('Path=/;','Path=/api/ai;')]);return json(res,200,{ok:true,csrf,role:identity.role,identity:{id:identity.id,username:identity.username},capabilities:capabilities(identity)});
+    res.setHeader('Set-Cookie',[cookie(id,7200),cookie('',0).replace('Path=/;','Path=/api/ai;')]);return json(res,200,{ok:true,csrf,...(privateMode?{token:id}:{}),role:identity.role,identity:{id:identity.id,username:identity.username},capabilities:capabilities(identity)});
    }
-   const id=(req.headers.cookie||'').match(/(?:^|;\s*)tracker_ai_session=([a-f0-9]{64})(?:;|$)/)?.[1],session=sessions.get(id);
+   const id=privateMode&&req.headers.authorization!==undefined?String(req.headers.authorization).match(/^Bearer ([a-f0-9]{64})$/)?.[1]:(req.headers.cookie||'').match(/(?:^|;\s*)tracker_ai_session=([a-f0-9]{64})(?:;|$)/)?.[1],session=sessions.get(id);
    if(!session||session.until<Date.now()){if(id)sessions.delete(id);return json(res,401,{error:'Cần đăng nhập vào backend AI.'});}
    const identity=accounts.current(session.identity);if(!identity){sessions.delete(id);return json(res,401,{error:'Tài khoản hoặc quyền đã đổi; cần đăng nhập lại.'});}
    const permissions=capabilities(identity);
@@ -67,6 +77,12 @@ function createApp({env=process.env,dir=path.resolve(env.TRACKER_AI_JOBS_DIR||pa
    if(!['GET','HEAD'].includes(req.method)&&(!origin||origin!==expected||!safeEqual(req.headers['x-tracker-csrf']||'',session.csrf)))return json(res,403,{error:'Thiếu mã bảo vệ phiên hoặc Origin hợp lệ.'});
    if(route==='session'&&req.method==='GET')return json(res,200,{role:identity.role,identity:{id:identity.id,username:identity.username},capabilities:permissions,csrf:session.csrf,...(identity.role==='owner'?gateway.status():{}),version:VERSION});
    if(route==='logout'&&req.method==='POST'){sessions.delete(id);res.setHeader('Set-Cookie',[cookie('',0),cookie('',0).replace('Path=/;','Path=/api/ai;')]);return json(res,200,{ok:true});}
+   if(privateMode&&(/^(market|jobs|monitors|operations)(\/|$)/.test(route))&&identity.role!=='owner')return json(res,403,{error:'Dữ liệu và nghiên cứu DNSE cá nhân chỉ dành cho chủ tài khoản nguồn.'});
+   if(privateMode&&route==='jobs'&&req.method==='POST')return json(res,409,{error:'Nguồn DNSE cá nhân chưa bật gửi dữ liệu sang AI bên ngoài. Screener và phân tích bằng engine vẫn dùng được.'});
+   if(privateMode&&route.startsWith('market/')&&['GET','HEAD'].includes(req.method)){
+    const name=route.slice(7);if(name!=='active.json'&&!/^snapshots\/[a-f0-9]{64}\.json\.gz$/.test(name))return json(res,404,{error:'Không tìm thấy snapshot riêng.'});
+    try{const asset=await privateMarket.asset(name);res.writeHead(200,{'Content-Type':asset.type,'Cache-Control':'private, no-store'});return res.end(req.method==='HEAD'?undefined:asset.bytes);}catch{return json(res,503,{error:'Snapshot DNSE riêng chưa sẵn sàng; giữ dữ liệu trước.'});}
+   }
    if(route==='users'&&req.method==='GET'){if(!permissions.includes('users'))return json(res,403,{error:'Không có quyền.'});return json(res,200,accounts.list(identity));}
    if(route==='users'&&req.method==='POST'){if(!permissions.includes('users'))return json(res,403,{error:'Không có quyền.'});const input=await body(req);if(input.role==='admin'&&identity.role!=='owner')return json(res,403,{error:'Chỉ Owner được cấp Admin.'});return await durableJson(201,()=>accounts.create(identity,input));}
    const userRoute=route.match(/^users\/([a-f0-9-]{36}|owner)$/);
