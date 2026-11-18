@@ -1,6 +1,6 @@
 'use strict';
 // Diễn tập artifact độc lập; không tự thay policy hoặc deploy production.
-const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const P=require('./publish-snapshot.cjs'),A=require('./audit-data.cjs'),Q=require('../public/shared/data-quality.js');
 const root=path.resolve(__dirname,'..');
 function gate(config){
@@ -26,7 +26,8 @@ function prepare({dataDir,target,config=JSON.parse(fs.readFileSync(path.join(roo
     P.validate(p,null,{now});archives.push([entry.file,file]);
   }
   // Chỉ copy danh sách file đã kiểm định, không phát hành CSV/log/candidate lẫn trong thư mục.
-  cp.execFileSync(process.execPath,[path.join(root,'tools/prepare-pages.cjs'),target]);
+  // Scaffold cũ phải tường minh, độc lập policy DNSE đang dùng trên web cá nhân.
+  require('./prepare-pages.cjs').prepare(target,{marketDataMode:'personal-file-only',publicMarketSnapshots:false,automaticEod:false});
   fs.mkdirSync(path.join(target,'data/snapshots'),{recursive:true});
   for(const name of ['market.json.gz','market.json','active.json'])fs.copyFileSync(path.join(dataDir,name),path.join(target,'data',name));
   for(const [name,file] of archives)fs.copyFileSync(file,path.join(target,'data',name));

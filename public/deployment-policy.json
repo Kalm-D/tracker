@@ -1,6 +1,8 @@
 {
-  "version": "personal-files-web-1",
-  "marketDataMode": "personal-file-only",
+  "version": "dnse-windows-private-web-1",
+  "marketDataMode": "dnse-owner-private",
+  "sourceProvider": "DNSE",
   "publicMarketSnapshots": false,
-  "automaticEod": false
+  "automaticEod": true,
+  "apiBase": "https://tracker-ai-free.onrender.com"
 }

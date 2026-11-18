@@ -10,11 +10,11 @@ function fixture(){
 }
 function folder(){fs.mkdirSync(path.join(root,'work'),{recursive:true});return fs.mkdtempSync(path.join(root,'work/auto-eod-test-'));}
 function dataset(dir){const file=path.join(dir,'candidate.json');fs.writeFileSync(file,JSON.stringify(fixture()));const out=path.join(dir,'published');P.publish(file,out,{now});return out;}
-test('Production vẫn chặn quyền chưa xác minh; không tạo artifact hay bật policy',()=>{
+test('Production vẫn chặn nguồn public chưa xác minh; DNSE chỉ tự động trong mode Owner private',()=>{
   const config=JSON.parse(fs.readFileSync(path.join(root,'config/public-eod.json'),'utf8'));
   assert.throws(()=>A.prepare({config,dataDir:'không cần đọc',target:'không cần tạo',now}),/PUBLIC_EOD_NOT_CLEARED/);
   for(const change of [c=>c.enabled=false,c=>c.rights.status='pending',c=>c.rights.reference='',c=>c.provider='VCI']){const c=structuredClone(fixtureConfig);change(c);assert.throws(()=>A.gate(c),/PUBLIC_EOD_NOT_CLEARED/);}
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'public/deployment-policy.json'),'utf8')).automaticEod,false);
+  const policy=JSON.parse(fs.readFileSync(path.join(root,'public/deployment-policy.json'),'utf8'));assert.equal(policy.publicMarketSnapshots,false);if(policy.automaticEod){assert.equal(policy.marketDataMode,'dnse-owner-private');assert.equal(policy.sourceProvider,'DNSE');assert.equal(policy.apiBase,'https://tracker-ai-free.onrender.com');}
 });
 test('Artifact EOD giả nối đúng UI, byte snapshot/rollback nguyên vẹn, không lộ Backtest/log',()=>{
   const dir=folder();try{
@@ -26,6 +26,7 @@ test('Artifact EOD giả nối đúng UI, byte snapshot/rollback nguyên vẹn, 
     assert.equal(fs.existsSync(path.join(target,'backtest')),false);assert.equal(fs.existsSync(path.join(target,'data/private-export.csv')),false);
     const html=fs.readFileSync(path.join(target,'index.html'),'utf8');
     assert.ok(html.includes('window.TRACKER_PERSONAL_WEB = false'));assert.ok(html.includes('shared/automatic-data.js'));assert.ok(!html.includes('src="./shared/personal-ui.js"'));
+    assert.ok(!html.includes('TRACKER_PRIVATE_MARKET_WEB = true'));assert.ok(!html.includes('shared/private-market-ui.js'));
     assert.ok(html.includes('await window.refreshTrackerSharedMarketData();return;'));
     assert.equal(JSON.parse(fs.readFileSync(path.join(target,'deployment-policy.json'),'utf8')).automaticEod,true);
     // Mọi inline/external script trong artifact phải parse được ở cùng scope cũ.
