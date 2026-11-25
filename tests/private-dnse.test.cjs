@@ -70,7 +70,7 @@ test('HTTP: anon 401, User/Admin 403 cả dữ liệu và AI; Owner dùng bearer
 });
 test('Web Pages dùng bearer ở RAM, bỏ cookie bên thứ ba, chặn gửi token sai host và xóa view khi hết phiên',async()=>{
  const listeners={},password={value:'FIXTURE'},submit={},status={},logout={addEventListener:(name,fn)=>listeners[name]=fn},form={querySelector:s=>s==='input'?password:submit,addEventListener:(name,fn)=>listeners[name]=fn};
- const panel={style:{},querySelector:s=>s==='[role=status]'?status:s==='form'?form:logout},document={createElement:()=>panel,getElementById:()=>({before(){}}),addEventListener(){}};
+ const panel={style:{},querySelector:s=>s==='[role=status]'?status:s==='form'?form:logout},document={createElement:()=>panel,getElementById:id=>({before(){},append(node){assert.equal(id,'t140-infor');assert.equal(node,panel);}}),addEventListener(){}};
  const calls=[];let expired=false,reloads=0,mounts=0;const root={TRACKER_PRIVATE_MARKET_WEB:true,TRACKER_PRIVATE_API_BASE:'https://tracker-ai-free.onrender.com'},automatic={mount(){mounts++;}};
  const fetcher=async(url,options)=>{calls.push({url,options});return url.endsWith('/session')?Response.json({error:'login'},{status:401}):url.endsWith('/login')?Response.json({role:'owner',token:'a'.repeat(64),csrf:'fixture-csrf'}):Response.json({ok:true},{status:expired?401:200});};
  const c=vm.createContext({window:root,document,location:{href:'https://kalm-d.github.io/tracker/',reload(){reloads++;}},fetch:fetcher,URL,TrackerAutomaticData:automatic});
