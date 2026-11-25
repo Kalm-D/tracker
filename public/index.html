@@ -7399,7 +7399,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
 
     function rowHtml(x) {
       return `<tr>
-        <td class="stock-main" data-label="Mã"><span class="ticker">${escapeHtml(x.ticker)}</span> <button type="button" data-ai-ticker="${escapeHtml(x.ticker)}" title="Phân tích mã này bằng AI" aria-label="Phân tích ${escapeHtml(x.ticker)} bằng AI">AI</button></td>
+        <td class="stock-main" data-label="Mã"><span class="ticker">${escapeHtml(x.ticker)}</span></td>
         <td data-label="Sàn">${escapeHtml(x.exchange)}</td>
         <td data-label="Ngành">${escapeHtml(x.sector)}</td>
         <td data-label="Ngày">${escapeHtml(x.date)}</td>

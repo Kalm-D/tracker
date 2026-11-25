@@ -14,6 +14,20 @@ test('Backup tài khoản round-trip giữ hash/quyền; cờ rollback không x�
 test('Artifact Pages không chứa tài nguyên Backtest, vẫn giữ Screener và Watchlist',()=>{
  fs.mkdirSync(path.join(root,'work'),{recursive:true});const dir=fs.mkdtempSync(path.join(root,'work/pages-test-'));try{const target=path.join(dir,'site');cp.execFileSync(process.execPath,['tools/prepare-pages.cjs',target],{cwd:root});assert.ok(fs.existsSync(path.join(target,'index.html')));assert.ok(fs.existsSync(path.join(target,'shared/watchlist-data.js')));assert.equal(fs.existsSync(path.join(target,'backtest')),false);assert.ok(fs.existsSync(path.join(root,'public/backtest/worker.js')));}finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+test('Screener hiển thị mã và giữ thao tác Chi tiết, Watchlist khi bỏ nút AI', () => {
+ const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+ const source = html.slice(html.indexOf('function rowHtml(x)'), html.indexOf('function openDetail(ticker)'));
+ const format = value => String(value ?? '');
+ const render = vm.runInNewContext('(' + source.trim() + ')', {
+  escapeHtml: format, pill: format, fmtPrice: format, fmtNum: format, fmtPct: format,
+  gradeTone: format, scorePill: format, state: { watchlist: new Set() }
+ });
+ const row = render({ ticker: 'FPT' });
+ assert.doesNotMatch(row, /data-ai-ticker/);
+ assert.match(row, /<span class="ticker">FPT<\/span>/);
+ assert.match(row, /data-detail="FPT"/);
+ assert.match(row, /data-watch="FPT"/);
+});
 test('Đổi danh tính chấm dứt worker/poll và đóng DB Backtest; không xóa lịch sử',async()=>{
  const elements=new Map(),listeners=new Map(),closed=[],workers=[];const element=()=>({value:'',dataset:{},classList:{contains:()=>false},append(){},remove(){this.removed=true;},addEventListener(){}}),get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
  const identity='11111111-1111-4111-8111-111111111111',window={TrackerAccountId:identity,Tracker140:{},addEventListener(){},removeEventListener(){}},document={getElementById:get,createElement:element,addEventListener:(k,fn)=>listeners.set(k,fn),removeEventListener:k=>listeners.delete(k),dispatchEvent(){}};
