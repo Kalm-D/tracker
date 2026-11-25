@@ -34,11 +34,12 @@
     }
     return {refresh(){if(pending)return pending;pending=read().finally(()=>{pending=null;});return pending;}};
   }
-  function mount(root,document){
+  function mount(root,document,container){
     const panel=document.createElement('section');panel.className='panel';panel.id='automaticDataPanel';
     panel.style.cssText='margin:12px 0;padding:14px;overflow-wrap:anywhere';
     panel.innerHTML='<strong>Dữ liệu cuối ngày tự động</strong><p role="status" aria-live="polite">Đang tải snapshot đã công bố…</p><button type="button" class="btn" style="min-height:44px">Kiểm tra phiên mới</button>';
-    (document.getElementById('trackerDataStatus')||document.querySelector('.app>.grid')).before(panel);
+    if(container)container.append(panel);
+    else (document.getElementById('trackerDataStatus')||document.querySelector('.app>.grid')).before(panel);
     const status=panel.querySelector('[role=status]'),button=panel.querySelector('button');
     const coverage=document.createElement('p');coverage.style.cssText='margin:8px 0;overflow-wrap:anywhere';coverage.hidden=true;panel.append(coverage);
     const fetcher=root.TrackerPrivateFetch||root.fetch.bind(root);
