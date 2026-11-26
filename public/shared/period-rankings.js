@@ -8,6 +8,7 @@
     {days: 126, base: 126, label: '6 tháng'}
   ];
   const exchanges = new Set(['HOSE', 'HNX', 'UPCOM']);
+  const exchangeLabel = code => code === 'ALL' ? 'Tất cả' : code === 'UPCOM' ? 'UPCoM' : code;
   const valid = value => value != null && value !== '' && Number.isFinite(Number(value));
   const usableClose = value => valid(value) && Number(value) > 0;
 
@@ -59,20 +60,28 @@
         const firstClose = sessions.get(start)?.close, lastClose = sessions.get(last)?.close;
         if (!usableClose(firstClose) || !usableClose(lastClose)) continue;
         const change = 100 * (lastClose / firstClose - 1);
-        prices.push({ticker, exchange, firstClose, lastClose, change, current, sessions});
+        prices.push({ticker, exchange: sessions.get(last).exchange, firstClose, lastClose, change, current, sessions});
       }
       prices.sort((a,b) => b.change - a.change || tie(a,b));
-      const up = prices.filter(x => x.change > 0).slice(0,10);
-      const down = prices.filter(x => x.change < 0).sort((a,b) => a.change - b.change || tie(a,b)).slice(0,10);
-      for (const item of [...up, ...down]) {
+      const gainers = prices.filter(x => x.change > 0);
+      const decliners = prices.filter(x => x.change < 0).sort((a,b) => a.change - b.change || tie(a,b));
+      const byExchange = new Map(), displayed = new Set();
+      for (const code of ['ALL', ...exchanges]) {
+        const matches = x => code === 'ALL' || x.exchange === code;
+        const up = gainers.filter(matches).slice(0,10);
+        const down = decliners.filter(matches).slice(0,10);
+        byExchange.set(code, {eligible: prices.filter(matches).length, up, down});
+        for (const item of [...up, ...down]) displayed.add(item);
+      }
+      for (const item of displayed) {
         item.reference = volumes(item.sessions, baseDates, base);
         item.ratio = item.current.mean !== null && item.reference.mean > 0 ? item.current.mean / item.reference.mean : null;
         delete item.sessions;
       }
       totals.sort((a,b) => b.current.sum - a.current.sum || tie(a,b));
-      windows.set(days, {days, base, start, last, currentDates, baseDates, source, eligible: prices.length, up, down, totals: totals.slice(0,10)});
+      windows.set(days, {days, base, start, last, currentDates, baseDates, source, ...byExchange.get('ALL'), byExchange, totals: totals.slice(0,10)});
     }
     return windows;
   }
-  window.TrackerPeriodRankings = {periods, calculate};
+  window.TrackerPeriodRankings = {periods, exchanges: [...exchanges], exchangeLabel, calculate};
 })();

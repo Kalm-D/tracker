@@ -5944,7 +5944,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
 <style>
 .tracker-readout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem .8rem;align-items:baseline;margin:.75rem 0;font-variant-numeric:tabular-nums}
 .tracker-readout dt{color:var(--muted)}.tracker-readout dd{margin:0;text-align:right;font-weight:650}.tracker-readout small,.period-table small{display:block;font-size:.8rem;color:var(--muted)}
-.period-rankings{min-width:0;container-type:inline-size}.period-rankings select{margin-inline-start:.5rem;padding:.35rem}.period-movers{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
+.period-filters{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem 1.2rem}.period-rankings{min-width:0;container-type:inline-size}.period-rankings select{margin-inline-start:.5rem;padding:.35rem}.period-movers{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
 .period-table{min-width:0;margin:.8rem 0}.period-table .t140-tablewrap{max-width:100%;overflow-x:auto}.period-table h3{margin:.4rem 0}.period-table td,.period-table th{font-variant-numeric:tabular-nums}
 @container(min-width:1350px){.period-movers{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1023px){#t140-v2lab .dx6-tier-grid>.lab-quote{order:-1}}
@@ -6350,7 +6350,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   <script src="./shared/watchlist-data.js"></script>
   <script src="./shared/data-status.js" defer></script>
   <script src="./shared/tracker-engine.js"></script>
-  <script src="./shared/period-rankings.js"></script>
+  <script src="./shared/period-rankings.js?v=2"></script>
   <script src="./shared/analysis-context.js"></script>
   <script>
     "use strict";
@@ -8461,7 +8461,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
     TrackerViewRuntime.enqueue('classic-view',()=>{if(el.classList.contains('active'))renderView(v)});
   }
 
-  let rankingState = null, selectedPeriod = 1;
+  let rankingState = null, selectedPeriod = 1, selectedExchange = 'ALL';
   function preparePeriodRankings(){
     const rows=state.rawRows, benchmark=settings().benchmarkTicker || 'VNINDEX';
     if(rankingState?.rows===rows && rankingState.benchmark===benchmark) return;
@@ -8480,16 +8480,17 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   function periodResults(){
     if(!rankingState?.result) return `<p role="status">${rankingState?.error || 'Đang tổng hợp dữ liệu theo kỳ…'}</p>`;
     const w=rankingState.result.get(selectedPeriod);
+    const movers=w.byExchange.get(selectedExchange);
     const range=dates=>dates.length ? `${esc(dates[0])} → ${esc(dates.at(-1))}` : '—';
     const amount=(v,n)=>`${v.mean===null?'—':num(v.mean,1)}<small>${v.count}/${n} phiên</small>`;
     const headers=['Mã · Sàn','Giá đầu kỳ','Giá cuối kỳ','Biến động',w.days===1?'KL phiên (CP)':`KLTB ${w.days} phiên (CP/phiên)`,`KLTB ${w.base} phiên trước kỳ (CP/phiên)`,'So với nền'];
     const priceRows=list=>list.map(x=>`<tr><td><b>${esc(x.ticker)}</b><small>${esc(x.exchange)}</small></td><td>${num(x.firstClose,2)}</td><td>${num(x.lastClose,2)}</td><td class="t140-${x.change>0?'good':'bad'}">${x.change>0?'+':''}${num(x.change,2)}%</td><td>${amount(x.current,w.days)}</td><td>${amount(x.reference,w.base)}</td><td>${x.ratio===null?'—':x.ratio.toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2})+'×'}</td></tr>`);
     const volumeRows=w.totals.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.ticker)}</b></td><td>${esc(x.exchange)}</td><td>${esc(x.sector || 'Chưa phân loại')}</td><td>${num(x.current.sum,0)}</td><td>${x.current.count}/${w.days}</td></tr>`);
-    return `<p class="t140-sub">Biến động giá đóng cửa ${esc(w.start || '—')} → ${esc(w.last || '—')} · ${w.eligible} mã đủ hai mốc giá · Lịch ${esc(w.source)}</p>
+    return `<p class="t140-sub">Biến động giá đóng cửa ${esc(w.start || '—')} → ${esc(w.last || '—')} · ${movers.eligible} mã đủ hai mốc giá · Sàn ${TrackerPeriodRankings.exchangeLabel(selectedExchange)} · Lịch ${esc(w.source)}</p>
       <p class="t140-sub">Kỳ khối lượng ${range(w.currentDates)} · Nền ${w.base} phiên trước kỳ ${range(w.baseDates)}. Dấu — xuất hiện khi thiếu phiên để tính hoặc khi nền bằng 0.</p>
       ${w.currentDates.length<w.days?'<p>Lịch giao dịch chưa đủ số phiên yêu cầu. Tổng KL chỉ gồm các phiên hiện có.</p>':''}
-      <div class="period-movers">${rankingTable('Top 10 cổ phiếu tăng',headers,priceRows(w.up),'Chưa có mã tăng đủ dữ liệu trong kỳ.')}${rankingTable('Top 10 cổ phiếu giảm',headers,priceRows(w.down),'Chưa có mã giảm đủ dữ liệu trong kỳ.')}</div>
-      ${rankingTable('Top 10 khối lượng',['#','Mã','Sàn','Ngành','Tổng KL (CP)','Phiên có dữ liệu'],volumeRows,'Chưa có dữ liệu khối lượng trong kỳ.')}`;
+      <div class="period-movers">${rankingTable('Top 10 cổ phiếu tăng',headers,priceRows(movers.up),'Chưa có mã tăng đủ dữ liệu trong kỳ.')}${rankingTable('Top 10 cổ phiếu giảm',headers,priceRows(movers.down),'Chưa có mã giảm đủ dữ liệu trong kỳ.')}</div>
+      ${rankingTable('Top 10 khối lượng · toàn thị trường',['#','Mã','Sàn','Ngành','Tổng KL (CP)','Phiên có dữ liệu'],volumeRows,'Chưa có dữ liệu khối lượng trong kỳ.')}`;
   }
   function updatePeriodResults(){
     const el=document.getElementById('periodRankingResults');
@@ -8498,11 +8499,13 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   function renderPeriodRankings(){
     preparePeriodRankings();
     const options=TrackerPeriodRankings.periods.map(p=>`<option value="${p.days}" ${selectedPeriod===p.days?'selected':''}>${p.label}</option>`).join('');
-    return `<section class="t140-card t140-col-12 period-rankings"><h2>Xếp hạng theo kỳ</h2><div><label>Kỳ xếp hạng <select id="periodRankingSelect">${options}</select></label><div id="periodRankingResults">${periodResults()}</div></div></section>`;
+    const exchangeOptions=['ALL',...TrackerPeriodRankings.exchanges].map(code=>`<option value="${code}" ${selectedExchange===code?'selected':''}>${TrackerPeriodRankings.exchangeLabel(code)}</option>`).join('');
+    return `<section class="t140-card t140-col-12 period-rankings"><h2>Xếp hạng theo kỳ</h2><div><div class="period-filters"><label>Kỳ xếp hạng <select id="periodRankingSelect">${options}</select></label><label>Sàn tăng/giảm <select id="periodExchangeSelect">${exchangeOptions}</select></label></div><div id="periodRankingResults">${periodResults()}</div></div></section>`;
   }
   document.addEventListener('change',e=>{
-    if(e.target.id!=='periodRankingSelect') return;
-    selectedPeriod=Number(e.target.value);
+    if(e.target.id==='periodRankingSelect') selectedPeriod=Number(e.target.value);
+    else if(e.target.id==='periodExchangeSelect') selectedExchange=e.target.value;
+    else return;
     updatePeriodResults();
   });
 
