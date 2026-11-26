@@ -5941,6 +5941,15 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
 }
 </style>
 
+<style>
+.tracker-readout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem .8rem;align-items:baseline;margin:.75rem 0;font-variant-numeric:tabular-nums}
+.tracker-readout dt{color:var(--muted)}.tracker-readout dd{margin:0;text-align:right;font-weight:650}.tracker-readout small,.period-table small{display:block;font-size:.8rem;color:var(--muted)}
+.period-rankings{min-width:0;container-type:inline-size}.period-rankings select{margin-inline-start:.5rem;padding:.35rem}.period-movers{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
+.period-table{min-width:0;margin:.8rem 0}.period-table .t140-tablewrap{max-width:100%;overflow-x:auto}.period-table h3{margin:.4rem 0}.period-table td,.period-table th{font-variant-numeric:tabular-nums}
+@container(min-width:1350px){.period-movers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1023px){#t140-v2lab .dx6-tier-grid>.lab-quote{order:-1}}
+@media(max-width:768px){.mx-chart-full #labQuoteFields{grid-template-columns:auto 1fr auto 1fr;gap:.2rem .5rem;font-size:.85rem}.period-rankings .period-table .t140-tablewrap{overflow-x:auto!important}}
+</style>
 </head>
 <body class="tracker-app-v127">
   <div class="app">
@@ -6341,6 +6350,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   <script src="./shared/watchlist-data.js"></script>
   <script src="./shared/data-status.js" defer></script>
   <script src="./shared/tracker-engine.js"></script>
+  <script src="./shared/period-rankings.js"></script>
   <script src="./shared/analysis-context.js"></script>
   <script>
     "use strict";
@@ -8441,7 +8451,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   function classicKey(v){return TrackerViewRuntime.version()+'|'+JSON.stringify(v==='watchlist'?[[...state.watchlist],data.watchMeta]:v==='settings'?[data.theme,state.lastDataSource]:v==='overview'?[settings().benchmarkTicker,data.fundamentals]:[data.rules,data.ruleLogic,data.portfolio,data.alerts,data.strategies,data.customFormula])}
   function renderView(v,force=false){
     const el=document.getElementById('t140-'+v),fn={overview:renderOverview,strategy:renderStrategy,watchlist:renderWatchlist,portfolio:renderPortfolio,research:renderResearch,alerts:renderAlerts,settings:renderSettings}[v];if(!el||!fn)return;
-    if(v==='overview'&&!state.metrics?.length){el.textContent='Chưa có dữ liệu thật đủ điều kiện để đánh giá thị trường.';return;}
+    if(v==='overview'&&!state.rawRows?.length&&!state.metrics?.length){el.textContent='Chưa có dữ liệu thật đủ điều kiện để đánh giá thị trường.';return;}
     const key=classicKey(v);if(!force&&classicViewKeys.get(v)===key&&el.firstElementChild)return;
     fn();classicViewKeys.set(v,key);
   }
@@ -8451,48 +8461,50 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
     TrackerViewRuntime.enqueue('classic-view',()=>{if(el.classList.contains('active'))renderView(v)});
   }
 
-  // Cùng cửa sổ phiên thị trường cho mọi mã; không lấy phiên cũ để bù dữ liệu thiếu.
-  let volumeSource=null,volumeBenchmark='',volumeCache=null;
-  function volumeRankings(rows, benchmark = 'VNINDEX') {
-    if(rows===volumeSource&&benchmark===volumeBenchmark&&volumeCache)return volumeCache;
-    const stocks = rows.filter(r => /^[A-Z0-9]{3}$/.test(r.ticker) && ['HOSE','HNX','UPCOM'].includes(r.exchange));
-    const reference = rows.filter(r => r.ticker === benchmark);
-    const dates = [...new Set((reference.length ? reference : stocks).map(r => r.date))].sort();
-    const result=[1,5,21,63].map(days => {
-      const windowDates = dates.slice(-days), selected = new Set(windowDates), byTicker = new Map();
-      for (const r of stocks) {
-        if (!selected.has(r.date) || r.volume == null || !Number.isFinite(Number(r.volume)) || Number(r.volume) < 0) continue;
-        let x = byTicker.get(r.ticker);
-        if (!x) { x = {ticker:r.ticker, exchange:r.exchange, sector:r.sector, sessions:new Map()}; byTicker.set(r.ticker,x); }
-        x.sessions.set(r.date, Number(r.volume));
-        if(r.sector && r.sector !== 'Chưa phân loại') x.sector=r.sector;
-      }
-      const top = [...byTicker.values()].map(x => ({...x, count:x.sessions.size, volume:[...x.sessions.values()].reduce((a,b)=>a+b,0)}))
-        .sort((a,b)=>b.volume-a.volume || a.ticker.localeCompare(b.ticker)).slice(0,10);
-      return {days, dates:windowDates, top};
-    });
-    volumeSource=rows;volumeBenchmark=benchmark;volumeCache=result;return result;
+  let rankingState = null, selectedPeriod = 1;
+  function preparePeriodRankings(){
+    const rows=state.rawRows, benchmark=settings().benchmarkTicker || 'VNINDEX';
+    if(rankingState?.rows===rows && rankingState.benchmark===benchmark) return;
+    const job={rows,benchmark};
+    rankingState=job;
+    TrackerPeriodRankings.calculate(rows || [],benchmark,()=>TrackerViewRuntime.yieldThread())
+      .then(result=>{job.result=result;})
+      .catch(()=>{job.error='Chưa tổng hợp được dữ liệu xếp hạng.';})
+      .finally(()=>{
+        if(rankingState===job && rows===state.rawRows) updatePeriodResults();
+      });
   }
-  let volumeJob=null;
-  async function volumeRankingAsync(rows,benchmark='VNINDEX'){
-    const stocks=[],stockDates=new Set(),referenceDates=new Set();let clock=performance.now();
-    // Giữ thứ tự hàng gốc và cùng cửa sổ phiên cho mọi mã.
-    for(let i=0;i<rows.length;i++){const r=rows[i];if(/^[A-Z0-9]{3}$/.test(r.ticker)&&['HOSE','HNX','UPCOM'].includes(r.exchange)){stocks.push(r);stockDates.add(r.date)}if(r.ticker===benchmark)referenceDates.add(r.date);if(i%512===0&&performance.now()-clock>6){await TrackerViewRuntime.yieldThread();clock=performance.now()}}
-    const dates=[...(referenceDates.size?referenceDates:stockDates)].sort(),windows=[1,5,21,63].map(days=>({days,dates:dates.slice(-days),byTicker:new Map()}));windows.forEach(w=>w.selected=new Set(w.dates));
-    for(let i=0;i<stocks.length;i++){const r=stocks[i];if(windows[3].selected.has(r.date)&&r.volume!=null&&Number.isFinite(Number(r.volume))&&Number(r.volume)>=0){for(const w of windows){if(!w.selected.has(r.date))continue;let x=w.byTicker.get(r.ticker);if(!x){x={ticker:r.ticker,exchange:r.exchange,sector:r.sector,sessions:new Map()};w.byTicker.set(r.ticker,x)}x.sessions.set(r.date,Number(r.volume));if(r.sector&&r.sector!=='Chưa phân loại')x.sector=r.sector}}if(i%512===0&&performance.now()-clock>6){await TrackerViewRuntime.yieldThread();clock=performance.now()}}
-    const result=[];for(const w of windows){const top=[...w.byTicker.values()].map(x=>({...x,count:x.sessions.size,volume:[...x.sessions.values()].reduce((a,b)=>a+b,0)})).sort((a,b)=>b.volume-a.volume||a.ticker.localeCompare(b.ticker)).slice(0,10);result.push({days:w.days,dates:w.dates,top});await TrackerViewRuntime.yieldThread()}return result;
+  function rankingTable(title, headers, rows, empty){
+    return `<div class="period-table"><h3>${title}</h3><div class="t140-tablewrap" tabindex="0" aria-label="${title}"><table class="t140-table"><thead><tr>${headers.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('') || `<tr><td colspan="${headers.length}">${empty}</td></tr>`}</tbody></table></div></div>`;
   }
-  function prepareVolumeRankings(){const rows=state.rawRows,benchmark=settings().benchmarkTicker;if(rows===volumeSource&&benchmark===volumeBenchmark&&volumeCache)return Promise.resolve(volumeCache);if(volumeJob?.rows===rows&&volumeJob.benchmark===benchmark)return volumeJob.promise;
-    const job={rows,benchmark};volumeJob=job;job.promise=volumeRankingAsync(rows,benchmark).then(result=>{if(volumeJob===job){volumeSource=rows;volumeBenchmark=benchmark;volumeCache=result;volumeJob=null;if(document.getElementById('t140-overview')?.classList.contains('active'))renderOverview()}return result}).catch(e=>{if(volumeJob===job){volumeJob=null;console.warn('Tracker: tổng hợp theo lô lỗi, dùng thuật toán gốc',e);volumeRankings(rows,benchmark);if(document.getElementById('t140-overview')?.classList.contains('active'))renderOverview()}return volumeCache});return job.promise;
+  function periodResults(){
+    if(!rankingState?.result) return `<p role="status">${rankingState?.error || 'Đang tổng hợp dữ liệu theo kỳ…'}</p>`;
+    const w=rankingState.result.get(selectedPeriod);
+    const range=dates=>dates.length ? `${esc(dates[0])} → ${esc(dates.at(-1))}` : '—';
+    const amount=(v,n)=>`${v.mean===null?'—':num(v.mean,1)}<small>${v.count}/${n} phiên</small>`;
+    const headers=['Mã · Sàn','Giá đầu kỳ','Giá cuối kỳ','Biến động',w.days===1?'KL phiên (CP)':`KLTB ${w.days} phiên (CP/phiên)`,`KLTB ${w.base} phiên trước kỳ (CP/phiên)`,'So với nền'];
+    const priceRows=list=>list.map(x=>`<tr><td><b>${esc(x.ticker)}</b><small>${esc(x.exchange)}</small></td><td>${num(x.firstClose,2)}</td><td>${num(x.lastClose,2)}</td><td class="t140-${x.change>0?'good':'bad'}">${x.change>0?'+':''}${num(x.change,2)}%</td><td>${amount(x.current,w.days)}</td><td>${amount(x.reference,w.base)}</td><td>${x.ratio===null?'—':x.ratio.toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2})+'×'}</td></tr>`);
+    const volumeRows=w.totals.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.ticker)}</b></td><td>${esc(x.exchange)}</td><td>${esc(x.sector || 'Chưa phân loại')}</td><td>${num(x.current.sum,0)}</td><td>${x.current.count}/${w.days}</td></tr>`);
+    return `<p class="t140-sub">Biến động giá đóng cửa ${esc(w.start || '—')} → ${esc(w.last || '—')} · ${w.eligible} mã đủ hai mốc giá · Lịch ${esc(w.source)}</p>
+      <p class="t140-sub">Kỳ khối lượng ${range(w.currentDates)} · Nền ${w.base} phiên trước kỳ ${range(w.baseDates)}. Dấu — xuất hiện khi thiếu phiên để tính hoặc khi nền bằng 0.</p>
+      ${w.currentDates.length<w.days?'<p>Lịch giao dịch chưa đủ số phiên yêu cầu. Tổng KL chỉ gồm các phiên hiện có.</p>':''}
+      <div class="period-movers">${rankingTable('Top 10 cổ phiếu tăng',headers,priceRows(w.up),'Chưa có mã tăng đủ dữ liệu trong kỳ.')}${rankingTable('Top 10 cổ phiếu giảm',headers,priceRows(w.down),'Chưa có mã giảm đủ dữ liệu trong kỳ.')}</div>
+      ${rankingTable('Top 10 khối lượng',['#','Mã','Sàn','Ngành','Tổng KL (CP)','Phiên có dữ liệu'],volumeRows,'Chưa có dữ liệu khối lượng trong kỳ.')}`;
   }
-  function renderVolumeRankings() {
-    if(volumeSource!==state.rawRows||volumeBenchmark!==settings().benchmarkTicker||!volumeCache){prepareVolumeRankings();return '<section class="t140-card t140-col-12"><h2>Khối lượng theo kỳ</h2><div class="t140-sub" role="status">Đang tổng hợp khối lượng…</div></section>'}
-
-    const labels={1:'1 ngày',5:'1 tuần',21:'1 tháng',63:'3 tháng'};
-    return volumeRankings(state.rawRows, settings().benchmarkTicker).map(w => `<section class="t140-card t140-col-6" id="volumeTop${w.days}"><h2>Top 10 khối lượng · ${labels[w.days]}</h2>
-      <div class="t140-sub">Tổng khối lượng ${w.days} phiên gần nhất · ${esc(w.dates[0]||'—')} → ${esc(w.dates.at(-1)||'—')}<br>Toàn bộ HOSE / HNX / UPCOM · Đơn vị: cổ phiếu. Cột phiên cho biết mức đầy đủ dữ liệu; không bù phiên thiếu bằng phiên cũ.</div>
-      <div class="t140-tablewrap"><table class="t140-table"><thead><tr><th>#</th><th>Mã</th><th>Sàn</th><th>Ngành</th><th>Tổng KL (CP)</th><th>Phiên có DL</th></tr></thead><tbody>${w.top.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.ticker)}</b></td><td>${esc(x.exchange)}</td><td>${esc(x.sector||'Chưa phân loại')}</td><td>${num(x.volume,0)}</td><td>${x.count}/${w.days}</td></tr>`).join('')||'<tr><td colspan="6">Chưa có dữ liệu khối lượng trong kỳ.</td></tr>'}</tbody></table></div></section>`).join('');
+  function updatePeriodResults(){
+    const el=document.getElementById('periodRankingResults');
+    if(el) el.innerHTML=periodResults();
   }
+  function renderPeriodRankings(){
+    preparePeriodRankings();
+    const options=TrackerPeriodRankings.periods.map(p=>`<option value="${p.days}" ${selectedPeriod===p.days?'selected':''}>${p.label}</option>`).join('');
+    return `<section class="t140-card t140-col-12 period-rankings"><h2>Xếp hạng theo kỳ</h2><div><label>Kỳ xếp hạng <select id="periodRankingSelect">${options}</select></label><div id="periodRankingResults">${periodResults()}</div></div></section>`;
+  }
+  document.addEventListener('change',e=>{
+    if(e.target.id!=='periodRankingSelect') return;
+    selectedPeriod=Number(e.target.value);
+    updatePeriodResults();
+  });
 
   let overviewVersion=-1,overviewFundamentals='',overviewCache;
   function overviewSummary(m){const version=TrackerViewRuntime.version(),signature=JSON.stringify(data.fundamentals);if(version===overviewVersion&&signature===overviewFundamentals)return overviewCache;
@@ -8505,13 +8517,17 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   }
   function renderOverview(){
     const el=document.getElementById('t140-overview'); if(!el)return; const m=metrics(); const reg=state.marketRegime||{};
+    if(!m.length){
+      el.innerHTML=`<div class="t140-grid"><p class="t140-col-12">Chưa đủ dữ liệu cùng kỳ để đánh giá thị trường.</p>${renderPeriodRankings()}</div>`;
+      return;
+    }
     const {above50,above200,breakouts,leaders,sec,top,phases}=overviewSummary(m);
     el.innerHTML=`<div class="t140-grid">
       ${[["Regime",reg.label||'—',reg.key==='UPTREND'?'good':reg.key==='DOWNTREND'?'bad':'warn'],["Breadth > MA50",m.length?pct(above50/m.length*100,0):'—','info'],["Breadth > MA200",m.length?pct(above200/m.length*100,0):'—','info'],["Breakout hiện tại",String(breakouts),'good']].map(x=>`<div class="t140-card t140-col-3"><div class="t140-muted">${x[0]}</div><div class="t140-kpi t140-${x[2]}">${x[1]}</div><div class="t140-sub">${m.length} mã trong universe hiện tại</div></div>`).join('')}
       <div class="t140-card t140-col-8"><h2>Sector Rotation</h2><div class="t140-sub">Xếp hạng ngành bằng RS trung bình của các mã đang có dữ liệu.</div>${sec.slice(0,10).map(s=>`<div class="t140-sector-row"><div class="t140-sector-name">${esc(s.name)}</div><div class="t140-progress"><span style="width:${Math.max(4,Math.min(100,s.avgRs))}%"></span></div><div class="t140-muted">RS ${num(s.avgRs,0)}</div><div class="${s.avgRet>=0?'t140-good':'t140-bad'}">${pct(s.avgRet)}</div></div>`).join('')||'<div class="t140-empty">Chưa có dữ liệu ngành.</div>'}</div>
       <div class="t140-card t140-col-4"><h2>4 chu kỳ cổ phiếu</h2><div class="t140-sub">Phân loại thuật toán từ trend, volume và distribution.</div>${phases.map(([p,n])=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.1)"><span>${p}</span><b>${n}</b></div>`).join('')}<div class="t140-sub" style="margin-top:8px">Leader RS ≥ 80: <b>${leaders}</b></div></div>
       <div class="t140-card t140-col-12"><h2>Top Ranking</h2><div class="t140-sub">Kết hợp Tracker Score, RS, Market Fit, Risk và Volume Ratio.</div><div class="t140-tablewrap"><table class="t140-table"><thead><tr><th>Mã</th><th>Ngành</th><th>Khối lượng (CP)</th><th>Ngày KL</th><th>Phase</th><th>Score</th><th>RS</th><th>Vol Ratio</th><th>RSI14</th><th>20D</th><th>Setup</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${x.ticker}</b></td><td>${esc(x.sector)}</td><td>${num(x.rows?.at(-1)?.volume,0)}</td><td>${esc(x.date)}</td><td>${phasePill(x.phaseCode)}</td><td>${scoreP(x.trackerScore)}</td><td>${num(x.rsPercentile,0)}</td><td>${num(x.volRatio,2)}×</td><td>${num(x.rsi14,1)}</td><td class="${x.return20Pct>=0?'t140-good':'t140-bad'}">${pct(x.return20Pct)}</td><td>${esc(x.setupSummary||'—')}</td></tr>`).join('')}</tbody></table></div></div>
-      ${renderVolumeRankings()}
+      ${renderPeriodRankings()}
     </div>`;
   }
   function phasePill(p){const c=p==='TĂNG GIÁ'?'good':p==='GIẢM GIÁ'?'bad':p==='PHÂN PHỐI'?'warn':'info';return `<span class="t140-pill ${c}">${esc(p||'—')}</span>`}
@@ -8591,7 +8607,7 @@ body:not(#_):not(#__).mx-active .mx-sheet .mx-menu-item:has(>svg)::after {conten
   function runSelfTest(){const tests=[];const add=(name,ok,detail)=>tests.push({name,ok,detail});add('Raw data',state.rawRows.length>0,`${state.rawRows.length} dòng`);add('Metrics',state.metrics.length>0,`${state.metrics.length} mã`);const ts=(state.metrics||[]).map(x=>x.ticker);add('Ticker unique',new Set(ts).size===ts.length,`${new Set(ts).size}/${ts.length}`);add('Price validity',(state.metrics||[]).every(x=>Number.isFinite(x.close)&&x.close>0),'close > 0');add('Data Quality',!!state.quality&&!!state.quality.counts,state.quality?.standardDate||'—');let ls=true;try{localStorage.setItem(KEY+'diag','1');localStorage.removeItem(KEY+'diag')}catch(_){ls=false}add('Local storage',ls,ls?'có thể lưu':'trình duyệt đang chặn');let formula=true;try{const m=metrics()[0];if(m)evalFormula(m,'trackerScore + rsPercentile')}catch(_){formula=false}add('Formula engine',formula,formula?'OK':'lỗi');const out=document.getElementById('t140SelfTestOut');out.innerHTML=tests.map(t=>`<span class="t140-chip" style="border-color:${t.ok?'rgba(22,199,154,.28)':'rgba(255,92,116,.28)'}">${t.ok?'✓':'✕'} ${esc(t.name)}: ${esc(t.detail)}</span>`).join(' ');if(tests.every(t=>t.ok))toast('Self-test: tất cả hạng mục PASS.');else toast(`Self-test: ${tests.filter(t=>!t.ok).length} hạng mục cần kiểm tra.`)}
   function backup(){const payload={version:VERSION,createdAt:new Date().toISOString(),watchlist:[...state.watchlist],watchlistRecovery:window.TrackerWatchlistRecovery||[],rules:data.rules,ruleLogic:data.ruleLogic,strategies:data.strategies,fundamentals:data.fundamentals,watchMeta:data.watchMeta,portfolio:data.portfolio,dividends:data.dividends,journals:data.journals,alerts:data.alerts,theme:data.theme,formula:data.customFormula};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=`Tracker_${VERSION.replace(/\s/g,'_')}_Backup.json`;a.click();URL.revokeObjectURL(u)}
   function restore(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const p=TrackerWatchlist.validateBackup(JSON.parse(r.result));['rules','ruleLogic','strategies','fundamentals','watchMeta','portfolio','dividends','journals','alerts','theme'].forEach(k=>{if(p[k]!=null){data[k]=p[k];store.set(k,p[k])}});if(p.formula){data.customFormula=p.formula;store.set('formula',p.formula)}if(Array.isArray(p.watchlist)){const parsed=TrackerWatchlist.parse(p.watchlist);window.TrackerWatchlistRecovery=[...parsed.quarantined,...(p.watchlistRecovery||[])];state.watchlist=new Set(parsed.tickers);writeWatchlistStorage(parsed.tickers)}applyTheme();buildStages();renderAll();renderSettings();toast('Khôi phục backup thành công.')}catch(err){toast('Backup không hợp lệ.')}};r.readAsText(f)}
-  function refreshHeaderMarket(){const box=document.querySelector('.header-market');if(!box)return;const bt=(settings().benchmarkTicker||'VNINDEX').toUpperCase();const rows=state.series?.get(bt)||state.fullSeries?.get(bt)||[];const last=rows.at(-1),prev=rows.at(-2);if(!last)return;const ch=prev?.close?last.close/prev.close-1:NaN;const up=Number.isFinite(ch)&&ch>=0;box.innerHTML=`<div class="market-line"><span class="market-name">${esc(bt)}${state.lastDataSource === "Demo" ? " · DEMO" : ""}</span> <span class="market-dot" style="background:${up?'var(--good)':'var(--bad)'}"></span> <span class="market-price">${money(last.close)}</span> <span class="${up?'market-up':'t140-bad'}">${Number.isFinite(ch)?(up?'+':'')+(ch*100).toFixed(2)+'%':'—'}</span></div><div class="market-sub">Dữ liệu ${esc(last.date||'—')} • ${esc(state.lastDataSource)}</div>`}function refresh(){metrics();prepareVolumeRankings();refreshHeaderMarket();if(data.view!=='screener'&&document.getElementById('t140-'+data.view)?.classList.contains('active'))renderView(data.view);}
+  function refreshHeaderMarket(){const box=document.querySelector('.header-market');if(!box)return;const bt=(settings().benchmarkTicker||'VNINDEX').toUpperCase();const rows=state.series?.get(bt)||state.fullSeries?.get(bt)||[];const last=rows.at(-1),prev=rows.at(-2);if(!last)return;const ch=prev?.close?last.close/prev.close-1:NaN;const up=Number.isFinite(ch)&&ch>=0;box.innerHTML=`<div class="market-line"><span class="market-name">${esc(bt)}${state.lastDataSource === "Demo" ? " · DEMO" : ""}</span> <span class="market-dot" style="background:${up?'var(--good)':'var(--bad)'}"></span> <span class="market-price">${money(last.close)}</span> <span class="${up?'market-up':'t140-bad'}">${Number.isFinite(ch)?(up?'+':'')+(ch*100).toFixed(2)+'%':'—'}</span></div><div class="market-sub">Dữ liệu ${esc(last.date||'—')} • ${esc(state.lastDataSource)}</div>`}function refresh(){metrics();preparePeriodRankings();refreshHeaderMarket();if(data.view!=='screener'&&document.getElementById('t140-'+data.view)?.classList.contains('active'))renderView(data.view);}
   injectUI();
   try{const oldRenderAll=renderAll; renderAll=function(){oldRenderAll();refresh()}}catch(_){ }
   refresh();
@@ -8908,11 +8924,18 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     }record.value=count;if(source===state.rawRows)document.querySelectorAll('[data-schema-count]').forEach(el=>el.textContent=String(count))})().catch(e=>{schemaCache.delete(source);console.warn('Tracker: kiểm tra schema chưa hoàn tất',e)});
     return record.value??'Đang kiểm tra…';
   }
+  function marketTiming(on){
+    const ready=Number.isFinite(on.score);
+    const signal=date=>date ? esc(date) : ready?'Chưa xuất hiện tín hiệu':'Chưa đủ dữ liệu';
+    const ftd=on.followThrough;
+    const details=[Number.isFinite(ftd?.day)?`Phiên thứ ${ftd.day} của nhịp hồi`:'',Number.isFinite(ftd?.changePct)?`${ftd.changePct>=0?'+':''}${num(ftd.changePct,2)}%`:''].filter(Boolean).join(' · ');
+    return `<div class="v2-card v2-c4"><h2>Market Timing</h2><div class="v2-sub">Tín hiệu O’Neil trên ${esc(settings().benchmarkTicker||'VNINDEX')}</div><dl class="tracker-readout"><dt>Điểm O’Neil</dt><dd data-oneil-score>${ready?`${num(on.score,0)}/100`:'—'}</dd><dt>Bắt đầu nhịp hồi</dt><dd>${signal(on.rallyAttempt)}</dd><dt>Xác nhận đà tăng</dt><dd>${signal(ftd?.date)}${details?`<small>${details}</small>`:''}</dd></dl></div>`;
+  }
   function renderDashboard(){
     const el=document.getElementById('t140-v2dashboard');if(!el)return;const m=currentMetrics();if(!m.length){el.textContent='Chưa đủ dữ liệu cùng kỳ để tính Market Health/độ rộng và xếp hạng; có thể tra cứu mã bằng Global Search.';return}meta.market=cachedMarketHealth();const h=meta.market;const {rows,sectors}=dashboardSummary(m);
     const on=h.oneil||{};el.innerHTML=`<p class="v2-sub">${esc(state.analysisContext?.marketLimitation||'Chưa xác minh phạm vi dữ liệu.')} Phiên ${esc(state.analysisContext?.asOf||'—')}.</p><div class="v2-grid"><div class="v2-card v2-c3"><div class="v2-sub">MARKET HEALTH · TẬP ĐỦ DỮ LIỆU</div><div class="v2-kpi v2-${tone(h.score)}">${Math.round(h.score)}</div><div class="v2-sub">Tập đủ dữ liệu · Regime: ${esc(h.regime?.label||'—')}</div></div><div class="v2-card v2-c3"><div class="v2-sub">O’NEIL MARKET</div><div class="v2-kpi v2-info" style="font-size:19px">${esc(on.status||'—')}</div><div class="v2-sub">Distribution Days: <b>${on.distributionDays??'—'}</b></div></div><div class="v2-card v2-c3"><div class="v2-sub">BREADTH &gt; MA50</div><div class="v2-kpi v2-info">${pct(h.above50,0)}</div><div class="v2-sub">&gt; MA200: ${pct(h.above200,0)}</div></div><div class="v2-card v2-c3"><div class="v2-sub">LEADERSHIP</div><div class="v2-kpi v2-purple">${pct(h.leaders,0)}</div><div class="v2-sub">Tỷ lệ mã RS Rating ≥ 80</div></div>
     <div class="v2-card v2-c8"><div class="v2-between"><div><h2>Top Setups — Evidence Ranking</h2><div class="v2-sub">Xếp theo Confluence + Base Quality. Click mã để mở Research Lab.</div></div><div id="v2EngineStatus" class="v2-sub"></div></div><div class="v2-tablewrap"><table class="v2-table"><thead><tr><th>Mã</th><th>Ngành</th><th>Confluence</th><th>Base</th><th>MTF</th><th>Stage</th><th>RS</th><th>VCP</th><th>O’Neil</th><th>Volume</th></tr></thead><tbody>${rows.slice(0,15).map(({x,a})=>`<tr data-v2ticker="${x.ticker}"><td><b>${x.ticker}</b></td><td>${esc(x.sector)}</td><td>${chip(a.confluence+'/100',tone(a.confluence))}</td><td>${Math.round(a.baseQuality.score)}</td><td>${esc(a.mtf.label)}</td><td>${esc(a.weinstein.stage)}</td><td>${x.rsPercentile??'—'}</td><td>${Math.round(a.vcp.confidence)}</td><td>${esc(a.oneil.best?.[0]||'—')} ${Math.round(a.oneil.best?.[1]||0)}</td><td>${Math.round(a.volume.score||0)}</td></tr>`).join('')||'<tr><td colspan="10">Đang tính Advanced Engine...</td></tr>'}</tbody></table></div></div>
-    <div class="v2-card v2-c4"><h2>Market Timing</h2><div class="v2-sub">O’Neil-style approximation trên benchmark.</div><div style="margin-top:12px">${scorebar('Market',h.score)}${scorebar('Breadth50',h.above50)}${scorebar('Breadth200',h.above200)}${scorebar('Leadership',h.leaders)}${scorebar('O’Neil',on.score||0)}</div><div class="v2-sub" style="margin-top:10px">Rally attempt: <b>${esc(on.rallyAttempt||'—')}</b><br>Follow-through: <b>${esc(on.followThrough?.date||'—')}</b></div></div>
+    ${marketTiming(on)}
     <div class="v2-card v2-c8"><h2>Sector Rotation</h2><div class="v2-sub">RS + Confluence của tập đủ dữ liệu cùng kỳ; chưa kết luận toàn thị trường.</div><div class="v2-heat">${sectors.slice(0,10).map(s=>`<div class="cell"><b>${esc(s.name)}</b><span>RS ${Math.round(s.rs)} • Conf ${Math.round(s.conf)}</span><span class="${s.ret>=0?'v2-good':'v2-bad'}">RS3M ${pct(s.ret)}</span></div>`).join('')||'<div class="v2-sub">Chưa có sector data.</div>'}</div></div>
     <div class="v2-card v2-c4"><h2>Data Engine V2</h2><div class="v2-sub">IndexedDB giữ dataset offline; analytics cache riêng. Schema validator và point-in-time module được đóng gói trong Quant Suite.</div><div class="v2-toolbar"><button id="v2SaveDataset" class="v2-btn primary">Save Dataset Offline</button><button id="v2LoadDataset" class="v2-btn">Load</button><button id="v2ClearDataset" class="v2-btn">Clear</button></div><div class="v2-sub">Nguồn: <b>${esc(state.lastDataSource||'—')}</b><br>${(state.rawRows?.length||0).toLocaleString('vi-VN')} dòng • ngày chuẩn ${esc(state.quality?.standardDate||'—')}<br>Schema issues: <b><span data-schema-count>${schemaIssueCount()}</span></b></div></div></div>`;
     renderStatus();el.onclick=e=>{const r=e.target.closest('[data-v2ticker]');if(r&&el.contains(r)){meta.selected=r.dataset.v2ticker;showV2('lab')}};document.getElementById('v2SaveDataset').onclick=saveDataset;document.getElementById('v2LoadDataset').onclick=loadDataset;document.getElementById('v2ClearDataset').onclick=clearDataset;
@@ -8935,8 +8958,9 @@ return{SCHEMA_VERSION,validateOHLCV,applyAdjustmentFactors,pointInTime,lookAhead
     document.getElementById('v2TickerSelect')?.addEventListener('change',e=>{meta.selected=e.target.value;renderLab()});document.getElementById('v2Recalc')?.addEventListener('click',()=>computeAdvanced(true));document.getElementById('v2OpenClassic')?.addEventListener('click',()=>{if(meta.selected)openDetail(meta.selected)});if(a&&x)TrackerViewRuntime.enqueue('lab-chart',()=>{if(el.classList.contains('active')&&meta.selected===x.ticker)drawAdvChart(x,a)});
   }
   function labBody(x,a){const av=a.avwap,op=a.oneil,wy=a.wyckoff;return `<div class="v2-card v2-c3"><div class="v2-sub">CONFLUENCE</div><div class="v2-kpi v2-${tone(a.confluence)}">${a.confluence}</div><div class="v2-sub">${a.evidence.length}/9 nhóm bằng chứng</div></div><div class="v2-card v2-c3"><div class="v2-sub">BASE QUALITY</div><div class="v2-kpi v2-${tone(a.baseQuality.score)}">${Math.round(a.baseQuality.score)}</div><div class="v2-sub">${esc(a.baseQuality.label)}</div></div><div class="v2-card v2-c3"><div class="v2-sub">MTF</div><div class="v2-kpi v2-info" style="font-size:18px">${esc(a.mtf.label)}</div><div class="v2-sub">M ${a.mtf.monthly} • W ${a.mtf.weekly} • D ${a.mtf.daily}</div></div><div class="v2-card v2-c3"><div class="v2-sub">WEINSTEIN</div><div class="v2-kpi v2-purple" style="font-size:19px">${esc(a.weinstein.stage)}</div><div class="v2-sub">30W slope ${pct(a.weinstein.slopePct)}</div></div>
-    <div class="v2-card v2-c8"><h2>${x.ticker} — Advanced Chart</h2><div class="v2-sub">Close + Bollinger + AVWAP neo 52W Low / Breakout. Chart phục vụ context, không thay thế candlestick ở Stock Detail.</div><canvas id="v2AdvCanvas" class="v2-canvas" width="1100" height="340"></canvas></div><div class="v2-card v2-c4"><h2>Multi Score</h2>${Object.entries(a.scores).map(([k,v])=>scorebar(({trend:'Trend',momentum:'Momentum',volume:'Volume',rs:'RS',pattern:'Pattern',quality:'Quality',risk:'Risk'})[k]||k,v)).join('')}</div>
-    <div class="v2-card v2-c4"><h2>RS V2</h2><div class="v2-sub">So với ${esc(settings().benchmarkTicker||'VNINDEX')}</div><div style="margin-top:10px">${scorebar('RS Rating',x.rsPercentile||0)}<div class="v2-between"><span>1M</span><b>${a.periodAvailability?.[21]?.available?pct(a.rs.rs1m):'Chưa đủ dữ liệu cùng kỳ'}</b></div><div class="v2-between"><span>3M</span><b>${a.periodAvailability?.[63]?.available?pct(a.rs.rs3m):'Chưa đủ dữ liệu cùng kỳ'}</b></div><div class="v2-between"><span>6M</span><b>${a.periodAvailability?.[126]?.available?pct(a.rs.rs6m):'Chưa đủ dữ liệu cùng kỳ'}</b></div><div class="v2-between"><span>12M</span><b>${a.periodAvailability?.[252]?.available?pct(a.rs.rs12m):'Chưa đủ dữ liệu cùng kỳ'}</b></div></div></div>
+    <div class="v2-card v2-c8"><h2>${x.ticker} — Advanced Chart</h2><div class="v2-sub">Close + Bollinger + AVWAP neo 52W Low / Breakout. Chart phục vụ context, không thay thế candlestick ở Stock Detail.</div><canvas id="v2AdvCanvas" class="v2-canvas" width="1100" height="340"></canvas></div><div class="v2-card v2-c4 lab-quote"><h2>Giá phiên</h2><dl class="tracker-readout" id="labQuoteFields"><dt>Ngày</dt><dd data-price-field="date">—</dd><dt>Mở cửa</dt><dd data-price-field="open">—</dd><dt>Cao nhất</dt><dd data-price-field="high">—</dd><dt>Thấp nhất</dt><dd data-price-field="low">—</dd><dt>Đóng cửa</dt><dd data-price-field="close">—</dd><dt>Khối lượng (CP)</dt><dd data-price-field="volume">—</dd><dt>Thay đổi</dt><dd data-price-field="change">—</dd></dl></div>
+    <div class="v2-card v2-c6"><h2>RS V2</h2><div class="v2-sub">So với ${esc(settings().benchmarkTicker||'VNINDEX')}</div><div style="margin-top:10px">${scorebar('RS Rating',x.rsPercentile||0)}<div class="v2-between"><span>1M</span><b>${a.periodAvailability?.[21]?.available?pct(a.rs.rs1m):'Chưa đủ dữ liệu cùng kỳ'}</b></div><div class="v2-between"><span>3M</span><b>${a.periodAvailability?.[63]?.available?pct(a.rs.rs3m):'Chưa đủ dữ liệu cùng kỳ'}</b></div><div class="v2-between"><span>6M</span><b>${a.periodAvailability?.[126]?.available?pct(a.rs.rs6m):'Chưa đủ dữ liệu cùng kỳ'}</b></div><div class="v2-between"><span>12M</span><b>${a.periodAvailability?.[252]?.available?pct(a.rs.rs12m):'Chưa đủ dữ liệu cùng kỳ'}</b></div></div></div>
+    <div class="v2-card v2-c6"><h2>Multi Score</h2>${Object.entries(a.scores).map(([k,v])=>scorebar(({trend:'Trend',momentum:'Momentum',volume:'Volume',rs:'RS',pattern:'Pattern',quality:'Quality',risk:'Risk'})[k]||k,v)).join('')}</div>
     <div class="v2-card v2-c4"><h2>Volume Intelligence</h2><div class="v2-kpi v2-${tone(a.volume.score||0)}">${Math.round(a.volume.score||0)}</div><div class="v2-sub">${esc(a.volume.label||'—')}</div><div style="margin-top:9px">${chip('RelVol '+num(a.volume.relVol,2),a.volume.relVol>=1.5?'good':'')}${chip('Z '+num(a.volume.zScore,2))}${chip(a.volume.dryUp?'Dry-up':'No dry-up',a.volume.dryUp?'good':'')}${chip(a.volume.climax?'Climax':'No climax',a.volume.climax?'warn':'')}</div></div>
     <div class="v2-card v2-c4"><h2>Bollinger</h2><div class="v2-kpi v2-info" style="font-size:19px">${esc(a.bollinger.squeeze||'—')}</div><div class="v2-sub">BandWidth ${pct(a.bollinger.bandwidth,2)} • percentile ${num(a.bollinger.bandwidthPercentile,0)}<br>%B ${pct(a.bollinger.percentB,1)}. Squeeze chỉ đo co volatility, không dự đoán hướng.</div></div>
     <div class="v2-card v2-c4"><h2>VCP V2</h2><div class="v2-kpi v2-${tone(a.vcp.confidence)}">${Math.round(a.vcp.confidence)}</div><div class="v2-sub">${esc(a.vcp.label)} • Pivot ${num(a.vcp.pivot,0)} • cách pivot ${pct(a.vcp.distanceToPivotPct)}</div><div style="margin-top:8px">${(a.vcp.contractions||[]).map((v,i)=>chip(['60D','30D','15D','7D'][i]+' '+pct(v,1),i>0&&v<a.vcp.contractions[i-1]?'good':'')).join('')}</div></div>
@@ -9140,22 +9164,40 @@ function chart(cv,x,opt,fallback){
 // Gom chuyển động con trỏ và đổi kích thước thành tối đa một lần vẽ mỗi khung hình.
 function schedulePaint(c){if(c.frame)return;c.frame=requestAnimationFrame(()=>{c.frame=0;if(c.cv.isConnected)paintSafe(c)})}
 function paintSafe(c){try{paint(c)}catch(e){console.warn('Bộ vẽ mới lỗi, dùng biểu đồ gốc:',e);c.fallback()}}
+ function updateLabQuote(c,row,previous){
+   const panel=document.getElementById('labQuoteFields');
+   if(!panel || (c.quotePanel===panel && c.quoteRow===row && c.quotePrev===previous)) return;
+   c.quotePanel=panel;c.quoteRow=row;c.quotePrev=previous;
+   const valid=v=>v!=null && v!=='' && Number.isFinite(Number(v));
+   const diff=valid(row?.close) && valid(previous?.close) && previous.close>0 ? (row.close/previous.close-1)*100 : null;
+   for(const node of panel.querySelectorAll('[data-price-field]')){
+     const key=node.dataset.priceField;
+     let value=row?.[key];
+     if(key==='date') node.textContent=value || '—';
+     else if(key==='change'){
+       node.textContent=diff===null?'—':(diff>=0?'+':'')+diff.toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+       node.classList.toggle('t140-good',diff>0);node.classList.toggle('t140-bad',diff<0);
+     }else node.textContent=valid(value)?Number(value).toLocaleString('vi-VN',{maximumFractionDigits:key==='volume'?0:2}):'—';
+   }
+ }
 function paint(c){
  const {cv,x,opt}=c,rect=cv.getBoundingClientRect();if(!rect.width)return;
  const w=rect.width,h=rect.height||360,dpr=window.devicePixelRatio||1;const cw=Math.round(w*dpr),ch=Math.round(h*dpr);if(cv.width!==cw)cv.width=cw;if(cv.height!==ch)cv.height=ch;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
  const soft=document.body.classList.contains('t140-soft-theme'),bg=soft?'#fbfdff':'#0b1220',surface=soft?'#ffffff':'#142238',text=soft?'#172b43':'#e5edf8',muted=soft?'#536b84':'#9aabc3',line=soft?'#dae4ef':'#26364d';
  const rows=(x.rows||[]).slice(-c.count).filter(r=>Number.isFinite(+r.close)),n=rows.length;
  const back=ctx.createLinearGradient(0,0,0,h);back.addColorStop(0,bg);back.addColorStop(1,soft?'#f0f5fa':'#0f1626');ctx.fillStyle=back;ctx.fillRect(0,0,w,h);ctx.font='11px Inter,system-ui';
+ const lab=cv.id==='v2AdvCanvas';
+ if(lab && (!c.hover || n<2)) updateLabQuote(c,rows.at(-1),x.rows?.at(-2));
  if(n<2){ctx.fillStyle=muted;ctx.fillText('Chưa đủ lịch sử giá để vẽ biểu đồ',16,30);return}
- const last=rows.at(-1),prev=rows.at(-2),positive=+last.close>=+rows[0].close,col=positive?'#16a34a':'#ef4444',volume=rows.some(r=>+r.volume>0),L=12,R=w<500?70:86,T=w<500?80:68,B=26,V=volume?h*.22:0,P=h-B-V-(volume?12:0),end=w-R;
+ const last=rows.at(-1),prev=rows.at(-2),positive=+last.close>=+rows[0].close,col=positive?'#16a34a':'#ef4444',volume=rows.some(r=>+r.volume>0),L=12,R=w<500?70:86,T=lab?34:(w<500?80:68),B=26,V=volume?h*.22:0,P=h-B-V-(volume?12:0),end=w-R;
  const marks=(opt.marks||[]).filter(m=>Number.isFinite(m.value));
  const vals=rows.flatMap(r=>[+r.close,+r.high,+r.low]).filter(v=>Number.isFinite(v)&&v>0).concat(marks.map(m=>m.value));
  let lo=Math.min(...vals),hi=Math.max(...vals),pad=(hi-lo||hi*.02)*.09;lo-=pad;hi+=pad;
  const X=i=>L+i/Math.max(1,n-1)*(end-L),Y=v=>T+(hi-v)/(hi-lo)*(P-T),price=y=>hi-(y-T)/(P-T)*(hi-lo);
  const label=(s,px,py,color,fg='#fff')=>{ctx.font='600 10px Inter,system-ui';const tw=ctx.measureText(s).width+12;ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(px,py-9,tw,18,4);ctx.fill();ctx.fillStyle=fg;ctx.fillText(s,px+6,py+3);return tw};
- ctx.fillStyle=text;ctx.font='700 13px Inter,system-ui';ctx.fillText(String(x.ticker||'Giá')+'  '+fmt(last.close),L,21);const change=+prev.close?(+last.close/+prev.close-1)*100:0;ctx.fillStyle=change>=0?'#16a34a':'#ef4444';ctx.font='600 11px Inter,system-ui';ctx.fillText((change>=0?'+':'')+change.toFixed(2)+'%',Math.min(end-50,150),21);
- ctx.fillStyle=muted;ctx.font='10px Inter,system-ui';ctx.fillText(['open','high','low','close'].map((k,i)=>['O','H','L','C'][i]+' '+fmt(last[k])).join('   '),L,39);
- let lx=L;for(const m of marks){ctx.fillStyle=m.color;ctx.fillRect(lx,49,9,2);ctx.fillText(m.label,lx+13,53);lx+=ctx.measureText(m.label).width+25;if(lx>end-65)break}
+ if(!lab){ctx.fillStyle=text;ctx.font='700 13px Inter,system-ui';ctx.fillText(String(x.ticker||'Giá')+'  '+fmt(last.close),L,21);const change=+prev.close?(+last.close/+prev.close-1)*100:0;ctx.fillStyle=change>=0?'#16a34a':'#ef4444';ctx.font='600 11px Inter,system-ui';ctx.fillText((change>=0?'+':'')+change.toFixed(2)+'%',Math.min(end-50,150),21);
+ ctx.fillStyle=muted;ctx.font='10px Inter,system-ui';ctx.fillText(['open','high','low','close'].map((k,i)=>['O','H','L','C'][i]+' '+fmt(last[k])).join('   '),L,39);}
+ let lx=L;const legendY=lab?17:53;for(const m of marks){ctx.fillStyle=m.color;ctx.fillRect(lx,legendY-4,9,2);ctx.fillText(m.label,lx+13,legendY);lx+=ctx.measureText(m.label).width+25;if(lx>end-65)break}
  ctx.font='11px Inter,system-ui';for(let i=0;i<5;i++){const y=T+i*(P-T)/4;ctx.strokeStyle=line;ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(end,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=muted;ctx.fillText(fmt(price(y)),end+8,y+4)}
  // Ép nét đường trong vùng giá; nối mềm không làm thay đổi mẫu giá.
  ctx.save();ctx.beginPath();ctx.rect(L,T,end-L,P-T);ctx.clip();
@@ -9169,6 +9211,11 @@ function paint(c){
  if(volume){const max=Math.max(...rows.map(r=>+r.volume||0)),vh=V-18,bottom=h-B;ctx.fillStyle=muted;ctx.font='10px Inter,system-ui';ctx.fillText('Volume',L,P+17);ctx.fillText(short(max),end+6,P+22);rows.forEach((r,i)=>{ctx.fillStyle=(+r.close>=+(r.open??rows[i-1]?.close??r.close)?'#16a34a':'#ef4444')+'b3';const bh=(+r.volume||0)/max*vh;ctx.fillRect(X(i)-Math.max(1,(end-L)/n*.65)/2,bottom-bh,Math.max(1,(end-L)/n*.65),bh)})}
  const month=r=>String(r.date||'').slice(0,7);let lastX=-100;rows.forEach((r,i)=>{const boundary=i>0&&month(r)!==month(rows[i-1]),x0=X(i);if((i===0||boundary||i===n-1)&&x0-lastX>65&&x0<end-20){ctx.font=(boundary?'600':'400')+' 10px Inter,system-ui';ctx.fillStyle=muted;const date=String(r.date||'');ctx.fillText(date.slice(8,10)+'/'+date.slice(5,7)+(date.slice(5,7)==='01'?'/'+date.slice(0,4):''),x0,h-8);lastX=x0}});
  if(c.hover){const mx=Math.max(L,Math.min(end,c.hover.x)),my=Math.max(T,Math.min(P,c.hover.y)),i=Math.max(0,Math.min(n-1,Math.round((mx-L)/(end-L)*(n-1)))),r=rows[i];ctx.strokeStyle=muted;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(X(i),T);ctx.lineTo(X(i),h-B);ctx.moveTo(L,my);ctx.lineTo(end,my);ctx.stroke();ctx.setLineDash([]);label(fmt(price(my)),end+2,my,soft?'#475569':'#536b84');label(String(r.date||''),Math.max(L,Math.min(end-85,X(i)-40)),h-10,soft?'#475569':'#536b84');
+ if(lab){
+   const previous=i>0?rows[i-1]:x.rows[x.rows.indexOf(r)-1];
+   updateLabQuote(c,r,previous);
+   return;
+ }
  const pc=i>0&&+rows[i-1].close?(+r.close/+rows[i-1].close-1)*100:null,lines=[String(r.date||''),'O '+fmt(r.open)+'   H '+fmt(r.high),'L '+fmt(r.low)+'   C '+fmt(r.close),'KL '+(Number.isFinite(+r.volume)?short(+r.volume):'—')+'   '+(pc===null?'—':(pc>=0?'+':'')+pc.toFixed(2)+'%')],tw=Math.min(220,end-L-12),tx=X(i)>w/2?L+6:end-tw-6,ty=T+8;ctx.fillStyle=surface;ctx.strokeStyle=line;ctx.beginPath();ctx.roundRect(tx,ty,tw,80,8);ctx.fill();ctx.stroke();ctx.font='10px Inter,system-ui';ctx.fillStyle=text;lines.forEach((s,j)=>ctx.fillText(s,tx+9,ty+16+j*17,tw-18));}
 }
 window.TrackerDesign={chart};
@@ -9630,31 +9677,12 @@ const TRACKER_GLOSSARY={
     "note": "Không suy ra quyết định giao dịch chỉ từ một nhãn hoặc số lượng."
   },
   "Market Timing": {
-    "aliases": [
-      "Market Timing"
-    ],
-    "what": "Tổng hợp điểm thị trường và các thành phần breadth, leadership, O’Neil.",
-    "use": "Đối chiếu những thành phần đang hỗ trợ hoặc gây áp lực.",
-    "read": "Điểm Market dùng cùng thang Market Health; các thành phần cần đọc riêng.",
-    "rules": [
-      {
-        "min": 75,
-        "verdict": "good",
-        "why": "{value} đạt vùng cao từ 75."
-      },
-      {
-        "min": 55,
-        "verdict": "neutral",
-        "why": "{value} nằm trong vùng trung gian."
-      },
-      {
-        "max": 55,
-        "exclusiveMax": true,
-        "verdict": "caution",
-        "why": "{value} chưa đạt mốc 55."
-      }
-    ],
-    "source": "Mã/văn bản Tracker",
+    "aliases": ["Market Timing"],
+    "what": "Điểm O’Neil và hai mốc của nhịp hồi trên chỉ số chuẩn.",
+    "use": "Xem nhịp hồi bắt đầu khi nào và đã có phiên xác nhận hay chưa.",
+    "read": "Điểm O’Neil dùng thang 0–100. Đọc cùng ngày bắt đầu và ngày xác nhận.",
+    "rules": [],
+    "source": "Tracker · O’Neil trên benchmark",
     "note": ""
   },
   "MTF": {
@@ -10945,7 +10973,7 @@ function assess(key,value){const g=TRACKER_GLOSSARY[key],n=numeric(value);if(!va
 function close(){dialog?.remove();overlay?.remove();dialog=overlay=null;opener?.setAttribute('aria-expanded','false');if(opener?.isConnected)opener.focus();opener=null}
 function open(key,value,button){close();opener=button;button.setAttribute('aria-expanded','true');const g=TRACKER_GLOSSARY[key],a=assess(key,value);overlay=document.createElement('div');overlay.className='th-help-overlay th-help-ui';dialog=document.createElement('section');dialog.className='th-help-dialog th-help-ui';dialog.id='trackerHelpDialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','trackerHelpTitle');dialog.setAttribute('aria-describedby','trackerHelpDescription');const h=document.createElement('h3');h.id='trackerHelpTitle';h.textContent=key;const exit=document.createElement('button');exit.type='button';exit.className='th-help-close';exit.textContent='×';exit.setAttribute('aria-label','Đóng giải thích');exit.onclick=close;dialog.append(h,exit);const desc=document.createElement('div');desc.id='trackerHelpDescription';for(const [name,content] of [['Hiện tại',value?value+' · '+labels[a.verdict]:'Tra cứu cột / chỉ số'],['Là gì',g.what],['Dùng để làm gì',g.use],['Cách đọc',g.read],['Nguồn',g.source]]){const p=document.createElement('p'),b=document.createElement('b');b.textContent=name+': ';p.append(b,document.createTextNode(content));desc.append(p)}if(value){const p=document.createElement('p');p.textContent=a.why;desc.append(p)}if(g.rules.length){const table=document.createElement('table');table.setAttribute('aria-label','Điều kiện đánh giá');g.rules.forEach(r=>{const tr=document.createElement('tr');for(const t of [r.match||[(r.min!==undefined?(r.exclusiveMin?'> ':'≥ ')+r.min:''),(r.max!==undefined?(r.exclusiveMax?'< ':'≤ ')+r.max:'')].filter(Boolean).join(' và '),labels[r.verdict]]){const td=document.createElement('td');td.textContent=t;tr.append(td)}const cells=tr.querySelectorAll('td');if(cells.length===2){cells[0].append(document.createTextNode(' : '+cells[1].textContent));cells[1].remove()}table.append(tr)});desc.append(table)}if(g.note){const p=document.createElement('p');p.textContent='Lưu ý: '+g.note;desc.append(p)}const foot=document.createElement('p');foot.className='th-disclaimer';foot.textContent=disclaimer;desc.append(foot);dialog.append(desc);document.body.append(overlay,dialog);const r=button.getBoundingClientRect();dialog.style.left=Math.max(12,Math.min(r.left,innerWidth-dialog.offsetWidth-12))+'px';dialog.style.top=Math.max(12,Math.min(r.bottom+6,innerHeight-dialog.offsetHeight-12))+'px';overlay.onclick=close;dialog.addEventListener('keydown',ev=>{if(ev.key==='Escape'){ev.preventDefault();close()}if(ev.key==='Tab'){const fs=[...dialog.querySelectorAll('button,[href],input,[tabindex="0"]')];if(fs.length===1){ev.preventDefault();fs[0].focus()}else if(ev.shiftKey&&document.activeElement===fs[0]){ev.preventDefault();fs.at(-1).focus()}else if(!ev.shiftKey&&document.activeElement===fs.at(-1)){ev.preventDefault();fs[0].focus()}}});exit.focus()}
 function info(key,getValue){const b=document.createElement('button');b.type='button';b.className='th-info th-help-ui';b.innerHTML=icon;b.setAttribute('aria-label','Giải thích '+key);b.setAttribute('aria-haspopup','dialog');b.setAttribute('aria-expanded','false');b.setAttribute('aria-controls','trackerHelpDialog');b.onclick=e=>{e.preventDefault();e.stopPropagation();open(key,getValue(),b)};return b}
-function valueOf(card,key){const kpi=card.querySelector(':scope>.v2-kpi,:scope>.t140-kpi,:scope>.v');if(kpi)return clean(kpi);if(key==='RS V2'||key==='RS Rating')return clean(card.querySelector('.v2-scorebar b'));if(key==='Market Timing')return clean(card.querySelector('.v2-scorebar b'));if(key==='Anchored VWAP')return clean(card.querySelector(':scope>.v2-sub'));if(key==='Multi Score')return card.querySelectorAll('.v2-scorebar').length+' điểm thành phần';if(key==='Sector Rotation'){const row=card.querySelector('.t140-sector-row,.v2-heat .cell');return clean(row)}if(key==='4 chu kỳ cổ phiếu')return [...card.querySelectorAll(':scope>div')].filter(n=>n.querySelector('b')).map(clean).join(' · ');if(key==='Top Setups — Evidence Ranking')return card.querySelectorAll('tbody tr[data-v2ticker]').length+' mã xếp hạng';return''}
+function valueOf(card,key){const kpi=card.querySelector(':scope>.v2-kpi,:scope>.t140-kpi,:scope>.v');if(kpi)return clean(kpi);if(key==='RS V2'||key==='RS Rating')return clean(card.querySelector('.v2-scorebar b'));if(key==='Market Timing')return clean(card.querySelector('[data-oneil-score]'));if(key==='Anchored VWAP')return clean(card.querySelector(':scope>.v2-sub'));if(key==='Multi Score')return card.querySelectorAll('.v2-scorebar').length+' điểm thành phần';if(key==='Sector Rotation'){const row=card.querySelector('.t140-sector-row,.v2-heat .cell');return clean(row)}if(key==='4 chu kỳ cổ phiếu')return [...card.querySelectorAll(':scope>div')].filter(n=>n.querySelector('b')).map(clean).join(' · ');if(key==='Top Setups — Evidence Ranking')return card.querySelectorAll('tbody tr[data-v2ticker]').length+' mã xếp hạng';return''}
 function update(r){const value=r.getValue(),sig=value;if(sig===r.signature)return;r.signature=sig;const a=assess(r.key,value);if(r.badge){r.summaryValue.textContent=value.length>70?value.slice(0,67)+'…':value;r.summaryValue.title=value;r.badge.textContent=labels[a.verdict];r.badge.dataset.verdict=a.verdict;r.brief.textContent=(a.verdict==='unknown'?a.why:TRACKER_GLOSSARY[r.key].what+' '+a.why);r.brief.title=r.brief.textContent;r.badge.title=TRACKER_GLOSSARY[r.key].what+' '+a.why}}
 function attachCard(card){const existing=cardRecords.get(card);if(existing){update(existing);return}const label=card.querySelector(':scope>h2,:scope>h3,:scope>.v2-sub:first-child,:scope>.t140-muted:first-child,:scope>.k,:scope>.v2-between>div>h2');if(!label)return;const key=aliases.get(norm(clean(label)));if(!key)return;let r=cardRecords.get(card);if(r){update(r);return}const getValue=()=>valueOf(card,key);const badge=document.createElement('span');badge.className='th-badge th-help-ui';const brief=document.createElement('p');brief.className='th-brief th-help-ui';const head=document.createElement('div');head.className='th-header-help th-help-ui';const summaryValue=document.createElement('b');summaryValue.className='th-summary-value';head.append(summaryValue,badge,info(key,getValue));label.after(head);const kpi=card.querySelector(':scope>.v2-kpi,:scope>.t140-kpi,:scope>.v');(kpi||head).after(brief);r={key,badge,brief,getValue,summaryValue};cardRecords.set(card,r);records.set(card,r);card.dataset.help='1';update(r)}
 function chip(node,key,getValue){const prior=seenChips.get(node);const value=getValue();const a=assess(key,value);const tooltip=TRACKER_GLOSSARY[key].what+' '+a.why;if(node.title!==tooltip)node.title=tooltip;if(prior)return;node.dataset.helpChip='1';if(!node.hasAttribute('tabindex'))node.tabIndex=0;node.setAttribute('aria-haspopup','dialog');node.addEventListener('click',ev=>{ev.stopPropagation();open(key,getValue(),node)});node.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();open(key,getValue(),node)}});let hold;node.addEventListener('pointerdown',ev=>{if(ev.pointerType==='touch')hold=setTimeout(()=>open(key,getValue(),node),500)});['pointerup','pointercancel','pointerleave'].forEach(name=>node.addEventListener(name,()=>clearTimeout(hold)));seenChips.set(node,{key})}
@@ -11032,8 +11060,8 @@ function kpi(card){if(!card.classList.contains('dx6-kpi'))card.classList.add('dx
 function arrange(root,view){if(roots.has(root)&&root.querySelector(':scope>.dx6-quicknav'))return;const cards=[...root.children].filter(c=>c.matches('.v2-card,.t140-card'));if(!cards.length)return;if(view==='lab'&&!cards.some(c=>c.querySelector('canvas')))return;roots.add(root);root.classList.add('dx6-workspace');const map=new Map(cards.map(c=>[title(c),c])),find=name=>map.get(name)||cards.find(c=>title(c).includes(name));const nav=document.createElement('nav');nav.className='dx6-quicknav';nav.setAttribute('aria-label','Điều hướng nội dung '+view);const pickerCard=cards.find(c=>c.querySelector('.lab-picker'));if(pickerCard)pickerCard.after(nav);else root.prepend(nav);const sections=[];const kp=group(root,'Chỉ số chính','kpi');sections.push(kp);const work=group(root,'Bảng & biểu đồ','work');sections.push(work);
 function put(section,names,spans){names.forEach((name,i)=>{const c=find(name);if(!c)return;section.grid.append(c);if(section===kp)kpi(c);else module(c,Array.isArray(spans)?spans[i]:spans||4);map.delete(title(c));cards.splice(cards.indexOf(c),1)})}
 if(view==='dashboard'){put(kp,['MARKET HEALTH','O’NEIL MARKET','BREADTH > MA50','LEADERSHIP']);put(work,['Top Setups — Evidence Ranking','Market Timing','Sector Rotation'],[8,4,12]);const system=group(root,'Dữ liệu & hệ thống','system');sections.push(system);put(system,['Data Engine V2'],12);system.s.classList.add('dx6-system');const status=document.getElementById('v2EngineStatus');if(status){status.classList.add('dx6-worker-status');nav.append(status)}const labels={v2SaveDataset:'Lưu offline',v2LoadDataset:'Tải',v2ClearDataset:'Xóa'};for(const [id,name]of Object.entries(labels)){const b=document.getElementById(id);if(b)b.textContent=name}}
-if(view==='lab'){put(kp,['CONFLUENCE','BASE QUALITY','MTF','WEINSTEIN']);put(work,['Advanced Chart','Multi Score'],[8,4]);const chart=work.grid.querySelector('canvas')?.closest('.v2-card');chart?.classList.add('dx6-chart-card');for(const [name,items]of [['Sức mạnh tương đối',['RS V2']],['Khối lượng & biến động',['Volume Intelligence','Bollinger']],['Mẫu hình & chu kỳ',['VCP V2','O’Neil Patterns','Wyckoff Events']],['Hành động & rủi ro',['Elder','Anchored VWAP']],['Bằng chứng tổng hợp',['Explainable Evidence']]]){const g=group(root,name,'analysis');sections.push(g);put(g,items,items.length===1?12:items.length===2?6:4)}}
-if(view==='overview'){put(kp,['Regime','Breadth > MA50','Breadth > MA200','Breakout hiện tại']);put(work,['Sector Rotation','4 chu kỳ cổ phiếu','Top Ranking'],[8,4,12]);const g=group(root,'Khối lượng theo kỳ','analysis');sections.push(g);cards.filter(c=>title(c).startsWith('Top 10 khối lượng')).forEach(c=>{g.grid.append(c);module(c,6);cards.splice(cards.indexOf(c),1)})}
+if(view==='lab'){put(kp,['CONFLUENCE','BASE QUALITY','MTF','WEINSTEIN']);put(work,['Advanced Chart','Giá phiên','RS V2','Multi Score'],[8,4,6,6]);const chart=work.grid.querySelector('canvas')?.closest('.v2-card');chart?.classList.add('dx6-chart-card');for(const [name,items]of [['Khối lượng & biến động',['Volume Intelligence','Bollinger']],['Mẫu hình & chu kỳ',['VCP V2','O’Neil Patterns','Wyckoff Events']],['Hành động & rủi ro',['Elder','Anchored VWAP']],['Bằng chứng tổng hợp',['Explainable Evidence']]]){const g=group(root,name,'analysis');sections.push(g);put(g,items,items.length===1?12:items.length===2?6:4)}}
+if(view==='overview'){put(kp,['Regime','Breadth > MA50','Breadth > MA200','Breakout hiện tại']);put(work,['Sector Rotation','4 chu kỳ cổ phiếu','Top Ranking'],[8,4,12]);const g=group(root,'Xếp hạng theo kỳ','analysis');sections.push(g);put(g,['Xếp hạng theo kỳ'],12)}
 if(view==='watchlist')put(work,['Watchlist nâng cao'],12);
 if(view==='settings'){put(work,['Appearance','Backup / Restore'],[6,6]);const g=group(root,'Hiển thị & chất lượng dữ liệu','analysis');sections.push(g);put(g,['Mobile / PWA-like','Data Quality'],[6,6]);const system=group(root,'Dữ liệu & hệ thống','system');sections.push(system);put(system,['Diagnostics / Self-test'],12);system.s.classList.add('dx6-system')}
 for(const c of cards){if(c.querySelector('.lab-picker')){if(root.firstElementChild!==c)root.prepend(c);continue}if(view==='lab'&&title(c)==='Research Lab v2'){root.prepend(c);continue}const g=sections.find(s=>s.s.dataset.tier==='analysis')||work;g.grid.append(c);module(c,12)}
@@ -11108,9 +11136,9 @@ function results(){const wrap=document.getElementById('resultTableWrap'),body=do
 const shown=!wrap.classList.contains('is-hidden');resultTools.hidden=!shown;cls(wrap,s.mode==='cards'?'mx-cards':'mx-table');if(wrap.classList.contains('mx-cards')!==(s.mode==='cards'))wrap.classList.toggle('mx-cards',s.mode==='cards');if(wrap.classList.contains('mx-table')!==(s.mode==='table'))wrap.classList.toggle('mx-table',s.mode==='table');resultList.hidden=s.mode!=='cards';resultFooter.hidden=s.mode!=='cards';resultTools.querySelectorAll('[data-mx-mode]').forEach(b=>{const v=String(b.dataset.mxMode===s.mode);if(b.getAttribute('aria-pressed')!==v)b.setAttribute('aria-pressed',v)});const sortKey=typeof state!=='undefined'?state.sortKey:'',name=plain(document.querySelector('#resultTableWrap th[data-sort="'+sortKey+'"]'))||'Tracker Score';const sort=resultTools.querySelector('[data-mx-sort]');if(sort.textContent!=='Sắp xếp: '+name+' ▾')sort.textContent='Sắp xếp: '+name+' ▾';
 const rows=[...body.querySelectorAll(':scope>tr')],signature=rows.map(r=>r.textContent).join('|');if(signature===resultSignature)return;resultSignature=signature;resultLimit=50;draw();function draw(){resultList.replaceChildren();rows.slice(0,resultLimit).forEach(r=>{const n=stock(r);if(n)resultList.append(n)});const dates=rows.map(r=>plain(r.querySelector('[data-label="Ngày"]'))).filter(Boolean),day=dates.sort().at(-1)||'';resultMeta.textContent=rows.length?'Dữ liệu ngày '+day+' · '+rows.filter(r=>plain(r.querySelector('[data-label="Data"]'))==='D0').length+'/'+rows.length+' mã D0':'';resultFooter.replaceChildren(el('span','mx-meta','Hiển thị '+Math.min(resultLimit,rows.length)+' / '+rows.length+' mã'));if(rows.length>resultLimit)resultFooter.append(button('Hiện thêm 50 mã',null,()=>{resultLimit+=50;draw()},'btn'));} }
 // Dùng lại bộ vẽ; chỉ bật crosshair sau khi chạm giữ 250 ms.
-const charts=new WeakSet();function chart(cv){if(charts.has(cv))return;charts.add(cv);const chartTicker=text(cv.closest('.v2-card')?.querySelector('h2')).split(/\s|—|-/)[0];attr(cv,'data-mx','chart');const tip=root('div','mx-chart-tip');tip.textContent='Chạm giữ 250 ms rồi kéo ngang để đọc phiên.';cv.before(tip);const full=button('Xem ngang',null,()=>{const a=sheet('Biểu đồ · xoay ngang để xem rộng hơn',true);const ranges=cv.parentElement.querySelector('.dx-ranges');if(ranges)a.restore.push(move(ranges,a.body));a.restore.push(move(tip,a.body));a.restore.push(move(cv,a.body));a.foot.remove();window.dispatchEvent(new Event('resize'))},'btn small');cv.before(full);let hold=0,frame=0,active=false,startX=0,startY=0,lastTouch=null;
+const charts=new WeakSet();function chart(cv){if(charts.has(cv))return;charts.add(cv);const chartTicker=text(cv.closest('.v2-card')?.querySelector('h2')).split(/\s|—|-/)[0];attr(cv,'data-mx','chart');const tip=root('div','mx-chart-tip');tip.textContent='Chạm giữ 250 ms rồi kéo ngang để đọc phiên.';cv.before(tip);const full=button('Xem ngang',null,()=>{const a=sheet('Biểu đồ · xoay ngang để xem rộng hơn',true);const ranges=cv.closest('.v2-card,.t140-card,.modal')?.querySelector('.dx-ranges')||cv.parentElement.querySelector('.dx-ranges');if(ranges)a.restore.push(move(ranges,a.body));if(cv.id==='v2AdvCanvas'){const quote=document.getElementById('labQuoteFields');if(quote)a.restore.push(move(quote,a.body));}a.restore.push(move(tip,a.body));a.restore.push(move(cv,a.body));a.foot.remove();window.dispatchEvent(new Event('resize'))},'btn small');cv.before(full);let hold=0,frame=0,active=false,startX=0,startY=0,lastTouch=null;
 const reset=()=>{clearTimeout(hold);cancelAnimationFrame(frame);hold=0;frame=0;active=false;lastTouch=null;cv.dispatchEvent(new MouseEvent('mouseleave',{bubbles:false}))};
-const display=e=>{const t=e.touches?.[0]||lastTouch;if(!t)return;lastTouch=t;cv.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY,bubbles:false}));const ticker=cv.id==='priceCanvas'?text(document.getElementById('modalTitle')).split(/\s|—|-/)[0]:chartTicker,metric=typeof state!=='undefined'?state.metrics.find(m=>m.ticker===ticker):null;const range=cv.parentElement.querySelector('.dx-ranges button[aria-pressed=true]')?.textContent||'Mặc định',count=({'3M':63,'6M':126,'1Y':252,'All':Infinity})[range]||(cv.id==='priceCanvas'?160:180),rows=metric?.rows?.slice(-count);if(!rows?.length)return;const rect=cv.getBoundingClientRect(),i=Math.round(Math.max(0,Math.min(1,(t.clientX-rect.left-12)/(rect.width-82)))*(rows.length-1)),r=rows[i],prev=rows[i-1],fmt=n=>Number.isFinite(+n)?(+n).toLocaleString('vi-VN'):'—',pct=prev?.close?((r.close/prev.close-1)*100).toFixed(2)+'%':'—';tip.textContent=r.date+' · O '+fmt(r.open)+' · H '+fmt(r.high)+' · L '+fmt(r.low)+' · C '+fmt(r.close)+' · KL '+fmt(r.volume)+' · '+pct};
+const display=e=>{const t=e.touches?.[0]||lastTouch;if(!t)return;lastTouch=t;cv.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY,bubbles:false}));if(cv.id==='v2AdvCanvas')return;const ticker=cv.id==='priceCanvas'?text(document.getElementById('modalTitle')).split(/\s|—|-/)[0]:chartTicker,metric=typeof state!=='undefined'?state.metrics.find(m=>m.ticker===ticker):null;const range=cv.parentElement.querySelector('.dx-ranges button[aria-pressed=true]')?.textContent||'Mặc định',count=({'3M':63,'6M':126,'1Y':252,'All':Infinity})[range]||(cv.id==='priceCanvas'?160:180),rows=metric?.rows?.slice(-count);if(!rows?.length)return;const rect=cv.getBoundingClientRect(),i=Math.round(Math.max(0,Math.min(1,(t.clientX-rect.left-12)/(rect.width-82)))*(rows.length-1)),r=rows[i],prev=rows[i-1],fmt=n=>Number.isFinite(+n)?(+n).toLocaleString('vi-VN'):'—',pct=prev?.close?((r.close/prev.close-1)*100).toFixed(2)+'%':'—';tip.textContent=r.date+' · O '+fmt(r.open)+' · H '+fmt(r.high)+' · L '+fmt(r.low)+' · C '+fmt(r.close)+' · KL '+fmt(r.volume)+' · '+pct};
 on(cv,'touchstart',e=>{
  e.stopImmediatePropagation();clearTimeout(hold);cancelAnimationFrame(frame);frame=0;active=false;
  if(e.touches.length!==1){reset();return}
